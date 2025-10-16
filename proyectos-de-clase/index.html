@@ -1,0 +1,422 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Proyectos de clase - WebDI</title><meta name="description" content="Proyectos en Java 1. Calculadora Básica Desarrollo de una calculadora de escritorio en Java que permite realizar operaciones aritméticas básicas: suma, resta, multiplicación y división."><meta name="generator" content="Publii Open-Source CMS for Static Site"><link rel="canonical" href="https://PabloProgramador33.github.io/2damdi/proyectos-de-clase/"><link rel="alternate" type="application/atom+xml" href="https://PabloProgramador33.github.io/2damdi/feed.xml" title="WebDI - RSS"><link rel="alternate" type="application/json" href="https://PabloProgramador33.github.io/2damdi/feed.json" title="WebDI - JSON"><meta property="og:title" content="Proyectos de clase"><meta property="og:image" content="https://PabloProgramador33.github.io/2damdi/media/website/icono.png"><meta property="og:image:width" content="385"><meta property="og:image:height" content="400"><meta property="og:site_name" content="WebDI"><meta property="og:description" content="Proyectos en Java 1. Calculadora Básica Desarrollo de una calculadora de escritorio en Java que permite realizar operaciones aritméticas básicas: suma, resta, multiplicación y división."><meta property="og:url" content="https://PabloProgramador33.github.io/2damdi/proyectos-de-clase/"><meta property="og:type" content="article"><link rel="shortcut icon" href="https://PabloProgramador33.github.io/2damdi/media/website/icono-2.png" type="image/x-icon"><link rel="preload" href="https://PabloProgramador33.github.io/2damdi/assets/dynamic/fonts/sourcecodepro/sourcecodepro.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="https://PabloProgramador33.github.io/2damdi/assets/dynamic/fonts/sourcecodepro/sourcecodepro-italic.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="https://PabloProgramador33.github.io/2damdi/assets/css/style.css?v=effde41a7349bd5db42cb845f147359f"><script type="application/ld+json">{"@context":"http://schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https://PabloProgramador33.github.io/2damdi/proyectos-de-clase/"},"headline":"Proyectos de clase","datePublished":"2025-09-26T12:45+02:00","dateModified":"2025-09-26T14:42+02:00","image":{"@type":"ImageObject","url":"https://PabloProgramador33.github.io/2damdi/media/website/icono.png","height":400,"width":385},"description":"Proyectos en Java 1. Calculadora Básica Desarrollo de una calculadora de escritorio en Java que permite realizar operaciones aritméticas básicas: suma, resta, multiplicación y división.","author":{"@type":"Person","name":"Pablo Pérez Martínez","url":"https://PabloProgramador33.github.io/2damdi/authors/pablo-perez-martinez/"},"publisher":{"@type":"Organization","name":"Pablo Pérez Martínez","logo":{"@type":"ImageObject","url":"https://PabloProgramador33.github.io/2damdi/media/website/icono.png","height":400,"width":385}}}</script><noscript><style>img[loading] {
+                    opacity: 1;
+                }</style></noscript></head><body class="page-template"><div class="container container--center"><header class="header"><div class="header__logo"><a class="logo" href="https://PabloProgramador33.github.io/2damdi/"><img src="https://PabloProgramador33.github.io/2damdi/media/website/icono.png" alt="WebDI" width="385" height="400"></a></div><nav class="navbar js-navbar"><button class="navbar__toggle js-toggle" aria-label="Menu" aria-haspopup="true" aria-expanded="false"><span class="navbar__toggle-box"><span class="navbar__toggle-inner">Menu</span></span></button><ul class="navbar__menu"><li><a href="https://PabloProgramador33.github.io/2damdi/descripcion-de-mi-nueva-pagina/" title="principal" target="_self">Bienvenida</a></li><li><a href="https://PabloProgramador33.github.io/2damdi/sobre-mi/" target="_self">Sobre mí</a></li><li class="active"><a href="https://PabloProgramador33.github.io/2damdi/proyectos-de-clase/">Proyectos personales</a></li><li><a href="https://PabloProgramador33.github.io/2damdi/recomendaciones/" target="_self">Recomendaciones</a></li></ul></nav></header><main class="content page"><article class="post"><header><h1 class="post__title">Proyectos de clase</h1></header><div class="post__entry"><h2 data-start="258" data-end="282"><strong data-start="261" data-end="282">Proyectos en Java</strong></h2><h3 data-start="284" data-end="313"><strong data-start="288" data-end="313">1. Calculadora Básica</strong></h3><blockquote data-start="314" data-end="650"><p data-start="316" data-end="650">Desarrollo de una calculadora de escritorio en Java que permite realizar operaciones aritméticas básicas: suma, resta, multiplicación y división. Implementa <strong data-start="473" data-end="503">interfaz gráfica con Swing</strong>, manejo de eventos y validaciones de entrada. Con este proyecto reforcé mis conocimientos en <strong data-start="597" data-end="647">programación orientada a objetos y GUI en Java</strong>.</p></blockquote><pre class="language-java"><code>import java.util.Scanner;
+
+public class Calculadora {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Bienvenido a la calculadora");
+        System.out.print("Introduce el primer número: ");
+        double num1 = sc.nextDouble();
+        System.out.print("Introduce el segundo número: ");
+        double num2 = sc.nextDouble();
+
+        System.out.println("Selecciona operación: 1-Suma 2-Resta 3-Multiplicación 4-División");
+        int opcion = sc.nextInt();
+        double resultado = 0;
+
+        switch(opcion) {
+            case 1: resultado = num1 + num2; break;
+            case 2: resultado = num1 - num2; break;
+            case 3: resultado = num1 * num2; break;
+            case 4: 
+                if(num2 != 0) resultado = num1 / num2; 
+                else System.out.println("Error: División entre 0");
+                break;
+            default: System.out.println("Opción no válida");
+        }
+
+        System.out.println("Resultado: " + resultado);
+        sc.close();
+    }
+}
+</code></pre><hr data-start="652" data-end="655"><h3 data-start="657" data-end="689"><strong data-start="661" data-end="689">2. Comprobador de Emails</strong></h3><blockquote data-start="690" data-end="1001"><p data-start="692" data-end="1001">Aplicación que valida la sintaxis de correos electrónicos introducidos por el usuario. Utiliza <strong data-start="787" data-end="833">expresiones regulares y lógica condicional</strong> para detectar errores comunes en emails. Aprendí a manejar <strong data-start="893" data-end="931">validaciones y excepciones en Java</strong>, así como a crear algoritmos eficientes para comprobación de datos.</p><pre class="language-java"><code>import java.util.Scanner;
+import java.util.regex.*;
+
+public class ComprobadorEmail {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Introduce un email: ");
+        String email = sc.nextLine();
+
+        String regex = "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(email);
+
+        if(matcher.matches()) {
+            System.out.println("Email válido");
+        } else {
+            System.out.println("Email inválido");
+        }
+
+        sc.close();
+    }
+}
+</code></pre></blockquote><hr data-start="1003" data-end="1006"><h3 data-start="1008" data-end="1040"><strong data-start="1012" data-end="1040">3. Gestor de Contraseñas</strong></h3><blockquote data-start="1041" data-end="1370"><p data-start="1043" data-end="1370">Herramienta para generar, almacenar y validar contraseñas seguras. Incluye opciones de <strong data-start="1130" data-end="1172">longitud, complejidad y cifrado básico</strong> para proteger los datos. Este proyecto me permitió practicar <strong data-start="1234" data-end="1298">seguridad informática y técnicas de cifrado sencillo en Java</strong>, así como buenas prácticas de almacenamiento de información sensible.</p><pre class="language-java"><code>import java.util.Random;
+import java.util.Scanner;
+
+public class GeneradorContrasena {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Introduce longitud de la contraseña: ");
+        int longitud = sc.nextInt();
+
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
+        Random rand = new Random();
+        StringBuilder pass = new StringBuilder();
+
+        for(int i = 0; i &lt; longitud; i++) {
+            pass.append(chars.charAt(rand.nextInt(chars.length())));
+        }
+
+        System.out.println("Contraseña generada: " + pass);
+
+        sc.close();
+    }
+}
+</code></pre></blockquote><hr data-start="1372" data-end="1375"><h3 data-start="1377" data-end="1404"><strong data-start="1381" data-end="1404">4. Juego de Ajedrez</strong></h3><blockquote data-start="1405" data-end="1697"><p data-start="1407" data-end="1697">Desarrollo de un juego completo de ajedrez para consola o interfaz gráfica en Java. Implementa <strong data-start="1502" data-end="1577">reglas del juego, movimientos legales, turnos y detección de jaque mate</strong>. Este proyecto reforzó mis habilidades en <strong data-start="1620" data-end="1694">programación orientada a objetos avanzada y lógica de juegos complejos</strong>.</p><pre class="language-java"><code>import java.util.Scanner;
+
+public class Ajedrez {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Introduce pieza (Rey, Reina, Torre, Alfil, Caballo, Peón): ");
+        String pieza = sc.nextLine();
+
+        switch(pieza) {
+            case "Rey": System.out.println("Se mueve una casilla en cualquier dirección"); break;
+            case "Reina": System.out.println("Se mueve en cualquier dirección y distancia"); break;
+            case "Torre": System.out.println("Se mueve horizontal o vertical"); break;
+            case "Alfil": System.out.println("Se mueve en diagonal"); break;
+            case "Caballo": System.out.println("Se mueve en 'L'"); break;
+            case "Peón": System.out.println("Se mueve hacia adelante una casilla"); break;
+            default: System.out.println("Pieza no válida");
+        }
+
+        sc.close();
+    }
+}
+</code></pre></blockquote><hr data-start="1699" data-end="1702"><h3 data-start="1704" data-end="1735"><strong data-start="1708" data-end="1735">5. Gestión de Empleados</strong></h3><blockquote data-start="1736" data-end="2071"><p data-start="1738" data-end="2071">Sistema de gestión de empleados para una empresa ficticia. Permite <strong data-start="1805" data-end="1844">alta, baja, modificación y búsqueda</strong> de empleados, además de calcular salarios y turnos. Utiliza <strong data-start="1905" data-end="1979">arrays y colecciones, validación de datos y estructura modular en Java</strong>. Aprendí a organizar un programa con varias clases y mantener la integridad de los datos.</p><pre class="language-java"><code>import java.util.ArrayList;
+import java.util.Scanner;
+
+public class GestionEmpleados {
+    public static void main(String[] args) {
+        ArrayList&lt;String&gt; empleados = new ArrayList&lt;&gt;();
+        Scanner sc = new Scanner(System.in);
+        int opcion = 0;
+
+        do {
+            System.out.println("1-Agregar empleado 2-Mostrar empleados 3-Salir");
+            opcion = sc.nextInt();
+            sc.nextLine(); // limpiar buffer
+
+            switch(opcion) {
+                case 1:
+                    System.out.print("Nombre del empleado: ");
+                    String nombre = sc.nextLine();
+                    empleados.add(nombre);
+                    System.out.println("Empleado agregado");
+                    break;
+                case 2:
+                    System.out.println("Empleados:");
+                    for(String e : empleados) {
+                        System.out.println("- " + e);
+                    }
+                    break;
+                case 3: System.out.println("Saliendo..."); break;
+                default: System.out.println("Opción no válida");
+            }
+        } while(opcion != 3);
+
+        sc.close();
+    }
+}
+</code></pre></blockquote><hr data-start="2073" data-end="2076"><h3 data-start="2078" data-end="2115"><strong data-start="2082" data-end="2115">6. Concesionario de Vehículos</strong></h3><blockquote data-start="2116" data-end="2415"><p data-start="2118" data-end="2415">Aplicación que permite gestionar un concesionario: registro de vehículos, ventas, clientes y stock. Se implementa <strong data-start="2232" data-end="2305">interfaz gráfica con Swing, estructuras de datos y consultas internas</strong>. Este proyecto me ayudó a practicar <strong data-start="2342" data-end="2412">programación orientada a objetos y lógica de gestión de inventario</strong>.</p><pre class="language-java"><code>import java.util.ArrayList;
+import java.util.Scanner;
+
+class Vehiculo {
+    String marca;
+    String modelo;
+    int año;
+    double precio;
+
+    Vehiculo(String marca, String modelo, int año, double precio) {
+        this.marca = marca;
+        this.modelo = modelo;
+        this.año = año;
+        this.precio = precio;
+    }
+
+    public String toString() {
+        return marca + " " + modelo + " (" + año + ") - " + precio + "€";
+    }
+}
+
+public class Concesionario {
+    public static void main(String[] args) {
+        ArrayList&lt;Vehiculo&gt; stock = new ArrayList&lt;&gt;();
+        Scanner sc = new Scanner(System.in);
+        int opcion;
+
+        do {
+            System.out.println("\n1-Agregar vehículo 2-Mostrar stock 3-Salir");
+            opcion = sc.nextInt();
+            sc.nextLine();
+
+            switch(opcion) {
+                case 1:
+                    System.out.print("Marca: "); String marca = sc.nextLine();
+                    System.out.print("Modelo: "); String modelo = sc.nextLine();
+                    System.out.print("Año: "); int año = sc.nextInt();
+                    System.out.print("Precio: "); double precio = sc.nextDouble(); sc.nextLine();
+                    stock.add(new Vehiculo(marca, modelo, año, precio));
+                    System.out.println("Vehículo agregado al stock");
+                    break;
+                case 2:
+                    System.out.println("Stock disponible:");
+                    for(Vehiculo v : stock) System.out.println(v);
+                    break;
+                case 3: System.out.println("Saliendo..."); break;
+                default: System.out.println("Opción no válida");
+            }
+        } while(opcion != 3);
+
+        sc.close();
+    }
+}
+</code></pre></blockquote><hr data-start="2417" data-end="2420"><h3 data-start="2422" data-end="2447"><strong data-start="2426" data-end="2447">7. Juego de Bingo</strong></h3><blockquote data-start="2448" data-end="2694"><p data-start="2450" data-end="2694">Juego de bingo interactivo en Java para consola o GUI, con <strong data-start="2509" data-end="2585">generación de cartones, sorteo aleatorio de números y control de ganador</strong>. Este proyecto mejoró mis conocimientos en <strong data-start="2629" data-end="2691">aleatoriedad, bucles y manejo de arrays multidimensionales</strong>.</p><pre class="language-java"><code>import java.util.Random;
+import java.util.HashSet;
+
+public class Bingo {
+    public static void main(String[] args) {
+        Random rand = new Random();
+        HashSet&lt;Integer&gt; carton = new HashSet&lt;&gt;();
+
+        while(carton.size() &lt; 5) { // generar 5 números aleatorios para el cartón
+            int numero = rand.nextInt(75) + 1;
+            carton.add(numero);
+        }
+
+        System.out.println("Tu cartón de bingo: " + carton);
+
+        System.out.println("Sorteando 5 números...");
+        for(int i=0; i&lt;5; i++) {
+            int sorteo = rand.nextInt(75) + 1;
+            System.out.println("Número sorteado: " + sorteo);
+            if(carton.contains(sorteo)) System.out.println("¡Coincidencia!");
+        }
+    }
+}
+</code></pre></blockquote><hr data-start="2696" data-end="2699"><h3 data-start="2701" data-end="2728"><strong data-start="2705" data-end="2728">8. Validador de DNI</strong></h3><blockquote data-start="2729" data-end="2941"><p data-start="2731" data-end="2941">Aplicación que verifica la validez de números de DNI español mediante <strong data-start="2801" data-end="2865">cálculo de letra correspondiente y comprobaciones de formato</strong>. Aprendí a manejar <strong data-start="2885" data-end="2938">cálculos, cadenas de texto y validaciones en Java</strong>.</p><pre class="language-java"><code>import java.util.Scanner;
+
+public class ValidadorDNI {
+    public static void main(String[] args) {
+        String letras = "TRWAGMYFPDXBNJZSQVHLCKE";
+        Scanner sc = new Scanner(System.in);
+
+        System.out.print("Introduce tu DNI (solo números): ");
+        int dni = sc.nextInt();
+        System.out.print("Introduce la letra del DNI: ");
+        char letraIngresada = sc.next().toUpperCase().charAt(0);
+
+        char letraCorrecta = letras.charAt(dni % 23);
+        if(letraIngresada == letraCorrecta) {
+            System.out.println("DNI válido");
+        } else {
+            System.out.println("DNI inválido, la letra correcta es: " + letraCorrecta);
+        }
+
+        sc.close();
+    }
+}
+</code></pre></blockquote><hr data-start="2943" data-end="2946"><h3 data-start="2948" data-end="2978"><strong data-start="2952" data-end="2978">9. Cifrado de Mensajes</strong></h3><blockquote data-start="2979" data-end="3187"><p data-start="2981" data-end="3187">Programa que permite cifrar y descifrar mensajes usando <strong data-start="3037" data-end="3086">algoritmos sencillos como César o sustitución</strong>. Este proyecto me permitió profundizar en <strong data-start="3129" data-end="3184">manipulación de cadenas y seguridad básica de datos</strong>.</p><pre class="language-java"><code>import java.util.Scanner;
+
+public class CifradoCesar {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Introduce mensaje: ");
+        String mensaje = sc.nextLine();
+        System.out.print("Introduce clave (número de desplazamiento): ");
+        int clave = sc.nextInt();
+
+        StringBuilder cifrado = new StringBuilder();
+        for(char c : mensaje.toCharArray()) {
+            if(Character.isLetter(c)) {
+                char base = Character.isUpperCase(c) ? 'A' : 'a';
+                c = (char)((c - base + clave) % 26 + base);
+            }
+            cifrado.append(c);
+        }
+
+        System.out.println("Mensaje cifrado: " + cifrado);
+        sc.close();
+    }
+}
+</code></pre></blockquote><hr data-start="3189" data-end="3192"><h3 data-start="3194" data-end="3224"><strong data-start="3198" data-end="3224">10. Calculadora de IMC</strong></h3><blockquote data-start="3225" data-end="3462"><p data-start="3227" data-end="3462">Aplicación para calcular el índice de masa corporal (IMC) y clasificarlo según rangos de salud. Incluye <strong data-start="3331" data-end="3384">validaciones de entrada y mensajes personalizados</strong>. Practiqué la <strong data-start="3399" data-end="3459">lógica condicional y manejo de números decimales en Java</strong>.</p><pre class="language-java"><code>import java.util.Scanner;
+
+public class IMC {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Introduce tu peso en kg: ");
+        double peso = sc.nextDouble();
+        System.out.print("Introduce tu altura en metros: ");
+        double altura = sc.nextDouble();
+
+        double imc = peso / (altura * altura);
+        System.out.println("Tu IMC es: " + imc);
+
+        if(imc &lt; 18.5) System.out.println("Bajo peso");
+        else if(imc &lt; 25) System.out.println("Peso normal");
+        else if(imc &lt; 30) System.out.println("Sobrepeso");
+        else System.out.println("Obesidad");
+
+        sc.close();
+    }
+}
+</code></pre></blockquote><hr data-start="3464" data-end="3467"><h3 data-start="3469" data-end="3523"><strong data-start="3473" data-end="3500">11. Agenda de Contactos</strong></h3><blockquote data-start="3524" data-end="3818"><p data-start="3526" data-end="3818">Aplicación para gestionar contactos personales o profesionales: añadir, eliminar, modificar y buscar contactos por nombre, teléfono o email. Utiliza <strong data-start="3675" data-end="3733">colecciones de Java y serialización para guardar datos</strong>. Mejora mis habilidades en <strong data-start="3761" data-end="3815">estructuras de datos y persistencia de información</strong>.</p><pre class="language-java"><code>import java.util.ArrayList;
+import java.util.Scanner;
+
+public class Agenda {
+    public static void main(String[] args) {
+        ArrayList&lt;String&gt; contactos = new ArrayList&lt;&gt;();
+        Scanner sc = new Scanner(System.in);
+        int opcion;
+
+        do {
+            System.out.println("\n1-Agregar contacto 2-Mostrar contactos 3-Salir");
+            opcion = sc.nextInt(); sc.nextLine();
+
+            switch(opcion) {
+                case 1:
+                    System.out.print("Nombre: "); String nombre = sc.nextLine();
+                    System.out.print("Teléfono: "); String telefono = sc.nextLine();
+                    contactos.add(nombre + " - " + telefono);
+                    System.out.println("Contacto agregado");
+                    break;
+                case 2:
+                    System.out.println("Contactos:");
+                    for(String c : contactos) System.out.println("- " + c);
+                    break;
+                case 3: System.out.println("Saliendo..."); break;
+                default: System.out.println("Opción no válida");
+            }
+        } while(opcion != 3);
+
+        sc.close();
+    }
+}
+</code></pre></blockquote><hr data-start="3820" data-end="3823"><h3 data-start="3825" data-end="3895"><strong data-start="3829" data-end="3872">12. Sistema de Reservas para Biblioteca</strong></h3><blockquote data-start="3896" data-end="4145"><p data-start="3898" data-end="4145">Programa que permite gestionar el préstamo y devolución de libros de una biblioteca. Implementa <strong data-start="3994" data-end="4055">listas de libros, control de stock y fechas de devolución</strong>. Este proyecto reforzó mis conocimientos en <strong data-start="4100" data-end="4142">POO, fechas y control de datos en Java</strong>.</p><pre class="language-java"><code>import java.util.ArrayList;
+import java.util.Scanner;
+
+public class Biblioteca {
+    public static void main(String[] args) {
+        ArrayList&lt;String&gt; libros = new ArrayList&lt;&gt;();
+        libros.add("Java para principiantes");
+        libros.add("Programación avanzada");
+        Scanner sc = new Scanner(System.in);
+        int opcion;
+
+        do {
+            System.out.println("\n1-Ver libros 2-Reservar libro 3-Salir");
+            opcion = sc.nextInt(); sc.nextLine();
+
+            switch(opcion) {
+                case 1:
+                    System.out.println("Libros disponibles:");
+                    for(String libro : libros) System.out.println("- " + libro);
+                    break;
+                case 2:
+                    System.out.print("Introduce el libro a reservar: ");
+                    String libro = sc.nextLine();
+                    if(libros.contains(libro)) {
+                        libros.remove(libro);
+                        System.out.println("Libro reservado: " + libro);
+                    } else System.out.println("Libro no disponible");
+                    break;
+                case 3: System.out.println("Saliendo..."); break;
+                default: System.out.println("Opción no válida");
+            }
+        } while(opcion != 3);
+
+        sc.close();
+    }
+}
+</code></pre></blockquote><hr data-start="4147" data-end="4150"><h3 data-start="4152" data-end="4219"><strong data-start="4156" data-end="4196">13. Juego de Trivia de Conocimientos</strong></h3><blockquote data-start="4220" data-end="4467"><p data-start="4222" data-end="4467">Juego de preguntas y respuestas con múltiples niveles de dificultad. Incluye <strong data-start="4299" data-end="4364">puntuaciones, temporizador y selección aleatoria de preguntas</strong>. Me permitió practicar <strong data-start="4388" data-end="4464">algoritmos, estructuras de control y diseño de juegos educativos en Java</strong>.</p><pre class="language-java"><code>import java.util.Scanner;
+
+public class Trivia {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        String[][] preguntas = {
+            {"¿2+2=?", "4"},
+            {"¿Capital de España?", "Madrid"},
+            {"¿Java es un lenguaje de programación? (sí/no)", "sí"}
+        };
+
+        int puntuacion = 0;
+        for(String[] p : preguntas) {
+            System.out.println(p[0]);
+            String respuesta = sc.nextLine();
+            if(respuesta.equalsIgnoreCase(p[1])) {
+                System.out.println("¡Correcto!");
+                puntuacion++;
+            } else {
+                System.out.println("Incorrecto, la respuesta correcta es: " + p[1]);
+            }
+        }
+
+        System.out.println("Puntuación final: " + puntuacion + "/" + preguntas.length);
+        sc.close();
+    }
+}
+
+</code></pre></blockquote></div></article></main><footer class="footer"><div class="footer__inner"><div class="footer__copyright"><p>© 2025 Pablo Pérez :: Sitio creado con Publii CMS :: Ciberseguridad &amp; Desarrollo</p></div></div></footer></div><script defer="defer" src="https://PabloProgramador33.github.io/2damdi/assets/js/scripts.min.js?v=c2232aa7558e9517946129d2a1b8c770"></script><script>window.publiiThemeMenuConfig={mobileMenuMode:'sidebar',animationSpeed:300,submenuWidth: 'auto',doubleClickTime:500,mobileMenuExpandableSubmenus:true,relatedContainerForOverlayMenuSelector:'.top'};</script><script>var images = document.querySelectorAll('img[loading]');
+        for (var i = 0; i < images.length; i++) {
+            if (images[i].complete) {
+                images[i].classList.add('is-loaded');
+            } else {
+                images[i].addEventListener('load', function () {
+                    this.classList.add('is-loaded');
+                }, false);
+            }
+        }</script><canvas id="matrix"></canvas><script>window.onload = function() {
+  const c = document.getElementById("matrix");
+  const ctx = c.getContext("2d");
+
+  c.height = window.innerHeight;
+  c.width = window.innerWidth;
+
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()";
+  const fontSize = 18;
+  const columns = c.width / fontSize;
+
+  const drops = [];
+  for(let x = 0; x < columns; x++) drops[x] = Math.floor(Math.random() * c.height/fontSize);
+
+  function draw() {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+    ctx.fillRect(0, 0, c.width, c.height);
+
+    ctx.fillStyle = "#00ff00";
+    ctx.font = fontSize + "px JetBrains Mono";
+
+    for(let i = 0; i < drops.length; i++) {
+      const text = letters[Math.floor(Math.random() * letters.length)];
+      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+      drops[i] += 0.5;
+      if(drops[i] * fontSize > c.height && Math.random() > 0.975) drops[i] = 0;
+    }
+  }
+
+  setInterval(draw, 60);
+
+  window.addEventListener("resize", () => {
+    c.height = window.innerHeight;
+    c.width = window.innerWidth;
+  });
+};</script><style>#matrix {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+}</style></body></html>

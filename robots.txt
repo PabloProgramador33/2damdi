@@ -1,0 +1,3 @@
+User-agent: *
+Disallow:
+Sitemap: https://PabloProgramador33.github.io/2damdi/sitemap.xml
