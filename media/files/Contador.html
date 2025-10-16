@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Título de la página web actualizado -->
+    <title>Contador de Personas Retro</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente y estilos base de la aplicación */
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        /* Usamos 'Press Start 2P' para un auténtico look pixel/arcade */
+        body {
+            font-family: 'Press Start 2P', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+            overflow: hidden; 
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* ------------------------------------------- */
+        /* --- ESTILOS MODO OSCURO (DEFAULT) --- */
+        /* ------------------------------------------- */
+        body {
+            background-color: #0d0d0d;
+            color: #ffffff;
+        }
+
+        /* Contenedor principal del juego con un borde de tubo catódico retro */
+        #game-container {
+            border: 4px solid #00ff00; /* Borde verde brillante retro */
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.7), inset 0 0 10px rgba(0, 255, 0, 0.5);
+            background-color: #1a1a1a;
+            max-width: 600px;
+            width: 100%;
+            height: 90vh; /* Altura adaptable */
+            max-height: 800px;
+            padding: 1rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            border-radius: 8px;
+            transition: border-color 0.3s, background-color 0.3s, box-shadow 0.3s;
+        }
+
+        h1.app-title {
+            color: #00ff00;
+        }
+
+        /* Estilo para el Canvas (Zona de juego) */
+        #game-canvas {
+            background-color: #000000;
+            border: 2px solid #333333;
+            flex-grow: 1;
+            margin-bottom: 1rem;
+        }
+
+        /* Estilo para los contadores */
+        .counter-box {
+            background-color: #2c2c2c;
+            border: 2px solid #ff00ff;
+            box-shadow: inset 0 0 5px rgba(255, 0, 255, 0.5);
+        }
+
+        /* Estilo para los botones */
+        .retro-button {
+            padding: 0.75rem 0.5rem;
+            border-radius: 4px;
+            text-shadow: 1px 1px #000;
+            transition: all 0.1s;
+            line-height: 1;
+            font-size: 0.6rem;
+            border: 2px solid;
+            cursor: pointer;
+            min-width: 120px; /* Ancho mínimo para botones de acción */
+        }
+        .top-button {
+             min-width: 50px; /* Ancho mínimo reducido para botones superiores */
+             font-size: 0.8rem; /* Fuente un poco más grande para iconos superiores */
+             padding: 0.5rem 0.3rem;
+        }
+        .retro-button:hover {
+            filter: brightness(1.2);
+            transform: translateY(-1px);
+        }
+        .retro-button:active {
+            transform: translateY(1px);
+            box-shadow: none;
+        }
+        
+        /* Controles inferiores fijos */
+        .controls-area {
+            z-index: 100;
+            position: relative;
+            background-color: #1a1a1a;
+            padding-top: 0.5rem;
+            transition: background-color 0.3s;
+        }
+        /* Estilos de botones específicos en modo oscuro */
+        #aim-women-btn { background-color: #3b3b3b; color: #ff1493; border-color: #ff1493; }
+        #aim-men-btn { background-color: #3b3b3b; color: #00bfff; border-color: #00bfff; }
+        #subtract-women-btn, #subtract-men-btn { background-color: #880000; }
+        
+        /* Estilos de botones superiores en modo oscuro */
+        #reset-btn { background-color: #5a5a5a; color: #ffff00; border-color: #ffff00; }
+        #theme-toggle { background-color: #5a5a5a; color: #ffffff; border-color: #ffffff; }
+
+        /* Estilo para ocultar texto en móviles y mostrarlo en escritorio */
+        .theme-text {
+            display: none;
+        }
+        @media (min-width: 640px) { /* sm breakpoint */
+             .theme-text {
+                display: inline;
+             }
+             .top-button {
+                min-width: 120px; /* Restaurar ancho para texto en desktop */
+                font-size: 0.6rem;
+             }
+        }
+        
+        /* ------------------------------------------- */
+        /* --- ESTILOS MODO CLARO (.light-theme) --- */
+        /* ------------------------------------------- */
+
+        body.light-theme {
+            background-color: #e6e6e6; /* Base Light */
+            color: #1a1a1a;
+        }
+
+        body.light-theme #game-container {
+            background-color: #ffffff;
+            border: 4px solid #333333; /* Borde oscuro simple */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* Sombra suave */
+        }
+        
+        body.light-theme h1.app-title {
+            color: #333333; /* Texto oscuro */
+        }
+
+        body.light-theme #game-canvas {
+            background-color: #f8f8f8;
+            border-color: #cccccc;
+        }
+
+        body.light-theme .counter-box {
+            background-color: #d8d8d8;
+            border-color: #555555;
+            box-shadow: none;
+        }
+        
+        body.light-theme .controls-area {
+            background-color: #ffffff;
+        }
+
+        /* Estilos de botones específicos en modo claro */
+        body.light-theme .retro-button {
+            text-shadow: none;
+            box-shadow: 0 4px 0 #999; /* Sombra de botón presionable */
+        }
+        body.light-theme .retro-button:active {
+            box-shadow: 0 1px 0 #999;
+        }
+        
+        body.light-theme #aim-women-btn { background-color: #ffe0f0; color: #ff1493; border-color: #ff1493; }
+        body.light-theme #aim-men-btn { background-color: #e0f0ff; color: #00bfff; border-color: #00bfff; }
+        body.light-theme #subtract-women-btn { background-color: #ffcccc; color: #990000; border-color: #990000; }
+        body.light-theme #subtract-men-btn { background-color: #ffcccc; color: #990000; border-color: #990000; }
+        
+        /* Estilos de botones superiores en modo claro */
+        body.light-theme #reset-btn { background-color: #fffacd; color: #333333; border-color: #333333; }
+        body.light-theme #theme-toggle { background-color: #e0e0e0; color: #333333; border-color: #333333; }
+
+
+        /* Clases de utilidad */
+        .counter-value {
+            font-size: 1.5rem;
+            text-shadow: 2px 2px #000000;
+        }
+        .counter-box {
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.75rem;
+        }
+        /* Ajuste de sombra de valor en modo claro para legibilidad */
+        body.light-theme .counter-value {
+             text-shadow: 1px 1px #888888;
+        }
+        
+        /* Ocultar el texto del título en pantallas muy pequeñas */
+        @media (max-width: 400px) { 
+             h1.app-title {
+                font-size: 1.1rem;
+                line-height: 1.2;
+             }
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container" class="select-none">
+    
+    <!-- Contenedor del Título y los Botones Superiores -->
+    <div class="flex justify-between items-center mb-4 gap-2">
+        
+        <!-- Botón de Alternancia de Tema (Izquierda) -->
+        <button id="theme-toggle" 
+            class="retro-button top-button text-xs transition-colors duration-300" 
+            onclick="toggleTheme()">
+            <span class="theme-text">MODO CLARO</span>
+            <span>☀️/🌙</span>
+        </button>
+
+        <!-- Título principal -->
+        <h1 class="text-center text-xl sm:text-3xl drop-shadow-lg app-title flex-grow mx-2">CONTADOR DE PERSONAS RETRO</h1>
+        
+        <!-- Botón de Reinicio (Derecha) - SOLO ICONO -->
+        <button id="reset-btn" 
+            class="retro-button top-button text-xs" 
+            onclick="resetGame()">
+            &#x21BB; <!-- Icono de Recargar Unicode -->
+        </button>
+    </div>
+
+
+    <!-- Contadores (Puntuación / Hits) -->
+    <div id="counters" class="flex justify-around mb-4">
+        <div class="counter-box border-[#ff1493]">
+            <span class="text-[#ff1493]">HITS MUJERES</span>
+            <div id="count-women" class="counter-value text-[#ff1493]">00</div>
+        </div>
+        <div class="counter-box border-[#00bfff]">
+            <span class="text-[#00bfff]">HITS HOMBRES</span>
+            <div id="count-men" class="counter-value text-[#00bfff]">00</div>
+        </div>
+        <div class="counter-box border-[#ffff00]">
+            <span class="text-[#ffff00]">TOTAL PERSONAS</span>
+            <div id="count-total" class="counter-value text-[#ffff00]">00</div>
+        </div>
+    </div>
+
+    <!-- Zona de Juego: Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Controles -->
+    <div id="all-controls" class="controls-area flex justify-center flex-wrap gap-6">
+        
+        <!-- Grupo 1: Acciones Principales (Disparar) -->
+        <div class="flex gap-3">
+            <button id="aim-women-btn" 
+                class="retro-button" 
+                onclick="fireCannon('women')">
+                DISPARAR MUJERES ♀
+            </button>
+            
+            <button id="aim-men-btn" 
+                class="retro-button"
+                onclick="fireCannon('men')">
+                DISPARAR HOMBRES ♂
+            </button>
+        </div>
+        
+        <!-- Grupo 2: Acciones de Corrección (-1) -->
+        <div class="flex gap-3">
+            <button id="subtract-women-btn" 
+                class="retro-button" 
+                onclick="subtractScore('women')">
+                -1 MUJER
+            </button>
+            
+            <button id="subtract-men-btn" 
+                class="retro-button"
+                onclick="subtractScore('men')">
+                -1 HOMBRE
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Configuración y Variables Globales ---
+    const INITIAL_COUNT = 20;
+    const DOLL_RADIUS = 15;
+    const PROJECTILE_SPEED = 15;
+    const MAX_VELOCITY = 2;
+
+    // Puntuación (Hits) - Ahora es un contador infinito
+    let countMen = 0;
+    let countWomen = 0;
+
+    // Tipo de objetivo actual del cañón (determina SOLO su color)
+    let cannonTargetType = 'women'; 
+    
+    // Estado para la animación de fuego del cañón
+    let cannonFiringFrame = 0;
+    const FIRE_DURATION = 5; // Duración de la animación de fuego en frames
+
+    // Referencias DOM
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const countMenEl = document.getElementById('count-men');
+    const countWomenEl = document.getElementById('count-women');
+    const countTotalEl = document.getElementById('count-total');
+
+    // Arrays para entidades en el canvas
+    let dolls = [];
+    let projectiles = [];
+    let explosions = [];
+
+    // --- Clases / Constructores de Entidades ---
+
+    function Doll(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.color = type === 'women' ? '#ff1493' : '#00bfff';
+        this.vx = (Math.random() - 0.5) * MAX_VELOCITY * 2;
+        this.vy = (Math.random() - 0.5) * MAX_VELOCITY * 2;
+        if (Math.abs(this.vx) < 0.5) this.vx = this.vx > 0 ? 0.5 : -0.5;
+        if (Math.abs(this.vy) < 0.5) this.vy = this.vy > 0 ? 0.5 : -0.5;
+    }
+
+    function Projectile(startX, startY, targetDoll) {
+        this.x = startX;
+        this.y = startY;
+        this.type = targetDoll.type;
+        this.color = targetDoll.type === 'women' ? '#ff00ff' : '#00ffff';
+        this.target = targetDoll; 
+        this.size = 8;
+        this.hit = false;
+        this.vx = 0; 
+        this.vy = 0; 
+    }
+
+    function Explosion(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.radius = 5;
+        this.maxRadius = 30;
+        this.opacity = 1.0;
+        this.life = 0;
+        this.maxLife = 20; 
+    }
+
+    // --- Funciones de Tema ---
+    /**
+     * Aplica o quita la clase de tema claro.
+     * @param {boolean} isLight - Si el tema a aplicar es claro.
+     */
+    function applyTheme(isLight) {
+        const body = document.body;
+        const toggleBtn = document.getElementById('theme-toggle');
+
+        if (isLight) {
+            body.classList.add('light-theme');
+            // Muestra el icono de la luna en móvil y el texto completo en escritorio
+            toggleBtn.querySelector('.theme-text').textContent = 'MODO OSCURO';
+            toggleBtn.querySelector('span:not(.theme-text)').innerHTML = '🌙';
+            localStorage.setItem('theme', 'light');
+        } else {
+            body.classList.remove('light-theme');
+            // Muestra el icono del sol en móvil y el texto completo en escritorio
+            toggleBtn.querySelector('.theme-text').textContent = 'MODO CLARO';
+            toggleBtn.querySelector('span:not(.theme-text)').innerHTML = '☀️';
+            localStorage.setItem('theme', 'dark');
+        }
+    }
+
+    /**
+     * Alterna entre el modo oscuro y claro.
+     */
+    function toggleTheme() {
+        const isLight = document.body.classList.contains('light-theme');
+        applyTheme(!isLight);
+    }
+
+    /**
+     * Inicializa el tema al cargar, usando la preferencia guardada.
+     */
+    function initializeTheme() {
+        const storedTheme = localStorage.getItem('theme');
+        
+        let initialThemeIsLight = false;
+
+        // Si hay una preferencia guardada, úsala
+        if (storedTheme) {
+            initialThemeIsLight = storedTheme === 'light';
+        } else {
+            // Si no hay preferencia guardada, usa la preferencia del sistema operativo si es clara
+            initialThemeIsLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+        }
+
+        applyTheme(initialThemeIsLight); 
+    }
+
+    // --- Funciones de Inicialización y Lógica ---
+    
+    /**
+     * Reinicia el juego: contadores a cero y vuelve a poblar el canvas.
+     */
+    function resetGame() {
+        // Reiniciar contadores de puntos
+        countMen = 0;
+        countWomen = 0;
+        
+        // Limpiar arrays de entidades
+        dolls = [];
+        projectiles = [];
+        explosions = [];
+        
+        // Volver a crear los muñecos iniciales
+        createDolls('women', INITIAL_COUNT);
+        createDolls('men', INITIAL_COUNT);
+        
+        // Actualizar la interfaz
+        updateCounters();
+        
+        console.log("Juego reiniciado. Contadores a cero y canvas repoblado.");
+    }
+
+
+    function resizeCanvas() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        // Restar la altura de los contadores y controles
+        const headerHeight = document.querySelector('.flex.justify-between').offsetHeight;
+        const countersHeight = document.getElementById('counters').offsetHeight;
+        const controlsHeight = document.querySelector('.controls-area').offsetHeight;
+        
+        // 4rem (padding total) + altura de los elementos de control
+        const totalOffset = headerHeight + countersHeight + controlsHeight + 40; 
+        
+        canvas.width = rect.width - 32; // Ancho del contenedor - padding de 1rem * 2
+        canvas.height = rect.height - totalOffset; 
+    }
+
+    function createDolls(type, count) {
+        for (let i = 0; i < count; i++) {
+            const x = Math.random() * (canvas.width - DOLL_RADIUS * 2) + DOLL_RADIUS;
+            const y = Math.random() * (canvas.height - DOLL_RADIUS * 2) + DOLL_RADIUS;
+            dolls.push(new Doll(x, y, type));
+        }
+    }
+
+    function updateCounters() {
+        const totalPeople = countMen + countWomen;
+        
+        countMenEl.textContent = countMen.toString().padStart(2, '0');
+        countWomenEl.textContent = countWomen.toString().padStart(2, '0');
+        countTotalEl.textContent = totalPeople.toString().padStart(2, '0');
+
+        const remainingMen = dolls.filter(d => d.type === 'men').length;
+        const remainingWomen = dolls.filter(d => d.type === 'women').length;
+
+        const fireWomenBtn = document.getElementById('aim-women-btn');
+        const fireMenBtn = document.getElementById('aim-men-btn');
+
+        if (fireWomenBtn) fireWomenBtn.disabled = remainingWomen === 0;
+        if (fireMenBtn) fireMenBtn.disabled = remainingMen === 0;
+        
+        document.getElementById('subtract-men-btn').disabled = countMen === 0;
+        document.getElementById('subtract-women-btn').disabled = countWomen === 0;
+    }
+
+    function resetDollBlock(type) {
+        dolls = dolls.filter(d => d.type !== type); 
+        createDolls(type, INITIAL_COUNT);
+        updateCounters();
+    }
+
+    function findClosestDoll(type) {
+        const targets = dolls.filter(d => d.type === type);
+        if (targets.length === 0) return null;
+
+        const cannonX = canvas.width / 2;
+        const cannonY = canvas.height;
+
+        let closestDoll = null;
+        let minDistanceSq = Infinity;
+
+        for (const doll of targets) {
+            const dx = doll.x - cannonX;
+            const dy = doll.y - cannonY;
+            const distanceSq = dx * dx + dy * dy;
+
+            if (distanceSq < minDistanceSq) {
+                minDistanceSq = distanceSq;
+                closestDoll = doll;
+            }
+        }
+        return closestDoll;
+    }
+    
+    function fireCannon(type) {
+        cannonFiringFrame = FIRE_DURATION; 
+        cannonTargetType = type;
+        
+        const targetDoll = findClosestDoll(type);
+        
+        if (!targetDoll) {
+            updateCounters(); 
+            return;
+        }
+
+        const cannonX = canvas.width / 2;
+        const cannonY = canvas.height;
+
+        projectiles.push(new Projectile(cannonX, cannonY, targetDoll));
+        updateCounters();
+    }
+
+    function subtractScore(type) {
+        if (type === 'men' && countMen > 0) {
+            countMen -= 1;
+        } else if (type === 'women' && countWomen > 0) {
+            countWomen -= 1;
+        }
+        updateCounters(); 
+    }
+
+
+    function destroyDoll(doll) {
+        explosions.push(new Explosion(doll.x, doll.y, doll.color));
+        const typeToRefill = doll.type;
+        dolls = dolls.filter(d => d !== doll);
+
+        if (typeToRefill === 'men') {
+            countMen += 1;
+        } else {
+            countWomen += 1;
+        }
+        
+        updateCounters();
+
+        const remainingDollsOfType = dolls.filter(d => d.type === typeToRefill).length;
+        
+        if (remainingDollsOfType === 0) {
+             resetDollBlock(typeToRefill);
+        }
+    }
+
+    // --- Funciones de Dibujo ---
+
+    function drawCannon() {
+        const cannonX = canvas.width / 2;
+        const cannonY = canvas.height;
+        const angle = 0; 
+        
+        let barrelColor = '#666666'; 
+        let shadowColor = '#666666';
+
+        if (cannonTargetType === 'women') {
+            barrelColor = '#ff1493'; 
+            shadowColor = '#ff69b4';
+        } else if (cannonTargetType === 'men') {
+            barrelColor = '#00bfff'; 
+            shadowColor = '#1e90ff';
+        }
+        
+        const isLightTheme = document.body.classList.contains('light-theme');
+
+        // --- Dibujar la Base Fija ---
+        ctx.fillStyle = isLightTheme ? '#aaaaaa' : '#666666'; 
+        ctx.beginPath();
+        ctx.arc(cannonX, cannonY, 35, 0, Math.PI * 2); 
+        ctx.fill();
+        ctx.strokeStyle = isLightTheme ? '#555555' : '#00ff00';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(cannonX, cannonY);
+        ctx.rotate(angle); 
+
+        // --- Dibujar el Cañón (Barrel) ---
+        const BARREL_WIDTH = 15;
+        const BARREL_HEIGHT = 50;
+
+        ctx.fillStyle = barrelColor; 
+        if (!isLightTheme) {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = shadowColor; 
+        }
+        
+        ctx.fillRect(-BARREL_WIDTH / 2, -BARREL_HEIGHT, BARREL_WIDTH, BARREL_HEIGHT);
+        ctx.shadowBlur = 0; 
+        
+        // Turret Base 
+        ctx.fillStyle = isLightTheme ? '#e0e0e0' : '#ffffff'; 
+        ctx.beginPath();
+        ctx.arc(0, 0, 25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = isLightTheme ? '#888888' : '#333333';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // 6. ANIMACIÓN DE FUEGO (FIRE EFFECT)
+        if (cannonFiringFrame > 0) {
+            const fireIntensity = cannonFiringFrame / FIRE_DURATION;
+            const fireColor = cannonTargetType === 'women' ? '#ff4d94' : '#00e5ff'; 
+
+            ctx.shadowBlur = 15 * fireIntensity;
+            ctx.shadowColor = fireColor;
+
+            ctx.fillStyle = fireColor;
+            ctx.globalAlpha = 0.8 * fireIntensity;
+
+            const fireHeight = 25 * fireIntensity;
+            const fireWidth = 20 * fireIntensity;
+
+            ctx.beginPath();
+            ctx.moveTo(-fireWidth / 2, -BARREL_HEIGHT); 
+            ctx.lineTo(fireWidth / 2, -BARREL_HEIGHT); 
+            ctx.lineTo(0, -BARREL_HEIGHT - fireHeight); 
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1.0;
+        }
+
+        ctx.restore(); 
+    }
+
+    function drawDoll(doll) {
+        const r = DOLL_RADIUS;
+        const x = doll.x;
+        const y = doll.y;
+
+        const baseColor = doll.color; 
+        let highlightColor = doll.type === 'women' ? '#ff69b4' : '#1e90ff';
+        
+        const isLightTheme = document.body.classList.contains('light-theme');
+
+        // --- 1. Efecto Neón/Glow para el cuerpo (Solo en Modo Oscuro) ---
+        if (!isLightTheme) {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = baseColor;
+        } else {
+            ctx.shadowBlur = 0;
+        }
+        ctx.fillStyle = baseColor;
+
+        // --- 2. Dibujar el Cuerpo (Bloque inferior) ---
+        const bodyHeight = r * 1.5;
+        const bodyY = y - r * 0.5;
+        ctx.fillRect(x - r, bodyY, r * 2, bodyHeight);
+        
+        // --- 3. Dibujar la Cabeza (Semi-círculo superior) ---
+        const headRadius = r * 0.7;
+        const headY = y - r;
+        ctx.beginPath();
+        ctx.arc(x, headY, headRadius, Math.PI, 2 * Math.PI);
+        ctx.fill();
+
+        // --- 4. Dibujar el Brillo (Highlight) ---
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = highlightColor;
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.arc(x + headRadius * 0.3, headY - headRadius * 0.3, headRadius * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+        
+        // --- 5. Dibujar los Ojos (Pixel Eyes) ---
+        const eyeSize = 3;
+        const eyeOffset = 6;
+        const eyeY = headY + headRadius * 0.2;
+
+        ctx.fillStyle = isLightTheme ? '#008000' : '#00ff00'; // Ojos verdes
+        ctx.fillRect(x - eyeOffset - eyeSize / 2, eyeY, eyeSize, eyeSize); 
+        ctx.fillRect(x + eyeOffset - eyeSize / 2, eyeY, eyeSize, eyeSize); 
+        
+        ctx.shadowBlur = 0;
+    }
+
+    function drawProjectile(p) {
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = p.color;
+    }
+
+    function drawExplosion(e) {
+        e.life++;
+        e.radius += 1.5;
+        e.opacity -= 1 / e.maxLife;
+
+        ctx.fillStyle = e.color;
+        ctx.globalAlpha = e.opacity;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = e.color;
+
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.shadowBlur = 0; 
+        ctx.globalAlpha = 1.0; 
+    }
+
+
+    function updateDolls() {
+        dolls.forEach(doll => {
+            doll.x += doll.vx;
+            doll.y += doll.vy;
+
+            if (doll.x + DOLL_RADIUS > canvas.width || doll.x - DOLL_RADIUS < 0) {
+                doll.vx *= -1; 
+                doll.x = Math.max(DOLL_RADIUS, Math.min(canvas.width - DOLL_RADIUS, doll.x)); 
+            }
+            if (doll.y + DOLL_RADIUS > canvas.height || doll.y - DOLL_RADIUS < 0) {
+                doll.vy *= -1; 
+                doll.y = Math.max(DOLL_RADIUS, Math.min(canvas.height - DOLL_RADIUS, doll.y)); 
+            }
+        });
+    }
+
+    function updateProjectiles() {
+        projectiles = projectiles.filter(p => {
+            if (p.hit) return false;
+            
+            const targetIndex = dolls.indexOf(p.target);
+            if (targetIndex === -1) {
+                return false;
+            }
+
+            const targetX = p.target.x;
+            const targetY = p.target.y;
+
+            const dx = targetX - p.x;
+            const dy = targetY - p.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < DOLL_RADIUS + (p.size / 2)) {
+                destroyDoll(p.target);
+                return false; 
+            }
+
+            if (distance > 0) {
+                p.x += (dx / distance) * PROJECTILE_SPEED;
+                p.y += (dy / distance) * PROJECTILE_SPEED;
+            } else {
+                destroyDoll(p.target);
+                return false;
+            }
+            
+            return true;
+        });
+    }
+
+    function updateExplosions() {
+        explosions = explosions.filter(e => e.life < e.maxLife);
+    }
+    
+    function updateCannonFire() {
+        if (cannonFiringFrame > 0) {
+            cannonFiringFrame--;
+        }
+    }
+
+    /**
+     * Bucle principal del juego.
+     */
+    function gameLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        updateDolls();
+        updateProjectiles();
+        updateExplosions();
+        updateCannonFire();
+
+        drawCannon(); 
+        dolls.forEach(drawDoll);
+        projectiles.forEach(drawProjectile);
+        explosions.forEach(drawExplosion);
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    // --- Inicialización General ---
+
+    window.onload = function() {
+        initializeTheme(); 
+        resizeCanvas();
+        createDolls('women', INITIAL_COUNT);
+        createDolls('men', INITIAL_COUNT);
+        updateCounters();
+        gameLoop();
+    };
+
+    window.onresize = resizeCanvas;
+
+    // Exportar funciones para que sean accesibles desde el HTML
+    window.fireCannon = fireCannon;
+    window.subtractScore = subtractScore;
+    window.toggleTheme = toggleTheme; 
+    window.resetGame = resetGame; 
+    
+</script>
+
+</body>
+</html>
