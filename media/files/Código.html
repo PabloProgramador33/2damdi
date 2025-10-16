@@ -89,7 +89,7 @@
     <div id="app-container" class="relative z-10 min-h-screen w-full flex flex-col items-center justify-center p-4">
 
         <!-- Top Header Controls -->
-        <div class="max-w-7xl w-full flex justify-between items-start p-4 absolute top-0 left-0 right-0 z-10">
+        <div class="max-w-7xl w-full flex flex-col md:flex-row justify-between items-center p-4 absolute top-0 left-0 right-0 z-10 gap-4 md:gap-0">
             <div class="flex items-center space-x-4">
                 <button id="toggle-tasks-btn" class="p-3 bg-white rounded-full shadow-lg transition hover:shadow-xl text-gray-800" title="Mostrar/Ocultar Tareas">
                     <i data-lucide="list" class="w-6 h-6"></i>
@@ -102,7 +102,7 @@
             <div class="flex items-center space-x-4">
                 <div id="points-display" class="flex items-center px-4 py-2 rounded-full shadow-lg bg-gray-800/80 text-white text-sm font-semibold">
                     <i data-lucide="star" class="w-4 h-4 text-yellow-400 mr-2"></i>
-                    <span id="points-value">0</span> Puntos | Racha: <span id="streak-value">0</span> | Mejor: <span id="best-streak-value">0</span>
+                    <span id="points-value">0</span> Puntos <span class="hidden sm:inline">| Racha: <span id="streak-value">0</span></span><span class="hidden lg:inline"> | Mejor: <span id="best-streak-value">0</span></span>
                 </div>
                 <button id="toggle-focus-mode-btn" class="p-3 bg-white rounded-full shadow-lg transition hover:shadow-xl text-gray-800" title="Activar Modo Foco">
                     <i data-lucide="zap" class="w-6 h-6"></i>
@@ -114,11 +114,11 @@
         </div>
         
         <!-- Main Content: Timer and Tasks -->
-        <div class="flex items-start justify-center w-full max-w-7xl pt-24">
+        <div class="flex flex-col lg:flex-row items-center lg:items-start justify-center w-full max-w-7xl pt-36 md:pt-24">
             
             <!-- Task Manager (Left Column) -->
-            <div id="task-manager-container" class="mr-8 hidden">
-                <div class="bg-gray-900/95 backdrop-blur-sm p-6 rounded-2xl shadow-xl w-full max-w-sm flex-shrink-0 transition-all duration-300 border border-gray-700 task-manager-bg">
+            <div id="task-manager-container" class="w-full max-w-sm mb-8 lg:mb-0 lg:mr-8 hidden">
+                <div class="bg-gray-900/95 backdrop-blur-sm p-6 rounded-2xl shadow-xl w-full flex-shrink-0 transition-all duration-300 border border-gray-700 task-manager-bg">
                     <h3 class="text-xl font-bold mb-4 flex items-center text-gray-100">
                         <i data-lucide="list" class="w-5 h-5 mr-2 text-sky-500"></i> Lista de Tareas (Local)
                     </h3>
@@ -154,8 +154,8 @@
                 </div>
             </div>
 
-            <!-- Timer Circle (Center Column) -->
-            <div id="timer-card" class="relative flex flex-col items-center justify-center p-8 rounded-3xl shadow-2xl transition-all duration-300 bg-gray-900/40 border border-gray-700 timer-card-bg timer-card-border">
+            <!-- Timer Card (Center Column) -->
+            <div id="timer-card" class="relative flex flex-col items-center justify-center p-6 sm:p-8 rounded-3xl shadow-2xl transition-all duration-300 bg-gray-900/40 border border-gray-700 timer-card-bg timer-card-border">
                 
                 <!-- MOTIVATIONAL MESSAGE CONTAINER -->
                 <div id="motivational-message-container" class="mt-4 mb-8 w-full max-w-sm hidden">
@@ -163,18 +163,18 @@
                 </div>
 
                 <!-- Mode Selector -->
-                <div class="flex space-x-4 p-2 rounded-full bg-gray-100 bg-opacity-20 backdrop-blur-sm mb-6 shadow-md mode-selector-bg">
-                    <button data-mode="Pomodoro" class="mode-btn px-4 py-2 rounded-full font-medium transition-colors duration-200 text-sm">Pomodoro</button>
-                    <button data-mode="ShortBreak" class="mode-btn px-4 py-2 rounded-full font-medium transition-colors duration-200 text-sm">Descanso Corto</button>
-                    <button data-mode="LongBreak" class="mode-btn px-4 py-2 rounded-full font-medium transition-colors duration-200 text-sm">Descanso Largo</button>
+                <div class="flex space-x-2 sm:space-x-4 p-2 rounded-full bg-gray-100 bg-opacity-20 backdrop-blur-sm mb-6 shadow-md mode-selector-bg">
+                    <button data-mode="Pomodoro" class="mode-btn px-3 sm:px-4 py-2 rounded-full font-medium transition-colors duration-200 text-xs sm:text-sm">Pomodoro</button>
+                    <button data-mode="ShortBreak" class="mode-btn px-3 sm:px-4 py-2 rounded-full font-medium transition-colors duration-200 text-xs sm:text-sm">Descanso Corto</button>
+                    <button data-mode="LongBreak" class="mode-btn px-3 sm:px-4 py-2 rounded-full font-medium transition-colors duration-200 text-xs sm:text-sm">Descanso Largo</button>
                 </div>
 
                 <!-- Progress Circle and Time -->
-                <div class="relative">
-                    <div id="circular-progress-container">
+                <div class="relative w-[280px] h-[280px] sm:w-[300px] sm:h-[300px]">
+                    <div id="circular-progress-container" class="w-full h-full">
                         <!-- SVG will be injected here -->
                     </div>
-                    <div id="time-display-container" class="absolute inset-0 flex flex-col items-center justify-center font-extrabold transition-all duration-500" style="font-size: 4.5rem;">
+                    <div id="time-display-container" class="absolute inset-0 flex flex-col items-center justify-center font-extrabold transition-all duration-500 text-6xl sm:text-7xl">
                         <span id="time-display">00:00</span>
                     </div>
                 </div>
@@ -201,7 +201,7 @@
                         <i data-lucide="book-open" class="w-6 h-6"></i>
                     </button>
 
-                    <button id="toggle-timer-btn" class="py-4 px-12 rounded-2xl text-2xl font-bold uppercase transition-all shadow-xl hover:shadow-2xl active:scale-95 text-white">
+                    <button id="toggle-timer-btn" class="py-3 px-8 text-xl sm:py-4 sm:px-12 sm:text-2xl rounded-2xl font-bold uppercase transition-all shadow-xl hover:shadow-2xl active:scale-95 text-white">
                         <i data-lucide="play" class="w-8 h-8"></i>
                     </button>
 
@@ -771,24 +771,24 @@
             
             return `
                 <div id="stats-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
-                    <div class="bg-gray-900 border border-gray-700 rounded-2xl p-8 w-full max-w-2xl shadow-2xl text-white transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto">
+                    <div class="bg-gray-900 border border-gray-700 rounded-2xl p-6 sm:p-8 w-full max-w-md lg:max-w-2xl shadow-2xl text-white transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto">
                         <h2 class="text-2xl font-bold mb-6 flex items-center border-b border-gray-700 pb-2 text-sky-400">
                             <i data-lucide="calendar-check" class="w-6 h-6 mr-2"></i> Historial de Foco y Objetivos
                         </h2>
 
                         <!-- Resumen General -->
-                        <div class="grid grid-cols-3 gap-4 mb-6 text-center">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6 text-center">
                             <div class="bg-gray-800 p-4 rounded-xl shadow-md border-b-4 border-yellow-500">
-                                <p class="text-2xl font-bold">${state.points}</p>
-                                <p class="text-sm text-gray-400">Puntos Totales</p>
+                                <p class="text-xl sm:text-2xl font-bold">${state.points}</p>
+                                <p class="text-xs sm:text-sm text-gray-400">Puntos Totales</p>
                             </div>
                             <div class="bg-gray-800 p-4 rounded-xl shadow-md border-b-4 border-sky-500">
-                                <p class="text-2xl font-bold">${totalPomodoros}</p>
-                                <p class="text-sm text-gray-400">Pomodoros Completados</p>
+                                <p class="text-xl sm:text-2xl font-bold">${totalPomodoros}</p>
+                                <p class="text-xs sm:text-sm text-gray-400">Pomodoros Completados</p>
                             </div>
-                            <div class="bg-gray-800 p-4 rounded-xl shadow-md border-b-4 border-green-500">
-                                <p class="text-2xl font-bold">${dailyGoal}</p>
-                                <p class="text-sm text-gray-400">Objetivo Diario</p>
+                            <div class="bg-gray-800 p-4 rounded-xl shadow-md border-b-4 border-green-500 col-span-2 sm:col-span-1">
+                                <p class="text-xl sm:text-2xl font-bold">${dailyGoal}</p>
+                                <p class="text-xs sm:text-sm text-gray-400">Objetivo Diario</p>
                             </div>
                         </div>
 
@@ -808,10 +808,10 @@
                                     return `
                                         <div class="p-4 bg-gray-800 rounded-xl shadow-md transition hover:bg-gray-700 border border-gray-700">
                                             <div class="flex justify-between items-center mb-2">
-                                                <p class="font-bold text-lg flex items-center">
+                                                <p class="font-bold text-base sm:text-lg flex items-center">
                                                     ${icon} ${formatDate(log.date)}
                                                 </p>
-                                                <p class="font-mono text-sm ${log.isGoalAchieved ? 'text-green-400' : 'text-yellow-400'}">
+                                                <p class="font-mono text-xs sm:text-sm ${log.isGoalAchieved ? 'text-green-400' : 'text-yellow-400'}">
                                                     ${log.completedPomodoros} / ${dailyGoal} Pomodoros
                                                 </p>
                                             </div>
@@ -846,7 +846,7 @@
 
             return `
                 <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
-                    <div class="bg-gray-900 border border-gray-700 rounded-2xl p-8 w-full max-w-lg shadow-2xl text-white transform transition-all duration-300 scale-100">
+                    <div class="bg-gray-900 border border-gray-700 rounded-2xl p-6 sm:p-8 w-full max-w-md sm:max-w-lg shadow-2xl text-white transform transition-all duration-300 scale-100">
                         <h2 class="text-2xl font-bold mb-6 flex items-center border-b border-gray-700 pb-2 text-sky-400">
                             <i data-lucide="settings" class="w-6 h-6 mr-2"></i> Configuración de Foco
                         </h2>
@@ -855,17 +855,17 @@
                             <div class="space-y-6">
                                 
                                 <!-- Duraciones del Ciclo -->
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     ${renderSettingInput('pomodoro', 'Duración del Pomodoro (min)', currentSettings.pomodoro, 1, 60)}
                                     ${renderSettingInput('shortBreak', 'Descanso Corto (min)', currentSettings.shortBreak, 1, 30)}
                                 </div>
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     ${renderSettingInput('longBreak', 'Descanso Largo (min)', currentSettings.longBreak, 5, 90)}
                                     ${renderSettingInput('pomodorosBeforeLongBreak', 'Pomodoros antes de Descanso Largo', currentSettings.pomodorosBeforeLongBreak, 2, 12)}
                                 </div>
                                 
                                 <!-- Objetivo Diario, Tema y Volumen -->
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     ${renderSettingInput('dailyGoal', 'Objetivo Diario (Pomodoros)', currentSettings.dailyGoal, 1, 20)}
                                     <div class="col-span-1">
                                         <label for="themeColor" class="block text-sm font-medium mb-1 text-gray-300">Color de Acento</label>
@@ -1006,7 +1006,7 @@
                     <div key="${state.currentMantra}" class="p-3 rounded-xl shadow-xl animate-fadeIn animate-pulse-once border-b-4 text-center w-full"
                         style="background-color: rgba(30, 41, 59, 0.9); border-color: ${theme.hex};"
                     >
-                        <p class="text-lg font-semibold italic flex items-center justify-center text-white">
+                        <p class="text-sm sm:text-lg font-semibold italic flex items-center justify-center text-white">
                             <i data-lucide="zap" class="w-5 h-5 mr-2 text-yellow-400"></i>
                             ${state.currentMantra}
                         </p>
@@ -1093,7 +1093,7 @@
             const trackColor = isDark ? '#47556950' : '#e2e8f080';
 
             document.getElementById('circular-progress-container').innerHTML = `
-                <svg width="300" height="300" viewBox="0 0 240 240" class="progress-svg">
+                <svg width="100%" height="100%" viewBox="0 0 240 240" class="progress-svg">
                     <circle cx="120" cy="120" r="${radius}" fill="none" stroke="${trackColor}" stroke-width="15"/>
                     <circle 
                         cx="120" cy="120" r="${radius}" fill="none" stroke="${themeHex}" stroke-width="15" 
@@ -1107,16 +1107,31 @@
             document.querySelectorAll('.mode-btn').forEach(btn => {
                 const mode = btn.getAttribute('data-mode');
                 const isCurrent = mode === state.mode;
-                btn.className = `mode-btn px-4 py-2 rounded-full font-medium transition-colors duration-200 text-sm ${
-                    isCurrent ? 'text-white shadow-lg ring-2 ring-offset-2 ring-opacity-75' : (isDark ? 'bg-gray-100 bg-opacity-20 text-white hover:bg-opacity-30' : 'bg-gray-900 bg-opacity-10 text-gray-900 hover:bg-opacity-20')
-                }`;
-                btn.style.backgroundColor = isCurrent ? themeDarkHex : 'transparent';
-                btn.style.setProperty('--tw-ring-color', isCurrent ? themeHex : 'transparent');
-                btn.style.setProperty('--tw-ring-offset-color', isDark ? '#1f2937' : '#f8fafc');
+                btn.classList.toggle('text-white', isCurrent);
+                btn.classList.toggle('shadow-lg', isCurrent);
+                btn.classList.toggle('ring-2', isCurrent);
+                btn.classList.toggle('ring-offset-2', isCurrent);
+                btn.classList.toggle('ring-opacity-75', isCurrent);
+                
+                if (isCurrent) {
+                    btn.style.backgroundColor = themeDarkHex;
+                    btn.style.setProperty('--tw-ring-color', themeHex);
+                    btn.style.setProperty('--tw-ring-offset-color', isDark ? '#1f2937' : '#f8fafc');
+                } else {
+                    btn.style.backgroundColor = 'transparent';
+                    btn.style.setProperty('--tw-ring-color', 'transparent');
+                    if (isDark) {
+                        btn.className = btn.className.replace(/text-\w+/g, 'text-white').replace(/bg-opacity-\d+/g, 'bg-opacity-20').replace(/hover:bg-opacity-\d+/g, 'hover:bg-opacity-30');
+                        btn.classList.add('bg-gray-100');
+                    } else {
+                         btn.className = btn.className.replace(/text-\w+/g, 'text-gray-900').replace(/bg-opacity-\d+/g, 'bg-opacity-10').replace(/hover:bg-opacity-\d+/g, 'hover:bg-opacity-20');
+                         btn.classList.add('bg-gray-900');
+                    }
+                }
             });
 
             const toggleBtn = document.getElementById('toggle-timer-btn');
-            const icon = state.isActive ? '<i data-lucide="pause" class="w-8 h-8"></i>' : '<i data-lucide="play" class="w-8 h-8"></i>';
+            const icon = state.isActive ? '<i data-lucide="pause" class="w-7 h-7 sm:w-8 sm:h-8"></i>' : '<i data-lucide="play" class="w-7 h-7 sm:w-8 sm:h-8"></i>';
             toggleBtn.innerHTML = icon;
             toggleBtn.style.backgroundColor = themeHex;
             
@@ -1461,4 +1476,3 @@
     </script>
 </body>
 </html>
-
