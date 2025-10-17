@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Foco Local - Calendario y Gráficas</title>
+    <!-- Tailwind CSS CDN (MANDATORY) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons (React Icons equivalent) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        /* Global Styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background 0.5s ease;
+        }
+
+        /* --- ANIMATED BACKGROUND STYLES (Para relajación) --- */
+        
+        /* 1. Nebula Focus (Animated dark flow) - Flujo de nebulosa lenta */
+        @keyframes moveFocusFlow { 0% { background-position: 0% 0%; } 100% { background-position: 100% 100%; } }
+        .bg-nebula-focus { 
+            background: linear-gradient(-45deg, #0f172a, #1e293b, #0c4a6e, #0f172a);
+            background-size: 400% 400%; 
+            animation: moveFocusFlow 60s ease infinite; /* Más lento y sutil */
+        }
+
+        /* 3. Deep Forest (Dark green subtle texture) - Sutil movimiento de vetas oscuras */
+        @keyframes moveVeta { 0% { background-position: 0% 0%; } 100% { background-position: 100% 100%; } }
+        .bg-deep-forest { 
+            background-color: #064e3b; 
+            background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0, rgba(255, 255, 255, 0.05) 2px, transparent 2px, transparent 10px);
+            background-size: 200% 200%;
+            animation: moveVeta 120s linear infinite;
+        }
+
+        /* 4. Soft Beige (Light, warm minimal) - Estático por ser claro */
+        .bg-soft-beige { background-color: #f7f3e8; background-image: linear-gradient(135deg, #efe8d5 25%, transparent 25%), linear-gradient(-135deg, #efe8d5 25%, transparent 25%), linear-gradient(45deg, #efe8d5 25%, transparent 25%), linear-gradient(-45deg, #efe8d5 25%, #f7f3e8 25%); background-size: 15px 15px; }
+
+        /* 5. Minimalist White (Clean and crisp) - Estático por ser blanco */
+        .bg-minimalist-white { background-color: #ffffff; background-image: radial-gradient(#d1d5db 0.5px, transparent 0.5px); background-size: 50px 50px; }
+
+        /* 6. Gradient Calm (Animated) - Gradiente que se desplaza lentamente */
+        .bg-gradient-calm-animate {
+            background: linear-gradient(135deg, #047857, #1e40af, #047857);
+            background-size: 400% 400%;
+            animation: moveFocusFlow 75s ease infinite alternate; /* Reutilizamos la animación de flujo */
+        }
+        
+        /* 7. Gradient Sunset (Animated) - Gradiente en movimiento alternado */
+        .bg-gradient-sunset-animate {
+            background: linear-gradient(90deg, #f59e0b, #ef4444, #f59e0b);
+            background-size: 200% 200%;
+            animation: moveFocusFlow 90s ease infinite; 
+        }
+
+        /* Animation for timer pulse */
+        @keyframes pulseShadow { 0% { text-shadow: 0 0 5px rgba(255, 255, 255, 0); } 50% { text-shadow: 0 0 15px currentColor; } 100% { text-shadow: 0 0 5px rgba(255, 255, 255, 0); } }
+        .pulse-active { animation: pulseShadow 2s ease-in-out infinite; }
+        
+        /* Animation for message entrance */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeIn { animation-name: fadeIn; animation-duration: 0.5s; animation-timing-function: ease-out; animation-fill-mode: forwards; }
+        
+        /* Animation to prevent constant pulsing, only pulse once on mount */
+        .animate-pulse-once { animation-name: pulseShadow; animation-duration: 2s; animation-timing-function: ease-in-out; animation-iteration-count: 1; animation-delay: 0.5s; }
+
+        /* Circular Progress Styling */
+        .progress-svg { transform: rotate(-90deg); }
+
+        /* Scrollbar styles for task list (for dark mode contrast) */
+        #task-list::-webkit-scrollbar, #daily-logs-list::-webkit-scrollbar, #calendar-modal-content::-webkit-scrollbar, #notes-modal-content::-webkit-scrollbar { width: 8px; }
+        #task-list::-webkit-scrollbar-thumb, #daily-logs-list::-webkit-scrollbar-thumb, #calendar-modal-content::-webkit-scrollbar-thumb, #notes-modal-content::-webkit-scrollbar-thumb { background-color: #94a3b8; border-radius: 4px; }
+        #task-list::-webkit-scrollbar-track, #daily-logs-list::-webkit-scrollbar-track, #calendar-modal-content::-webkit-scrollbar-track, #notes-modal-content::-webkit-scrollbar-track { background-color: transparent; }
+
+        /* Preview container styling */
+        .background-preview { height: 40px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); margin-top: 8px; }
+
+        /* Calendar styles */
+        .calendar-day { transition: all 0.2s ease-in-out; }
+        .calendar-day:hover { transform: scale(1.05); background-color: rgba(255,255,255,0.1); }
+        .calendar-day.today { box-shadow: 0 0 0 2px #3b82f6; }
+        .calendar-day.selected { background-color: #3b82f6 !important; color: white !important; }
+        .calendar-day.has-events::after { content: ''; display: block; width: 6px; height: 6px; border-radius: 50%; background-color: #f59e0b; margin: 2px auto 0; }
+        .calendar-day.has-completed-events::after { background-color: #10b981; }
+
+    </style>
+</head>
+<body class="min-h-screen w-full flex flex-col items-center justify-center p-4 transition-all duration-500 bg-gray-900 bg-nebula-focus text-white">
+    
+    <!-- Canvas para Partículas (Fijo en el fondo) -->
+    <canvas id="particles-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+
+    <!-- Main App Container (Relativo y en la parte superior) -->
+    <div id="app-container" class="relative z-10 min-h-screen w-full flex flex-col items-center justify-center p-4">
+
+        <!-- Top Header Controls -->
+        <div class="max-w-7xl w-full flex flex-wrap items-center justify-center md:justify-between gap-4 p-4 absolute top-0 left-0 right-0 z-10">
+            <!-- Left Group -->
+            <div class="flex items-center space-x-4">
+                <button id="toggle-tasks-btn" class="p-3 bg-white rounded-full shadow-lg transition hover:shadow-xl text-gray-800" title="Mostrar/Ocultar Tareas">
+                    <i data-lucide="list" class="w-6 h-6"></i>
+                </button>
+                <button id="show-stats-btn" class="p-3 bg-white rounded-full shadow-lg transition hover:shadow-xl text-gray-800" title="Ver Historial y Objetivos">
+                    <i data-lucide="calendar-check" class="w-6 h-6"></i>
+                </button>
+                <button id="show-calendar-btn" class="p-3 bg-white rounded-full shadow-lg transition hover:shadow-xl text-gray-800" title="Calendario y Gráficas">
+                    <i data-lucide="calendar-days" class="w-6 h-6"></i>
+                </button>
+                <button id="show-notes-btn" class="p-3 bg-white rounded-full shadow-lg transition hover:shadow-xl text-gray-800" title="Notas Rápidas">
+                    <i data-lucide="notebook-pen" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Right Group -->
+            <div class="flex items-center flex-wrap justify-center gap-4">
+                <div id="points-display" class="flex items-center px-4 py-2 rounded-full shadow-lg bg-gray-800/80 text-white text-sm font-semibold">
+                    <i data-lucide="star" class="w-4 h-4 text-yellow-400 mr-2"></i>
+                    <span id="points-value">0</span> Puntos <span class="hidden sm:inline">| Racha: <span id="streak-value">0</span></span><span class="hidden lg:inline"> | Mejor: <span id="best-streak-value">0</span></span>
+                </div>
+                <button id="toggle-focus-mode-btn" class="p-3 bg-white rounded-full shadow-lg transition hover:shadow-xl text-gray-800" title="Activar Modo Foco">
+                    <i data-lucide="zap" class="w-6 h-6"></i>
+                </button>
+                <button id="show-settings-btn" class="p-3 bg-white rounded-full shadow-lg transition hover:shadow-xl text-gray-800" title="Configuración">
+                    <i data-lucide="settings" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Content: Timer and Tasks -->
+        <div class="flex flex-col lg:flex-row items-center lg:items-start justify-center w-full max-w-7xl pt-48 md:pt-36">
+            
+            <!-- Task Manager (Left Column) -->
+            <div id="task-manager-container" class="w-full max-w-sm mb-8 lg:mb-0 lg:mr-8 hidden">
+                <div class="bg-gray-900/95 backdrop-blur-sm p-6 rounded-2xl shadow-xl w-full flex-shrink-0 transition-all duration-300 border border-gray-700 task-manager-bg">
+                    <h3 class="text-xl font-bold mb-4 flex items-center text-gray-100">
+                        <i data-lucide="list" class="w-5 h-5 mr-2 text-sky-500"></i> Lista de Tareas (Local)
+                    </h3>
+                    
+                    <!-- New Task Input -->
+                    <div class="space-y-3 mb-4 p-3 bg-gray-800 rounded-xl task-input-bg">
+                        <input id="new-task-name" type="text" class="w-full p-2 rounded-lg border-2 border-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-gray-700 text-white placeholder-gray-400 task-input-field" placeholder="Escribe una nueva tarea...">
+                        <div class="flex space-x-2">
+                            <select id="new-task-priority" class="p-2 rounded-lg border-2 bg-gray-700 text-white border-gray-600 text-sm flex-grow min-w-0 task-input-field">
+                                <option value="High">Alta</option>
+                                <option value="Medium">Media</option>
+                                <option value="Low">Baja</option>
+                            </select>
+                            <input id="new-task-estimated-pomodoros" type="number" min="1" value="1" class="w-20 p-2 rounded-lg border-2 bg-gray-700 text-white border-gray-600 text-sm text-center placeholder-gray-400 task-input-field" title="Pomodoros Estimados">
+                            <button id="add-task-btn" onclick="addTask()" class="text-white px-3 rounded-lg font-semibold transition shadow-md bg-sky-600 hover:bg-sky-700">
+                                +
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Task List -->
+                    <div id="task-list" class="space-y-3 max-h-72 overflow-y-auto pr-2">
+                        <!-- Tasks will be injected here -->
+                    </div>
+                    
+                    <!-- Active Task Info -->
+                    <div class="mt-4 pt-4 border-t border-gray-700 task-border-color">
+                        <p class="text-xs font-semibold uppercase text-gray-400 active-task-label">Tarea Activa:</p>
+                        <p id="active-task-display" class="font-medium text-red-400 italic active-task-text">
+                            Ninguna (¡Selecciona una!)
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timer Card (Center Column) -->
+            <div id="timer-card" class="relative flex flex-col items-center justify-center p-6 sm:p-8 rounded-3xl shadow-2xl transition-all duration-300 bg-gray-900/40 border border-gray-700 timer-card-bg timer-card-border">
+                
+                <!-- MOTIVATIONAL MESSAGE CONTAINER -->
+                <div id="motivational-message-container" class="mt-4 mb-8 w-full max-w-sm hidden">
+                    <!-- Message content injected here -->
+                </div>
+
+                <!-- Mode Selector -->
+                <div class="flex space-x-2 sm:space-x-4 p-2 rounded-full bg-gray-100 bg-opacity-20 backdrop-blur-sm mb-6 shadow-md mode-selector-bg">
+                    <button data-mode="Pomodoro" class="mode-btn px-3 sm:px-4 py-2 rounded-full font-medium transition-colors duration-200 text-xs sm:text-sm">Pomodoro</button>
+                    <button data-mode="ShortBreak" class="mode-btn px-3 sm:px-4 py-2 rounded-full font-medium transition-colors duration-200 text-xs sm:text-sm">Descanso Corto</button>
+                    <button data-mode="LongBreak" class="mode-btn px-3 sm:px-4 py-2 rounded-full font-medium transition-colors duration-200 text-xs sm:text-sm">Descanso Largo</button>
+                </div>
+
+                <!-- Progress Circle and Time -->
+                <div class="relative w-[280px] h-[280px] sm:w-[300px] sm:h-[300px]">
+                    <div id="circular-progress-container" class="w-full h-full">
+                        <!-- SVG will be injected here -->
+                    </div>
+                    <div id="time-display-container" class="absolute inset-0 flex flex-col items-center justify-center font-extrabold transition-all duration-500 text-6xl sm:text-7xl">
+                        <span id="time-display">00:00</span>
+                    </div>
+                </div>
+                
+                <!-- Session Information -->
+                <div class="mt-4 text-center h-12">
+                    <p id="session-info" class="text-base font-semibold uppercase text-gray-400 session-info-text">
+                        Sesión 0 de 4
+                    </p>
+                    <p id="task-info" class="text-lg font-medium text-gray-300 task-info-text">
+                        ¡Enfócate!
+                    </p>
+                </div>
+                
+                <!-- Distraction Counter Display -->
+                <p id="distraction-counter-display" class="text-sm font-medium text-gray-400 mt-2 flex items-center hidden distraction-info-text">
+                    <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500 mr-1"></i>
+                    Distracciones en esta sesión: <span id="distractions-value" class="font-bold text-red-400 ml-1">0</span>
+                </p>
+
+                <!-- Controls -->
+                <div class="mt-8 flex space-x-4 items-center">
+                    <button id="reset-day-progress-btn" class="p-3 rounded-full shadow-lg transition-all text-gray-800 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-4 focus:ring-gray-400" title="Reiniciar Ciclo Diario">
+                        <i data-lucide="book-open" class="w-6 h-6"></i>
+                    </button>
+
+                    <button id="toggle-timer-btn" class="py-3 px-8 text-xl sm:py-4 sm:px-12 sm:text-2xl rounded-2xl font-bold uppercase transition-all shadow-xl hover:shadow-2xl active:scale-95 text-white">
+                        <i data-lucide="play" class="w-8 h-8"></i>
+                    </button>
+
+                    <button id="reset-timer-btn" class="p-3 rounded-full shadow-lg transition-all text-gray-800 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-4 focus:ring-gray-400" title="Reiniciar Modo Actual">
+                        <i data-lucide="rotate-ccw" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                
+                <!-- Distraction Marker Button -->
+                <button id="mark-distraction-btn" class="mt-4 py-2 px-6 rounded-xl text-base font-semibold transition-all shadow-md active:scale-95 hidden" title="Pulsa al momento de la distracción. Rompe la racha y penaliza puntos.">
+                    <i data-lucide="alert-triangle" class="inline w-5 h-5 mr-2"></i>
+                    He tenido una Distracción
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modals Container -->
+    <div id="modals-container">
+        <!-- Modals will be injected here -->
+    </div>
+    
+    <!-- User Note -->
+    <div class="absolute bottom-4 right-4 text-xs italic text-gray-400 z-10">
+      Guardando en: <span id="storage-type-display">LocalStorage</span>
+    </div>
+
+    <script>
+        // --- GLOBAL STATE AND CONFIGURATION ---
+        
+        // Claves para localStorage
+        const STORAGE_KEYS = {
+            SETTINGS: 'POMODORO_SETTINGS',
+            STATS: 'POMODORO_STATS',
+            TASKS: 'POMODORO_TASKS',
+            ACTIVE_TASK: 'POMODORO_ACTIVE_TASK',
+            SESSION_COUNT: 'POMODORO_SESSION_COUNT',
+            DAILY_LOGS: 'POMODORO_DAILY_LOGS',
+            CALENDAR_EVENTS: 'POMODORO_CALENDAR_EVENTS',
+            QUICK_NOTES: 'POMODORO_QUICK_NOTES', // NUEVA CLAVE
+        };
+
+        // Mejores opciones de fondo profesionales y sutiles (Animados y Estáticos)
+        const backgroundOptions = [
+            { key: 'nebula-focus', name: 'Nebulosa Oscura (Animada)', class: 'bg-nebula-focus', isDark: true },
+            { key: 'deep-forest', name: 'Textura Bosque Oscuro (Animado)', class: 'bg-deep-forest', isDark: true },
+            { key: 'gradient-calm', name: 'Gradiente Calmo (Verde/Azul Animado)', class: 'bg-gradient-calm-animate', isDark: true },
+            { key: 'gradient-sunset', name: 'Gradiente Atardecer Suave (Animado)', class: 'bg-gradient-sunset-animate', isDark: false },
+            { key: 'dark-solid', name: 'Oscuro Sólido (Estático)', class: 'bg-gray-800', isDark: true },
+            { key: 'soft-beige', name: 'Patrón Beige Suave (Estático)', class: 'bg-soft-beige', isDark: false },
+            { key: 'minimalist-white', name: 'Minimalista Blanco (Estático)', class: 'bg-minimalist-white', isDark: false },
+        ];
+        
+        const getBackgroundOption = (key) => backgroundOptions.find(opt => opt.key === key) || backgroundOptions[0];
+        const defaultBgOption = getBackgroundOption('nebula-focus');
+
+        // CONFIGURACIÓN POR DEFECTO
+        const defaultSettings = {
+            pomodoro: 25,
+            shortBreak: 5,
+            longBreak: 15,
+            pomodorosBeforeLongBreak: 4,
+            dailyGoal: 8,
+            themeColor: 'blue', 
+            bgKey: defaultBgOption.key,
+            isDarkBg: defaultBgOption.isDark,
+            volume: 0.5,
+        };
+        
+        const defaultStats = {
+            points: 0,
+            streak: 0,
+            bestStreak: 0,
+        };
+
+        const state = {
+            settings: { ...defaultSettings },
+            time: defaultSettings.pomodoro * 60,
+            initialTime: defaultSettings.pomodoro * 60,
+            isActive: false,
+            mode: 'Pomodoro', 
+            sessionCount: 0, 
+            distractions: 0,
+            tasks: [],
+            activeTask: null, 
+            showTasks: true,
+            isFocusMode: false,
+            points: 0,
+            streak: 0,
+            bestStreak: 0,
+            currentMantra: "",
+            timerInterval: null,
+            mantraInterval: null,
+            dailyLogs: {},
+            calendarEvents: [],
+            calendarDate: new Date(),
+            selectedDate: new Date().toISOString().split('T')[0],
+            quickNotes: [], // NUEVO ESTADO PARA NOTAS
+        };
+
+        // Estado del sistema de partículas
+        let particleSystem = {
+            canvas: null,
+            ctx: null,
+            particlesArray: [],
+            maxParticles: 80,
+            lineDistance: 100,
+            isAnimating: false,
+            color: 'rgba(255, 255, 255, 0.5)'
+        };
+
+        const themeMap = {
+            blue: { class: 'bg-blue-500 hover:bg-blue-600', hex: '#3b82f6', darkHex: '#2563eb' },
+            red: { class: 'bg-red-500 hover:bg-red-600', hex: '#ef4444', darkHex: '#dc2626' },
+            green: { class: 'bg-green-500 hover:bg-green-600', hex: '#10b981', darkHex: '#059669' },
+            purple: { class: 'bg-purple-500 hover:bg-purple-600', hex: '#8b5cf6', darkHex: '#7c3aed' },
+        };
+        
+        const motivationalMantras = [
+            "La concentración es el motor de la maestría.", "Un Pomodoro a la vez. El progreso es gradual.", "Elimina las distracciones. Tu enfoque es valioso.", "El trabajo profundo es el trabajo más satisfactorio.", "Ahora solo existe la tarea. Vuelve a ella.", "El poder de la ininterrupción: mantente en el flujo.", "Sé implacable con tu tiempo y tus prioridades.", "El 90% del éxito se basa simplemente en insistir.", "Cada minuto cuenta. No te rindas ahora.", "Imagina el orgullo al finalizar. ¡Sigue adelante!",
+        ];
+
+        // --- PARTICLE SYSTEM IMPLEMENTATION ---
+        
+        const Particle = function(x, y, directionX, directionY, size, color) { this.x = x; this.y = y; this.directionX = directionX; this.directionY = directionY; this.size = size; this.color = color; }
+        Particle.prototype.draw = function() { particleSystem.ctx.fillStyle = this.color; particleSystem.ctx.beginPath(); particleSystem.ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); particleSystem.ctx.fill(); }
+        Particle.prototype.update = function() { if (this.x + this.size > particleSystem.canvas.width || this.x - this.size < 0) { this.directionX = -this.directionX; } if (this.y + this.size > particleSystem.canvas.height || this.y - this.size < 0) { this.directionY = -this.directionY; } this.x += this.directionX; this.y += this.directionY; this.draw(); }
+        const connectParticles = () => { let opacityValue = 1; for (let a = 0; a < particleSystem.particlesArray.length; a++) { for (let b = a; b < particleSystem.particlesArray.length; b++) { let dx = particleSystem.particlesArray[a].x - particleSystem.particlesArray[b].x; let dy = particleSystem.particlesArray[a].y - particleSystem.particlesArray[b].y; let distance = dx * dx + dy * dy; if (distance < (particleSystem.lineDistance * particleSystem.lineDistance)) { opacityValue = 1 - (distance / (particleSystem.lineDistance * particleSystem.lineDistance)); let colorBase = particleSystem.color.substring(0, particleSystem.color.lastIndexOf(',') + 1); particleSystem.ctx.strokeStyle = colorBase + opacityValue + ')'; particleSystem.ctx.lineWidth = 1; particleSystem.ctx.beginPath(); particleSystem.ctx.moveTo(particleSystem.particlesArray[a].x, particleSystem.particlesArray[a].y); particleSystem.ctx.lineTo(particleSystem.particlesArray[b].x, particleSystem.particlesArray[b].y); particleSystem.ctx.stroke(); } } } }
+        const animateParticles = () => { if (!particleSystem.isAnimating) return; requestAnimationFrame(animateParticles); if (!particleSystem.ctx) return; particleSystem.ctx.clearRect(0, 0, particleSystem.canvas.width, particleSystem.canvas.height); for (let i = 0; i < particleSystem.particlesArray.length; i++) { particleSystem.particlesArray[i].update(); } connectParticles(); }
+        const initParticleSystem = (shouldRegenerate = false) => { particleSystem.canvas = document.getElementById('particles-canvas'); if (!particleSystem.canvas) return; particleSystem.ctx = particleSystem.canvas.getContext('2d'); const isDark = getBackgroundOption(state.settings.bgKey).isDark; const newColor = isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'; particleSystem.canvas.width = window.innerWidth; particleSystem.canvas.height = window.innerHeight; if (particleSystem.color !== newColor) { shouldRegenerate = true; } particleSystem.color = newColor; if (shouldRegenerate || particleSystem.particlesArray.length === 0) { particleSystem.particlesArray = []; for (let i = 0; i < particleSystem.maxParticles; i++) { let size = (Math.random() * 5) + 1; let x = (Math.random() * ((particleSystem.canvas.width - size * 2) - (size * 2)) + size * 2); let y = (Math.random() * ((particleSystem.canvas.height - size * 2) - (size * 2)) + size * 2); let directionX = (Math.random() * 0.4) - 0.2; let directionY = (Math.random() * 0.4) - 0.2; particleSystem.particlesArray.push(new Particle(x, y, directionX, directionY, size, particleSystem.color)); } } particleSystem.particlesArray.forEach(p => p.color = particleSystem.color); if (!particleSystem.isAnimating) { particleSystem.isAnimating = true; animateParticles(); } };
+        window.addEventListener('resize', () => { initParticleSystem(true); });
+
+
+        // --- RENDER UTILITIES ---
+        const formatTime = (seconds) => { const minutes = Math.floor(seconds / 60); const remainingSeconds = seconds % 60; return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`; };
+        const formatDate = (dateString) => { const date = new Date(dateString); const options = { weekday: 'short', month: 'short', day: 'numeric' }; return date.toLocaleDateString('es-ES', options); };
+        const getCurrentTheme = () => themeMap[state.settings.themeColor] || themeMap.blue;
+
+        // --- SIMULATED DATA GENERATION ---
+        const simulateDailyLogs = () => { const logs = {}; const today = new Date(); const dailyGoal = state.settings.dailyGoal || 8; for (let i = 1; i <= 30; i++) { const date = new Date(today); date.setDate(today.getDate() - i); const dateKey = date.toISOString().split('T')[0]; let completedPomodoros; const r = Math.random(); if (r < 0.2) { completedPomodoros = 0; } else if (r < 0.5) { completedPomodoros = Math.floor(Math.random() * 3) + 1; } else if (r < 0.8) { completedPomodoros = Math.floor(Math.random() * 5) + 4; } else { completedPomodoros = dailyGoal + Math.floor(Math.random() * 3); } if (completedPomodoros > 0) { logs[dateKey] = { date: dateKey, completedPomodoros: completedPomodoros, totalPointsEarned: completedPomodoros * 10, isGoalAchieved: completedPomodoros >= dailyGoal, }; } } return logs; };
+
+        // --- SOUND GENERATION ---
+        const playSessionSound = (type) => { const AudioContext = window.AudioContext || window.webkitAudioContext; if (!AudioContext) return; try { const ctx = new AudioContext(); const oscillator = ctx.createOscillator(); const gainNode = ctx.createGain(); let freq, duration; if (type === 'end') { freq = 523.25; duration = 0.35; }  else if (type === 'start') { freq = 880.00; duration = 0.15; }  else if (type === 'distraction') { freq = 150.00; duration = 0.5; }  else { return; } const vol = Math.max(0.0, Math.min(1.0, (state.settings.volume || 0.5) * 0.5)); oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(freq, ctx.currentTime); gainNode.gain.setValueAtTime(vol, ctx.currentTime); oscillator.connect(gainNode); gainNode.connect(ctx.destination); oscillator.start(ctx.currentTime); oscillator.stop(ctx.currentTime + duration); setTimeout(() => ctx.close(), duration * 1000 + 50); } catch (e) { console.error("Web Audio API error:", e); } };
+
+        // --- LOCAL STORAGE PERSISTENCE ---
+        const loadState = (key, defaultData) => { try { const dataJson = localStorage.getItem(key); return dataJson ? JSON.parse(dataJson) : defaultData; } catch (error) { console.error(`Error loading state for key ${key}:`, error); return defaultData; } };
+        const saveState = (key, data) => { try { localStorage.setItem(key, JSON.stringify(data)); } catch (error) { console.error(`Error saving state for key ${key}:`, error); showSimpleModal("Error de Guardado Local", "No se pudo guardar la configuración."); } };
+        const saveSettings = (newSettings) => { state.settings = { ...state.settings, ...newSettings }; const selectedBg = getBackgroundOption(state.settings.bgKey); state.settings.isDarkBg = selectedBg.isDark; saveState(STORAGE_KEYS.SETTINGS, state.settings); setTimeMode(state.mode); updateUI(true); showSimpleModal("Guardado Exitoso", "Tus ajustes han sido guardados y aplicados."); };
+        const updateGameStats = (updates) => { state.points = Math.max(0, updates.points !== undefined ? updates.points : state.points); state.streak = updates.streak !== undefined ? updates.streak : state.streak; state.bestStreak = Math.max(state.bestStreak, state.streak); saveState(STORAGE_KEYS.STATS, { points: state.points, streak: state.streak, bestStreak: state.bestStreak }); updateUI(); };
+
+        // --- TIMER LOGIC ---
+        const setTimeMode = (newMode) => { if (state.isActive) toggleTimer(); state.mode = newMode; let newTime; const s = state.settings; switch (newMode) { case 'Pomodoro': newTime = (s.pomodoro || defaultSettings.pomodoro) * 60; break; case 'ShortBreak': newTime = (s.shortBreak || defaultSettings.shortBreak) * 60; break; case 'LongBreak': newTime = (s.longBreak || defaultSettings.longBreak) * 60; break; default: newTime = defaultSettings.pomodoro * 60; } state.time = newTime; state.initialTime = newTime; state.distractions = 0; updateUI(); };
+        const handleSessionEnd = () => { clearInterval(state.timerInterval); clearInterval(state.mantraInterval); state.timerInterval = null; state.mantraInterval = null; state.isActive = false; playSessionSound('end'); const isPomodoro = state.mode === 'Pomodoro'; if (Notification.permission === "granted") { new Notification(`¡Sesión de ${state.mode} terminada!`, { body: isPomodoro ? 'Tómate un descanso.' : '¡Es hora de volver al trabajo!', }); } if (isPomodoro) { const earnedPoints = 10 - (state.distractions * 5); const newPoints = state.points + earnedPoints; const newStreak = state.streak + 1; const todayKey = new Date().toISOString().split('T')[0]; const dailyGoal = state.settings.dailyGoal || 8; const activeTaskObj = state.tasks.find(t => t.id === state.activeTask); if (activeTaskObj) { activeTaskObj.pomodoros = (activeTaskObj.pomodoros || 0) + 1; saveState(STORAGE_KEYS.TASKS, state.tasks); } state.dailyLogs[todayKey] = state.dailyLogs[todayKey] || { date: todayKey, completedPomodoros: 0, totalPointsEarned: 0, isGoalAchieved: false, }; state.dailyLogs[todayKey].completedPomodoros += 1; state.dailyLogs[todayKey].totalPointsEarned += earnedPoints; state.dailyLogs[todayKey].isGoalAchieved = state.dailyLogs[todayKey].completedPomodoros >= dailyGoal; saveState(STORAGE_KEYS.DAILY_LOGS, state.dailyLogs); updateGameStats({ points: newPoints, streak: newStreak }); const newSessionCount = state.sessionCount + 1; state.sessionCount = newSessionCount; saveState(STORAGE_KEYS.SESSION_COUNT, state.sessionCount); if (newSessionCount >= (state.settings.pomodorosBeforeLongBreak || defaultSettings.pomodorosBeforeLongBreak)) { setTimeMode('LongBreak'); state.sessionCount = 0; saveState(STORAGE_KEYS.SESSION_COUNT, state.sessionCount); } else { setTimeMode('ShortBreak'); } } else { setTimeMode('Pomodoro'); } state.distractions = 0; updateUI(); };
+        const tick = () => { state.time -= 1; if (state.time <= 0) { handleSessionEnd(); } updateUI(); };
+        const startMantraChanger = () => { if (state.mantraInterval) clearInterval(state.mantraInterval); const changeMantra = () => { const randomIndex = Math.floor(Math.random() * motivationalMantras.length); state.currentMantra = motivationalMantras[randomIndex]; updateMotivationalMessage(); }; changeMantra(); state.mantraInterval = setInterval(changeMantra, 60000); };
+        const toggleTimer = () => { if (!state.activeTask && state.mode === 'Pomodoro') { showSimpleModal("Advertencia", "Selecciona una tarea activa antes de empezar el Pomodoro."); return; } state.isActive = !state.isActive; if (state.isActive) { playSessionSound('start'); state.timerInterval = setInterval(tick, 1000); if (state.mode === 'Pomodoro') { startMantraChanger(); } } else { clearInterval(state.timerInterval); clearInterval(state.mantraInterval); state.timerInterval = null; state.mantraInterval = null; } updateUI(); };
+
+        // --- MODAL HANDLING ---
+        const showSimpleModal = (title, message) => { const container = document.getElementById('modals-container'); container.innerHTML = ` <div id="simple-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4"> <div class="bg-gray-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl border border-gray-700"> <h3 class="text-xl font-bold mb-4 text-gray-100">${title}</h3> <p class="text-gray-300 mb-6">${message}</p> <div class="flex justify-end"> <button onclick="closeModal('simple-modal')" class="px-4 py-2 bg-sky-600 text-white rounded-xl font-medium transition hover:bg-sky-700 shadow-md"> Aceptar </button> </div> </div> </div> `; renderLucideIcons(); };
+        window.closeModal = (id) => { const modal = document.getElementById(id); if (modal) modal.remove(); };
+        
+        // --- STATS MODAL (HISTORIAL) ---
+        const renderStatsModal = () => { const dailyLogsArray = Object.values(state.dailyLogs).sort((a, b) => new Date(b.date) - new Date(a.date)); const totalPomodoros = dailyLogsArray.reduce((sum, log) => sum + log.completedPomodoros, 0); const totalPoints = dailyLogsArray.reduce((sum, log) => sum + log.totalPointsEarned, 0); const dailyGoal = state.settings.dailyGoal; return ` <div id="stats-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4"> <div class="bg-gray-900 border border-gray-700 rounded-2xl p-6 sm:p-8 w-full max-w-md lg:max-w-2xl shadow-2xl text-white transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto"> <h2 class="text-2xl font-bold mb-6 flex items-center border-b border-gray-700 pb-2 text-sky-400"> <i data-lucide="calendar-check" class="w-6 h-6 mr-2"></i> Historial de Foco y Objetivos </h2> <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6 text-center"> <div class="bg-gray-800 p-4 rounded-xl shadow-md border-b-4 border-yellow-500"> <p class="text-xl sm:text-2xl font-bold">${state.points}</p> <p class="text-xs sm:text-sm text-gray-400">Puntos Totales</p> </div> <div class="bg-gray-800 p-4 rounded-xl shadow-md border-b-4 border-sky-500"> <p class="text-xl sm:text-2xl font-bold">${totalPomodoros}</p> <p class="text-xs sm:text-sm text-gray-400">Pomodoros Completados</p> </div> <div class="bg-gray-800 p-4 rounded-xl shadow-md border-b-4 border-green-500 col-span-2 sm:col-span-1"> <p class="text-xl sm:text-2xl font-bold">${dailyGoal}</p> <p class="text-xs sm:text-sm text-gray-400">Objetivo Diario</p> </div> </div> <div class="mt-8"> <h3 class="text-xl font-semibold mb-3 text-gray-300">Progreso Diario Reciente (${dailyLogsArray.length} días)</h3> <div id="daily-logs-list" class="space-y-3 max-h-80 overflow-y-auto pr-2"> ${dailyLogsArray.length > 0 ? dailyLogsArray.map(log => { const percentage = Math.min(100, (log.completedPomodoros / dailyGoal) * 100); const barColor = log.isGoalAchieved ? 'bg-green-500' : (log.completedPomodoros > 0 ? 'bg-yellow-500' : 'bg-red-500'); const icon = log.isGoalAchieved ? '<i data-lucide="award" class="w-4 h-4 text-green-400 mr-2"></i>' : (log.completedPomodoros > 0 ? '<i data-lucide="trending-up" class="w-4 h-4 text-yellow-400 mr-2"></i>' : '<i data-lucide="x" class="w-4 h-4 text-red-400 mr-2"></i>'); return ` <div class="p-4 bg-gray-800 rounded-xl shadow-md transition hover:bg-gray-700 border border-gray-700"> <div class="flex justify-between items-center mb-2"> <p class="font-bold text-base sm:text-lg flex items-center"> ${icon} ${formatDate(log.date)} </p> <p class="font-mono text-xs sm:text-sm ${log.isGoalAchieved ? 'text-green-400' : 'text-yellow-400'}"> ${log.completedPomodoros} / ${dailyGoal} Pomodoros </p> </div> <div class="w-full bg-gray-600 rounded-full h-2.5"> <div class="${barColor} h-2.5 rounded-full transition-all duration-500" style="width: ${percentage}%;"></div> </div> <p class="text-xs text-gray-400 mt-2 italic"> Puntos ganados: ${log.totalPointsEarned} </p> </div> `; }).join('') : '<p class="text-gray-500 italic text-center pt-4">Aún no hay registros. ¡Completa tu primer Pomodoro!</p>'} </div> </div> <div class="flex justify-end space-x-3 mt-8 pt-4 border-t border-gray-700"> <button type="button" onclick="closeModal('stats-modal')" class="px-5 py-2 text-sm font-medium text-white bg-sky-600 rounded-xl hover:bg-sky-700 transition duration-150 shadow-lg shadow-sky-500/30"> <i data-lucide="x" class="w-4 h-4 inline mr-1"></i> Cerrar </button> </div> </div> </div> `; };
+        
+        // --- SETTINGS MODAL ---
+        const renderSettingsModal = () => { const currentSettings = state.settings; return ` <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4"> <div class="bg-gray-900 border border-gray-700 rounded-2xl p-6 sm:p-8 w-full max-w-md sm:max-w-lg shadow-2xl text-white transform transition-all duration-300 scale-100"> <h2 class="text-2xl font-bold mb-6 flex items-center border-b border-gray-700 pb-2 text-sky-400"> <i data-lucide="settings" class="w-6 h-6 mr-2"></i> Configuración de Foco </h2> <form id="settings-form" onsubmit="handleSaveSettings(event)"> <div class="space-y-6"> <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"> ${renderSettingInput('pomodoro', 'Duración del Pomodoro (min)', currentSettings.pomodoro, 1, 60)} ${renderSettingInput('shortBreak', 'Descanso Corto (min)', currentSettings.shortBreak, 1, 30)} </div> <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"> ${renderSettingInput('longBreak', 'Descanso Largo (min)', currentSettings.longBreak, 5, 90)} ${renderSettingInput('pomodorosBeforeLongBreak', 'Pomodoros antes de Descanso Largo', currentSettings.pomodorosBeforeLongBreak, 2, 12)} </div> <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"> ${renderSettingInput('dailyGoal', 'Objetivo Diario (Pomodoros)', currentSettings.dailyGoal, 1, 20)} <div class="col-span-1"> <label for="themeColor" class="block text-sm font-medium mb-1 text-gray-300">Color de Acento</label> <select id="themeColor" name="themeColor" class="w-full p-3 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-sky-500 focus:border-sky-500"> ${Object.keys(themeMap).map(key => `<option value="${key}" ${currentSettings.themeColor === key ? 'selected' : ''}>${key.charAt(0).toUpperCase() + key.slice(1)}</option>`).join('')} </select> </div> </div> <div> <label for="volume" class="block text-sm font-medium mb-1 text-gray-300"> Volumen de Notificaciones: <span id="volume-value">${(currentSettings.volume * 100).toFixed(0)}</span>% </label> <input type="range" id="volume" name="volume" min="0" max="1" step="0.1" value="${currentSettings.volume}" oninput="document.getElementById('volume-value-display').innerText = (this.value * 100).toFixed(0)" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg focus:outline-none focus:ring-2 focus:ring-sky-500"> <span id="volume-value-display" class="sr-only">${(currentSettings.volume * 100).toFixed(0)}</span> </div> <div class="col-span-full"> <label for="bgKey" class="block text-sm font-medium mb-1 text-gray-300">Fondo de Pantalla</label> <select id="bgKey" name="bgKey" onchange="updateBackgroundPreview(this.value)" class="w-full p-3 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-sky-500 focus:border-sky-500"> ${backgroundOptions.map(opt => `<option value="${opt.key}" ${currentSettings.bgKey === opt.key ? 'selected' : ''}>${opt.name}</option>`).join('')} </select> <div id="background-preview" class="background-preview transition-all duration-300 ${getBackgroundOption(currentSettings.bgKey).class}"></div> </div> </div> <div class="flex justify-end space-x-3 mt-8 pt-4 border-t border-gray-700"> <button type="button" onclick="closeModal('settings-modal')" class="px-5 py-2 text-sm font-medium border border-gray-600 rounded-xl text-gray-300 hover:bg-gray-700 transition duration-150"> Cancelar </button> <button type="submit" class="px-5 py-2 text-sm font-medium text-white bg-sky-600 rounded-xl hover:bg-sky-700 transition duration-150 shadow-lg shadow-sky-500/30"> <i data-lucide="save" class="w-4 h-4 inline mr-1"></i> Guardar Ajustes </button> </div> </form> </div> </div> `; };
+        window.updateBackgroundPreview = (key) => { const previewElement = document.getElementById('background-preview'); const newBg = getBackgroundOption(key); backgroundOptions.forEach(opt => { opt.class.split(' ').forEach(cls => { if (cls.trim()) { previewElement.classList.remove(cls.trim()); } }); }); previewElement.classList.add(...newBg.class.split(' ')); };
+        const renderSettingInput = (id, label, value, min, max) => { return ` <div class="col-span-1"> <label for="${id}" class="block text-sm font-medium mb-1 text-gray-300">${label}</label> <input type="number" id="${id}" name="${id}" value="${value}" min="${min}" max="${max}" class="w-full p-3 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-sky-500 focus:border-sky-500 placeholder-gray-400"> </div> `; };
+        window.showSettingsModal = () => { document.getElementById('modals-container').innerHTML = renderSettingsModal(); renderLucideIcons(); };
+        window.showStatsModal = () => { document.getElementById('modals-container').innerHTML = renderStatsModal(); renderLucideIcons(); };
+        window.handleSaveSettings = (e) => { e.preventDefault(); const form = e.target; const newBgKey = form.bgKey.value; const selectedBg = getBackgroundOption(newBgKey); const newSettings = { pomodoro: parseInt(form.pomodoro.value), shortBreak: parseInt(form.shortBreak.value), longBreak: parseInt(form.longBreak.value), pomodorosBeforeLongBreak: parseInt(form.pomodorosBeforeLongBreak.value), dailyGoal: parseInt(form.dailyGoal.value), themeColor: form.themeColor.value, volume: parseFloat(form.volume.value), bgKey: newBgKey, isDarkBg: selectedBg.isDark, }; if ([newSettings.pomodoro, newSettings.shortBreak, newSettings.longBreak, newSettings.pomodorosBeforeLongBreak, newSettings.dailyGoal].some(isNaN)) { showSimpleModal("Error de Validación", "Por favor, asegúrate de que todos los campos numéricos son válidos."); return; } saveSettings(newSettings); closeModal('settings-modal'); };
+        
+        // --- UI RENDERING FUNCTIONS (EXISTING) ---
+        const renderLucideIcons = () => { try { lucide.createIcons(); } catch(e) { console.error("Lucide error:", e); } };
+        const updateMotivationalMessage = () => { const container = document.getElementById('motivational-message-container'); if (!container) return; if (state.mode === 'Pomodoro' && state.isActive) { const theme = getCurrentTheme(); container.classList.remove('hidden'); container.innerHTML = ` <div key="${state.currentMantra}" class="p-3 rounded-xl shadow-xl animate-fadeIn animate-pulse-once border-b-4 text-center w-full" style="background-color: rgba(30, 41, 59, 0.9); border-color: ${theme.hex};" > <p class="text-sm sm:text-lg font-semibold italic flex items-center justify-center text-white"> <i data-lucide="zap" class="w-5 h-5 mr-2 text-yellow-400"></i> ${state.currentMantra} </p> </div> `; renderLucideIcons(); } else { container.classList.add('hidden'); container.innerHTML = ''; } }
+        const updateUI = (forceParticleUpdate = false) => { const theme = getCurrentTheme(); const themeHex = theme.hex; const themeDarkHex = theme.darkHex; const activeTaskObj = state.tasks.find(t => t.id === state.activeTask); const currentBg = getBackgroundOption(state.settings.bgKey); const isDark = currentBg.isDark; const baseClasses = `min-h-screen w-full flex flex-col items-center justify-center p-4 transition-all duration-500`; document.body.className = `${baseClasses} ${currentBg.class}`; document.body.style.filter = state.isFocusMode ? 'brightness(0.5)' : 'none'; document.body.classList.toggle('text-white', isDark); document.body.classList.toggle('text-gray-900', !isDark); initParticleSystem(forceParticleUpdate); const timerCard = document.getElementById('timer-card'); if (isDark) { timerCard.className = timerCard.className.replace(/bg-\w+-\d+\/\d+/, 'bg-gray-900/40').replace(/border-\w+-\d+/, 'border-gray-700'); timerCard.style.backgroundColor = 'rgba(0,0,0,0.4)'; } else { timerCard.className = timerCard.className.replace(/bg-\w+-\d+\/\d+/, 'bg-white/70').replace(/border-\w+-\d+/, 'border-gray-300'); timerCard.style.backgroundColor = 'rgba(255,255,255,0.7)'; } const taskManagerContainerDiv = document.getElementById('task-manager-container'); const taskManagerCard = taskManagerContainerDiv.querySelector('div'); taskManagerCard.className = taskManagerCard.className.replace(/bg-\w+-\d+\/\d+/, isDark ? 'bg-gray-900/95' : 'bg-white/95'); taskManagerCard.className = taskManagerCard.className.replace(/border-\w+-\d+/, isDark ? 'border-gray-700' : 'border-gray-300'); taskManagerCard.querySelector('h3').classList.toggle('text-gray-100', isDark); taskManagerCard.querySelector('h3').classList.toggle('text-gray-800', !isDark); taskManagerCard.querySelector('#active-task-display').classList.toggle('text-red-400', isDark); taskManagerCard.querySelector('#active-task-display').classList.toggle('text-red-600', !isDark); taskManagerCard.querySelectorAll('.task-input-bg').forEach(el => { el.className = el.className.replace(/bg-\w+-\d+/, isDark ? 'bg-gray-800' : 'bg-gray-100'); }); taskManagerCard.querySelectorAll('.task-input-field').forEach(el => { el.className = el.className.replace(/bg-\w+-\d+/, isDark ? 'bg-gray-700' : 'bg-white'); el.className = el.className.replace(/text-\w+/, isDark ? 'text-white' : 'text-gray-900'); el.className = el.className.replace(/border-\w+-\d+/, isDark ? 'border-gray-600' : 'border-gray-400'); }); taskManagerCard.querySelector('.border-t').className = taskManagerCard.querySelector('.border-t').className.replace(/border-\w+-\d+/, isDark ? 'border-gray-700' : 'border-gray-300'); document.getElementById('time-display').textContent = formatTime(state.time); const timeDisplayContainer = document.getElementById('time-display-container'); timeDisplayContainer.classList.toggle('pulse-active', state.isActive); timeDisplayContainer.style.color = themeDarkHex; const progress = 1 - (state.time / state.initialTime); const radius = 100; const circumference = 2 * Math.PI * radius; const offset = circumference - progress * circumference; const trackColor = isDark ? '#47556950' : '#e2e8f080'; document.getElementById('circular-progress-container').innerHTML = ` <svg width="100%" height="100%" viewBox="0 0 240 240" class="progress-svg"> <circle cx="120" cy="120" r="${radius}" fill="none" stroke="${trackColor}" stroke-width="15"/> <circle cx="120" cy="120" r="${radius}" fill="none" stroke="${themeHex}" stroke-width="15" stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" class="transition-all duration-300 ease-linear"/> </svg> `; document.querySelectorAll('.mode-btn').forEach(btn => { const mode = btn.getAttribute('data-mode'); const isCurrent = mode === state.mode; btn.classList.toggle('text-white', isCurrent); btn.classList.toggle('shadow-lg', isCurrent); btn.classList.toggle('ring-2', isCurrent); btn.classList.toggle('ring-offset-2', isCurrent); btn.classList.toggle('ring-opacity-75', isCurrent); if (isCurrent) { btn.style.backgroundColor = themeDarkHex; btn.style.setProperty('--tw-ring-color', themeHex); btn.style.setProperty('--tw-ring-offset-color', isDark ? '#1f2937' : '#f8fafc'); } else { btn.style.backgroundColor = 'transparent'; btn.style.setProperty('--tw-ring-color', 'transparent'); if (isDark) { btn.className = btn.className.replace(/text-\w+/g, 'text-white').replace(/bg-opacity-\d+/g, 'bg-opacity-20').replace(/hover:bg-opacity-\d+/g, 'hover:bg-opacity-30'); btn.classList.add('bg-gray-100'); } else { btn.className = btn.className.replace(/text-\w+/g, 'text-gray-900').replace(/bg-opacity-\d+/g, 'bg-opacity-10').replace(/hover:bg-opacity-\d+/g, 'hover:bg-opacity-20'); btn.classList.add('bg-gray-900'); } } }); const toggleBtn = document.getElementById('toggle-timer-btn'); const icon = state.isActive ? '<i data-lucide="pause" class="w-7 h-7 sm:w-8 sm:h-8"></i>' : '<i data-lucide="play" class="w-7 h-7 sm:w-8 sm:h-8"></i>'; toggleBtn.innerHTML = icon; toggleBtn.style.backgroundColor = themeHex; document.getElementById('session-info').textContent = `Sesión ${state.mode === 'Pomodoro' ? state.sessionCount + 1 : state.sessionCount} de ${(state.settings.pomodorosBeforeLongBreak || defaultSettings.pomodorosBeforeLongBreak)}`; document.getElementById('task-info').textContent = activeTaskObj ? `Trabajando en: ${activeTaskObj.name}` : '¡Enfócate!'; document.getElementById('session-info').classList.toggle('text-gray-400', isDark); document.getElementById('session-info').classList.toggle('text-gray-600', !isDark); document.getElementById('task-info').classList.toggle('text-gray-300', isDark); document.getElementById('task-info').classList.toggle('text-gray-700', !isDark); document.getElementById('points-value').textContent = state.points; document.getElementById('streak-value').textContent = state.streak; document.getElementById('best-streak-value').textContent = state.bestStreak; document.getElementById('points-display').className = `flex items-center px-4 py-2 rounded-full shadow-lg text-sm font-semibold ${isDark ? 'bg-gray-800/80 text-white' : 'bg-white/80 text-gray-900'}`; const taskManagerContainer = document.getElementById('task-manager-container'); const toggleTasksBtn = document.getElementById('toggle-tasks-btn'); if (!state.isFocusMode && state.showTasks) { taskManagerContainer.classList.remove('hidden'); taskManagerContainer.classList.add('flex'); toggleTasksBtn.style.backgroundColor = themeHex; toggleTasksBtn.style.color = 'white'; } else { taskManagerContainer.classList.add('hidden'); taskManagerContainer.classList.remove('flex'); toggleTasksBtn.style.backgroundColor = 'white'; toggleTasksBtn.style.color = '#1e293b'; } const focusBtn = document.getElementById('toggle-focus-mode-btn'); focusBtn.className = `p-3 rounded-full shadow-lg transition hover:shadow-xl ${state.isFocusMode ? 'bg-red-500 text-white' : 'bg-white text-gray-800'}`; focusBtn.title = state.isFocusMode ? "Desactivar Modo Foco" : "Activar Modo Foco (Oculta Tareas y Oscurece)"; const distractionBtn = document.getElementById('mark-distraction-btn'); const distractionCounter = document.getElementById('distraction-counter-display'); if (state.mode === 'Pomodoro') { distractionCounter.classList.remove('hidden'); distractionBtn.classList.remove('hidden'); document.getElementById('distractions-value').textContent = state.distractions; distractionCounter.classList.toggle('text-gray-400', isDark); distractionCounter.classList.toggle('text-gray-600', !isDark); distractionBtn.className = `mt-4 py-2 px-6 rounded-xl text-base font-semibold transition-all shadow-md active:scale-95 ${state.isActive ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-gray-400 text-gray-700 cursor-not-allowed'}`; distractionBtn.disabled = !state.isActive; } else { distractionCounter.classList.add('hidden'); distractionBtn.classList.add('hidden'); } updateMotivationalMessage(); renderTaskList(); renderLucideIcons(); };
+        const getPriorityBadge = (priority) => { let color; switch (priority) { case 'High': color = 'bg-red-500'; break; case 'Medium': color = 'bg-yellow-500'; break; case 'Low': color = 'bg-green-500'; break; default: color = 'bg-gray-400'; } return `<span class="text-xs font-semibold px-2 py-0.5 rounded-full text-white ${color}">${priority}</span>`; };
+        const renderTaskList = () => { const taskList = document.getElementById('task-list'); const activeTaskDisplay = document.getElementById('active-task-display'); const isDark = getBackgroundOption(state.settings.bgKey).isDark; const priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3 }; const sortedTasks = [...state.tasks].sort((a, b) => { if (a.id === state.activeTask) return -1; if (b.id === state.activeTask) return 1; if (a.completed !== b.completed) { return a.completed ? 1 : -1; } if (priorityOrder[a.priority] !== priorityOrder[b.priority]) { return priorityOrder[a.priority] - priorityOrder[b.priority]; } return (b.createdAt || 0) - (a.createdAt || 0); }); if (sortedTasks.length === 0) { taskList.innerHTML = `<p class="text-gray-500 italic text-center pt-4">No hay tareas. ¡Añade una!</p>`; activeTaskDisplay.textContent = 'Ninguna (¡Selecciona una!)'; activeTaskDisplay.className = 'font-medium text-red-400 italic'; return; } activeTaskDisplay.textContent = sortedTasks.find(t => t.id === state.activeTask)?.name || 'Ninguna (¡Selecciona una!)'; activeTaskDisplay.className = sortedTasks.find(t => t.id === state.activeTask) ? `font-medium ${isDark ? 'text-sky-400' : 'text-sky-600'}` : `font-medium ${isDark ? 'text-red-400' : 'text-red-600'} italic`; taskList.innerHTML = sortedTasks.map(task => { const isActive = state.activeTask === task.id; let completedClass, activeClass, defaultClass; if (isDark) { completedClass = 'bg-green-900/50 border-green-700 line-through text-gray-400'; activeClass = 'bg-sky-900/50 border-sky-600 ring-2 ring-sky-500 font-semibold text-white'; defaultClass = 'bg-gray-800 border-gray-700 hover:bg-gray-700 text-white'; } else { completedClass = 'bg-green-100 border-green-300 line-through text-gray-500'; activeClass = 'bg-sky-200 border-sky-400 ring-2 ring-sky-500 font-semibold text-gray-900'; defaultClass = 'bg-white border-gray-300 hover:bg-gray-100 text-gray-900'; } const finalClass = task.completed ? completedClass : (isActive ? activeClass : defaultClass); const checkIconColor = task.completed ? 'text-green-500' : (isDark ? 'text-gray-600 hover:text-green-400' : 'text-gray-400 hover:text-green-600'); const infoTextColor = isDark ? 'text-gray-400' : 'text-gray-600'; const activeBtnClasses = isActive ? 'bg-sky-500 text-white' : (isDark ? 'text-sky-400 hover:bg-gray-700' : 'text-sky-600 hover:bg-gray-200'); const deleteBtnClasses = isDark ? 'text-red-400 hover:bg-gray-700' : 'text-red-600 hover:bg-gray-200'; return ` <div class="task-item flex items-start p-3 rounded-xl border transition-all shadow-sm ${finalClass}"> <button onclick="toggleTask('${task.id}', ${task.completed})" class="mr-3 mt-1"> <i data-lucide="check-circle" class="w-5 h-5 ${checkIconColor}"></i> </button> <div class="flex-grow min-w-0"> <p class="truncate text-base font-medium">${task.name}</p> <div class="flex items-center space-x-2 mt-1"> ${getPriorityBadge(task.priority)} <p class="text-xs ${infoTextColor} font-mono flex items-center"> <i data-lucide="zap" class="w-3 h-3 inline mr-1 align-sub"></i> ${task.pomodoros || 0} / ${task.estimatedPomodoros || 1} </p> </div> </div> <div class="flex space-x-1 ml-2 flex-shrink-0"> ${!task.completed ? ` <button onclick="activateTask('${task.id}')" class="p-1 rounded-full transition-all ${activeBtnClasses}" title="${isActive ? 'Tarea Activa' : 'Establecer como Tarea Activa'}"> <i data-lucide="play" class="w-4 h-4"></i> </button> ` : ''} <button onclick="deleteTask('${task.id}')" class="p-1 rounded-full transition ${deleteBtnClasses}" title="Eliminar Tarea"> <i data-lucide="trash-2" class="w-4 h-4"></i> </button> </div> </div> `; }).join(''); renderLucideIcons(); };
+        
+        // --- TASK MANAGER CRUD FUNCTIONS ---
+        window.addTask = () => { const name = document.getElementById('new-task-name').value.trim(); const priority = document.getElementById('new-task-priority').value; const estimatedPomodoros = parseInt(document.getElementById('new-task-estimated-pomodoros').value) || 1; if (!name) return; const newTask = { id: Date.now().toString(), name: name, completed: false, pomodoros: 0, estimatedPomodoros: estimatedPomodoros, priority: priority, createdAt: Date.now(), }; state.tasks.push(newTask); saveState(STORAGE_KEYS.TASKS, state.tasks); if (state.tasks.length === 1 || !state.activeTask) { state.activeTask = newTask.id; saveState(STORAGE_KEYS.ACTIVE_TASK, state.activeTask); } document.getElementById('new-task-name').value = ''; document.getElementById('new-task-estimated-pomodoros').value = 1; updateUI(); };
+        window.toggleTask = (id, completed) => { const task = state.tasks.find(t => t.id === id); if (task) { task.completed = !completed; saveState(STORAGE_KEYS.TASKS, state.tasks); if (id === state.activeTask && !completed) { state.activeTask = null; saveState(STORAGE_KEYS.ACTIVE_TASK, null); } updateUI(); } };
+        window.deleteTask = (id) => { state.tasks = state.tasks.filter(t => t.id !== id); saveState(STORAGE_KEYS.TASKS, state.tasks); if (id === state.activeTask) { const firstUncompleted = state.tasks.find(t => !t.completed); state.activeTask = firstUncompleted ? firstUncompleted.id : null; saveState(STORAGE_KEYS.ACTIVE_TASK, state.activeTask); } updateUI(); };
+        window.activateTask = (id) => { if (state.isActive) toggleTimer(); state.activeTask = id; saveState(STORAGE_KEYS.ACTIVE_TASK, id); updateUI(); };
+
+        // --- CALENDAR & GRAPHS IMPLEMENTATION ---
+        window.showCalendarModal = () => { const container = document.getElementById('modals-container'); container.innerHTML = renderCalendarModal(); renderCalendarGrid(); renderAllCharts(); renderLucideIcons(); document.getElementById('tab-calendar').addEventListener('click', () => switchTab('calendar')); document.getElementById('tab-graphs').addEventListener('click', () => switchTab('graphs')); };
+        window.switchTab = (tabName) => { const calendarContent = document.getElementById('calendar-content'); const graphsContent = document.getElementById('graphs-content'); const tabCalendar = document.getElementById('tab-calendar'); const tabGraphs = document.getElementById('tab-graphs'); if (tabName === 'calendar') { calendarContent.classList.remove('hidden'); graphsContent.classList.add('hidden'); tabCalendar.classList.add('bg-sky-600', 'text-white'); tabCalendar.classList.remove('text-gray-400', 'hover:bg-gray-700'); tabGraphs.classList.add('text-gray-400', 'hover:bg-gray-700'); tabGraphs.classList.remove('bg-sky-600', 'text-white'); } else { calendarContent.classList.add('hidden'); graphsContent.classList.remove('hidden'); tabGraphs.classList.add('bg-sky-600', 'text-white'); tabGraphs.classList.remove('text-gray-400', 'hover:bg-gray-700'); tabCalendar.classList.add('text-gray-400', 'hover:bg-gray-700'); tabCalendar.classList.remove('bg-sky-600', 'text-white'); } };
+        const renderCalendarModal = () => { return ` <div id="calendar-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4"> <div class="bg-gray-900 border border-gray-700 rounded-2xl p-4 sm:p-6 w-full max-w-4xl shadow-2xl text-white transform transition-all duration-300 scale-100 h-[95vh] flex flex-col"> <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3"> <h2 class="text-xl sm:text-2xl font-bold flex items-center text-sky-400"> <i data-lucide="calendar-days" class="w-6 h-6 mr-2"></i> Calendario y Gráficas </h2> <button type="button" onclick="closeModal('calendar-modal')" class="p-2 rounded-full hover:bg-gray-700"> <i data-lucide="x" class="w-5 h-5"></i> </button> </div> <div class="flex space-x-1 p-1 bg-gray-800 rounded-xl mb-4"> <button id="tab-calendar" class="flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition bg-sky-600 text-white">Calendario de Tareas</button> <button id="tab-graphs" class="flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition text-gray-400 hover:bg-gray-700">Gráficas de Progreso</button> </div> <div id="calendar-modal-content" class="flex-grow overflow-y-auto pr-2"> <div id="calendar-content"> ${renderCalendarView()} </div> <div id="graphs-content" class="hidden"> ${renderGraphsView()} </div> </div> </div> </div> `; };
+        const renderCalendarView = () => ` <div class="flex flex-col lg:flex-row gap-6"> <div class="flex-grow"> <div class="flex items-center justify-between mb-4"> <button onclick="changeMonth(-1)" class="p-2 rounded-full hover:bg-gray-700"><i data-lucide="chevron-left" class="w-5 h-5"></i></button> <h3 id="calendar-month-year" class="text-lg font-semibold text-center"></h3> <button onclick="changeMonth(1)" class="p-2 rounded-full hover:bg-gray-700"><i data-lucide="chevron-right" class="w-5 h-5"></i></button> </div> <div class="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-2"> ${['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => `<div>${day}</div>`).join('')} </div> <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div> </div> <div class="w-full lg:w-1/3 lg:max-w-xs bg-gray-800 p-4 rounded-xl border border-gray-700"> <h4 class="font-bold mb-3 border-b border-gray-600 pb-2">Tareas para <span id="selected-day-label"></span></h4> <div id="selected-day-tasks" class="space-y-2 mb-4 max-h-60 overflow-y-auto"></div> <div class="mt-4 pt-4 border-t border-gray-600"> <input id="new-calendar-event-title" type="text" class="w-full p-2 rounded-lg border-2 border-gray-600 bg-gray-700 text-white placeholder-gray-400 mb-2" placeholder="Nueva tarea para este día..."> <button onclick="addCalendarEvent()" class="w-full py-2 bg-sky-600 hover:bg-sky-700 rounded-lg font-semibold transition">Añadir Tarea</button> </div> </div> </div> `;
+        window.changeMonth = (delta) => { state.calendarDate.setMonth(state.calendarDate.getMonth() + delta); renderCalendarGrid(); };
+        const renderCalendarGrid = () => { const grid = document.getElementById('calendar-grid'); const monthYearLabel = document.getElementById('calendar-month-year'); if (!grid || !monthYearLabel) return; const date = state.calendarDate; const month = date.getMonth(); const year = date.getFullYear(); monthYearLabel.textContent = date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }); const firstDayOfMonth = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate(); grid.innerHTML = ''; const dayOffset = (firstDayOfMonth === 0) ? 6 : firstDayOfMonth - 1; for (let i = 0; i < dayOffset; i++) { grid.innerHTML += `<div></div>`; } const today = new Date(); const todayStr = today.toISOString().split('T')[0]; for (let day = 1; day <= daysInMonth; day++) { const dayDate = new Date(year, month, day); const dayStr = dayDate.toISOString().split('T')[0]; const events = state.calendarEvents.filter(e => e.date === dayStr); const hasEvents = events.length > 0; const hasCompletedEvents = hasEvents && events.every(e => e.completed); let classes = 'calendar-day flex items-center justify-center h-10 w-10 rounded-full cursor-pointer'; if (dayStr === todayStr) classes += ' today'; if (dayStr === state.selectedDate) classes += ' selected'; if (hasEvents && !hasCompletedEvents) classes += ' has-events'; if (hasCompletedEvents) classes += ' has-completed-events'; grid.innerHTML += `<div class="${classes}" onclick="selectDay('${dayStr}')">${day}</div>`; } renderLucideIcons(); selectDay(state.selectedDate); };
+        window.selectDay = (dateStr) => { state.selectedDate = dateStr; const date = new Date(dateStr + 'T00:00:00'); document.getElementById('selected-day-label').textContent = date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }); document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected')); const selectedEl = Array.from(document.querySelectorAll('.calendar-day')).find(el => { const day = el.textContent; const d = new Date(state.calendarDate.getFullYear(), state.calendarDate.getMonth(), parseInt(day)); return d.toISOString().split('T')[0] === dateStr; }); if (selectedEl) selectedEl.classList.add('selected'); renderSelectedDayTasks(); };
+        const renderSelectedDayTasks = () => { const container = document.getElementById('selected-day-tasks'); const events = state.calendarEvents.filter(e => e.date === state.selectedDate); if(events.length === 0){ container.innerHTML = `<p class="text-sm text-gray-500 italic text-center">No hay tareas para este día.</p>`; return; } container.innerHTML = events.map(event => ` <div class="flex items-center p-2 bg-gray-700 rounded-lg"> <input type="checkbox" ${event.completed ? 'checked' : ''} onchange="toggleCalendarEvent('${event.id}')" class="w-4 h-4 rounded text-sky-500 bg-gray-600 border-gray-500 focus:ring-sky-600"> <span class="flex-grow mx-2 text-sm ${event.completed ? 'line-through text-gray-400' : ''}">${event.title}</span> <button onclick="deleteCalendarEvent('${event.id}')" class="text-red-400 hover:text-red-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button> </div> `).join(''); renderLucideIcons(); };
+        window.addCalendarEvent = () => { const input = document.getElementById('new-calendar-event-title'); const title = input.value.trim(); if (!title) return; const newEvent = { id: Date.now().toString(), date: state.selectedDate, title, completed: false, }; state.calendarEvents.push(newEvent); saveState(STORAGE_KEYS.CALENDAR_EVENTS, state.calendarEvents); input.value = ''; renderCalendarGrid(); };
+        window.toggleCalendarEvent = (id) => { const event = state.calendarEvents.find(e => e.id === id); if(event) { event.completed = !event.completed; saveState(STORAGE_KEYS.CALENDAR_EVENTS, state.calendarEvents); renderCalendarGrid(); } };
+        window.deleteCalendarEvent = (id) => { state.calendarEvents = state.calendarEvents.filter(e => e.id !== id); saveState(STORAGE_KEYS.CALENDAR_EVENTS, state.calendarEvents); renderCalendarGrid(); };
+        const renderGraphsView = () => ` <div class="space-y-8"> <div> <h3 class="text-lg font-semibold mb-3 text-gray-300">Pomodoros por Día (Últimos 15 días)</h3> <div id="daily-chart-container" class="p-4 bg-gray-800 rounded-xl"></div> </div> <div> <h3 class="text-lg font-semibold mb-3 text-gray-300">Pomodoros por Semana (Últimas 8 semanas)</h3> <div id="weekly-chart-container" class="p-4 bg-gray-800 rounded-xl"></div> </div> <div> <h3 class="text-lg font-semibold mb-3 text-gray-300">Pomodoros por Mes (Últimos 6 meses)</h3> <div id="monthly-chart-container" class="p-4 bg-gray-800 rounded-xl"></div> </div> </div> `;
+        const renderAllCharts = () => { const dailyData = getChartData('day'); const weeklyData = getChartData('week'); const monthlyData = getChartData('month'); renderBarChart('daily-chart-container', dailyData, "Pomodoros"); renderBarChart('weekly-chart-container', weeklyData, "Pomodoros"); renderBarChart('monthly-chart-container', monthlyData, "Pomodoros"); };
+        const getChartData = (period) => { const logs = Object.values(state.dailyLogs); const data = {}; const today = new Date(); if (period === 'day') { for (let i = 14; i >= 0; i--) { const date = new Date(today); date.setDate(today.getDate() - i); const key = date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }); const dateStr = date.toISOString().split('T')[0]; const log = logs.find(l => l.date === dateStr); data[key] = log ? log.completedPomodoros : 0; } } else if (period === 'week') { for(let i = 7; i >= 0; i--){ const weekStart = new Date(today); weekStart.setDate(today.getDate() - today.getDay() + 1 - (i * 7)); const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6); const key = `${weekStart.toLocaleDateString('es-ES', {day:'numeric', month:'short'})}`; data[key] = 0; logs.forEach(log => { const logDate = new Date(log.date); if(logDate >= weekStart && logDate <= weekEnd){ data[key] += log.completedPomodoros; } }); } } else if (period === 'month') { for (let i = 5; i >= 0; i--) { const date = new Date(today.getFullYear(), today.getMonth() - i, 1); const key = date.toLocaleDateString('es-ES', { month: 'short', year: '2-digit'}); data[key] = 0; logs.forEach(log => { const logDate = new Date(log.date); if(logDate.getFullYear() === date.getFullYear() && logDate.getMonth() === date.getMonth()){ data[key] += log.completedPomodoros; } }); } } return data; };
+        const renderBarChart = (containerId, data) => { const container = document.getElementById(containerId); if (!container) return; const theme = getCurrentTheme(); const labels = Object.keys(data); const values = Object.values(data); const maxValue = Math.max(...values, 1); const bars = values.map((value, index) => { const heightPercentage = (value / maxValue) * 100; return ` <div class="flex-1 flex flex-col items-center justify-end group"> <div class="w-full text-center mb-1 text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">${value}</div> <div class="w-3/4 h-full bg-gray-700 rounded-t-md relative overflow-hidden"> <div class="absolute bottom-0 left-0 w-full rounded-t-md" style="height: ${heightPercentage}%; background-color:${theme.hex}; transition: height 0.5s ease-out;"></div> </div> <div class="w-full text-center mt-1 text-gray-400 text-[10px] sm:text-xs">${labels[index]}</div> </div> `; }).join(''); container.innerHTML = `<div class="flex items-end h-64 gap-2 sm:gap-3">${bars}</div>`; };
+
+        // --- NOTES IMPLEMENTATION (NUEVO) ---
+        
+        // Abrir modal de notas
+        window.showNotesModal = () => {
+            const container = document.getElementById('modals-container');
+            container.innerHTML = renderNotesModal();
+            renderNoteHistory();
+            renderLucideIcons();
+            
+            // Listeners para pestañas
+            document.getElementById('tab-new-note').addEventListener('click', () => switchNotesTab('new'));
+            document.getElementById('tab-history-note').addEventListener('click', () => switchNotesTab('history'));
+        };
+
+        // Cambiar entre pestañas de notas
+        window.switchNotesTab = (tabName) => {
+            const newNoteContent = document.getElementById('new-note-content');
+            const historyNoteContent = document.getElementById('history-note-content');
+            const tabNew = document.getElementById('tab-new-note');
+            const tabHistory = document.getElementById('tab-history-note');
+
+            if (tabName === 'new') {
+                newNoteContent.classList.remove('hidden');
+                historyNoteContent.classList.add('hidden');
+                tabNew.classList.add('bg-sky-600', 'text-white');
+                tabNew.classList.remove('text-gray-400', 'hover:bg-gray-700');
+                tabHistory.classList.add('text-gray-400', 'hover:bg-gray-700');
+                tabHistory.classList.remove('bg-sky-600', 'text-white');
+            } else {
+                newNoteContent.classList.add('hidden');
+                historyNoteContent.classList.remove('hidden');
+                tabHistory.classList.add('bg-sky-600', 'text-white');
+                tabHistory.classList.remove('text-gray-400', 'hover:bg-gray-700');
+                tabNew.classList.add('text-gray-400', 'hover:bg-gray-700');
+                tabNew.classList.remove('bg-sky-600', 'text-white');
+            }
+        };
+
+        // Renderizar el esqueleto del modal de notas
+        const renderNotesModal = () => {
+            return `
+            <div id="notes-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+                <div class="bg-gray-900 border border-gray-700 rounded-2xl p-4 sm:p-6 w-full max-w-lg shadow-2xl text-white transform transition-all duration-300 scale-100 h-[70vh] flex flex-col">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
+                        <h2 class="text-xl sm:text-2xl font-bold flex items-center text-sky-400">
+                            <i data-lucide="notebook-pen" class="w-6 h-6 mr-2"></i> Notas Rápidas
+                        </h2>
+                        <button type="button" onclick="closeModal('notes-modal')" class="p-2 rounded-full hover:bg-gray-700">
+                           <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="flex space-x-1 p-1 bg-gray-800 rounded-xl mb-4">
+                        <button id="tab-new-note" class="flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition bg-sky-600 text-white">Nueva Nota</button>
+                        <button id="tab-history-note" class="flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition text-gray-400 hover:bg-gray-700">Historial</button>
+                    </div>
+                    
+                    <div id="notes-modal-content" class="flex-grow overflow-y-auto pr-2">
+                        <div id="new-note-content">
+                            <textarea id="new-note-textarea" class="w-full h-64 p-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-sky-500" placeholder="Escribe tus ideas aquí..."></textarea>
+                            <button onclick="saveNote()" class="w-full mt-4 py-2 bg-sky-600 hover:bg-sky-700 rounded-lg font-semibold transition">Guardar Nota</button>
+                        </div>
+                        <div id="history-note-content" class="hidden">
+                             <div id="note-history-list" class="space-y-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        };
+        
+        // Guardar una nueva nota
+        window.saveNote = () => {
+            const textarea = document.getElementById('new-note-textarea');
+            const content = textarea.value.trim();
+            if (!content) return;
+
+            const newNote = {
+                id: Date.now().toString(),
+                content: content,
+                timestamp: new Date().toISOString(),
+            };
+
+            state.quickNotes.unshift(newNote); // Añade al principio
+            saveState(STORAGE_KEYS.QUICK_NOTES, state.quickNotes);
+            
+            textarea.value = '';
+            renderNoteHistory();
+            switchNotesTab('history');
+        };
+        
+        // Renderizar el historial de notas
+        const renderNoteHistory = () => {
+            const container = document.getElementById('note-history-list');
+            if (!container) return;
+
+            if (state.quickNotes.length === 0) {
+                container.innerHTML = `<p class="text-sm text-gray-500 italic text-center p-8">No tienes notas guardadas.</p>`;
+                return;
+            }
+
+            container.innerHTML = state.quickNotes.map(note => {
+                const date = new Date(note.timestamp);
+                const formattedDate = date.toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' });
+                return `
+                    <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                        <p class="text-sm text-gray-300 whitespace-pre-wrap">${note.content}</p>
+                        <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-600">
+                            <p class="text-xs text-gray-500">${formattedDate}</p>
+                            <button onclick="deleteNote('${note.id}')" class="text-red-400 hover:text-red-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            renderLucideIcons();
+        };
+
+        // Borrar una nota
+        window.deleteNote = (id) => {
+            state.quickNotes = state.quickNotes.filter(n => n.id !== id);
+            saveState(STORAGE_KEYS.QUICK_NOTES, state.quickNotes);
+            renderNoteHistory();
+        };
+
+
+        // --- INITIALIZATION ---
+        const initApp = () => {
+            const loadedSettings = loadState(STORAGE_KEYS.SETTINGS, defaultSettings);
+            if (!loadedSettings.bgKey) { Object.assign(loadedSettings, { bgKey: defaultSettings.bgKey, isDarkBg: defaultSettings.isDarkBg }); }
+            state.settings = loadedSettings;
+            const stats = loadState(STORAGE_KEYS.STATS, defaultStats);
+            state.tasks = loadState(STORAGE_KEYS.TASKS, []);
+            state.activeTask = loadState(STORAGE_KEYS.ACTIVE_TASK, null);
+            state.sessionCount = loadState(STORAGE_KEYS.SESSION_COUNT, 0);
+            state.calendarEvents = loadState(STORAGE_KEYS.CALENDAR_EVENTS, []);
+            state.quickNotes = loadState(STORAGE_KEYS.QUICK_NOTES, []); // CARGAR NOTAS
+            
+            state.dailyLogs = loadState(STORAGE_KEYS.DAILY_LOGS, null);
+            if (!state.dailyLogs || Object.keys(state.dailyLogs).length === 0) { state.dailyLogs = simulateDailyLogs(); saveState(STORAGE_KEYS.DAILY_LOGS, state.dailyLogs); }
+
+            state.points = stats.points; state.streak = stats.streak; state.bestStreak = stats.bestStreak;
+            
+            setTimeMode('Pomodoro');
+
+            const activeTaskExists = state.tasks.some(t => t.id === state.activeTask && !t.completed);
+            if (!activeTaskExists) { const firstUncompleted = state.tasks.find(t => !t.completed); state.activeTask = firstUncompleted ? firstUncompleted.id : null; saveState(STORAGE_KEYS.ACTIVE_TASK, state.activeTask); }
+
+            if (Notification.permission !== "granted") { Notification.requestPermission(); }
+            
+            initParticleSystem(true);
+        };
+        
+        const setupEventListeners = () => {
+            // Timer Controls
+            document.getElementById('toggle-timer-btn').addEventListener('click', toggleTimer);
+            document.getElementById('reset-timer-btn').addEventListener('click', () => setTimeMode(state.mode));
+            document.getElementById('reset-day-progress-btn').addEventListener('click', () => { if (state.isActive) toggleTimer(); state.sessionCount = 0; saveState(STORAGE_KEYS.SESSION_COUNT, 0); setTimeMode('Pomodoro'); showSimpleModal("Ciclo Diario Reiniciado", "Tu contador de sesiones se ha reiniciado."); });
+            document.getElementById('mark-distraction-btn').addEventListener('click', () => { if (!state.isActive || state.mode !== 'Pomodoro') return; playSessionSound('distraction'); state.distractions += 1; const newPoints = Math.max(0, state.points - 5); updateGameStats({ points: newPoints, streak: 0 }); showSimpleModal("Distracción Registrada", "Se ha roto tu racha y se han deducido 5 puntos."); updateUI(); });
+
+            // Mode Switching
+            document.querySelectorAll('.mode-btn').forEach(btn => { btn.addEventListener('click', (e) => { const mode = e.currentTarget.getAttribute('data-mode'); setTimeMode(mode); }); });
+
+            // Header Controls
+            document.getElementById('show-settings-btn').addEventListener('click', showSettingsModal);
+            document.getElementById('show-stats-btn').addEventListener('click', showStatsModal);
+            document.getElementById('show-calendar-btn').addEventListener('click', showCalendarModal);
+            document.getElementById('show-notes-btn').addEventListener('click', showNotesModal); // NUEVO LISTENER
+            document.getElementById('toggle-tasks-btn').addEventListener('click', () => { state.showTasks = !state.showTasks; updateUI(); });
+            document.getElementById('toggle-focus-mode-btn').addEventListener('click', () => { state.isFocusMode = !state.isFocusMode; updateUI(); });
+            
+            // Add Task on Enter
+            document.getElementById('new-task-name').addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); window.addTask(); } });
+        };
+        
+        window.onload = () => {
+            initApp();
+            setupEventListeners();
+            updateUI();
+        };
+
+    </script>
+</body>
+</html>
+
