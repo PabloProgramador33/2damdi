@@ -1,0 +1,2317 @@
+<!DOCTYPE html>
+<html lang="es" class=""> <!-- La clase 'dark' se añadirá aquí con JS -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor Multimedia Local</title>
+    <!-- Carga de Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de la fuente Inter --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Carga de Phosphor Icons --><script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- NUEVO: Carga de Chart.js para gráficos --><script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilos para el scrollbar (oscuro) */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e5e7eb; /* gray-200 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #9ca3af; /* gray-400 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* gray-500 */
+        }
+        
+        /* Estilos para el scrollbar (claro) */
+        .dark ::-webkit-scrollbar-track {
+            background: #2d3748; /* gray-800 */
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #718096; /* gray-500 */
+        }
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0; /* gray-400 */
+        }
+
+        /* Estilos para los reproductores de audio/video */
+        audio, video {
+            width: 100%;
+            border-radius: 0.5rem;
+        }
+        /* Ocultar elementos por defecto */
+        .view-content {
+            display: none;
+        }
+        .view-content.active {
+            display: block;
+        }
+        /* Estilo para el input range del progreso */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #10B981; /* green-500 */
+            cursor: pointer;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.4); /* green-500 con transparencia */
+            transition: background .15s ease-in-out;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #10B981; /* green-500 */
+            cursor: pointer;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.4); /* green-500 con transparencia */
+            transition: background .15s ease-in-out;
+        }
+
+        input[type="range"]:hover::-webkit-slider-thumb {
+            background: #059669; /* green-600 */
+        }
+        input[type="range"]:hover::-moz-range-thumb {
+            background: #059669; /* green-600 */
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            height: 4px;
+            background: #D1D5DB; /* gray-300 */
+            border-radius: 2px;
+        }
+        .dark input[type="range"]::-webkit-slider-runnable-track {
+            background: #4B5563; /* gray-600 */
+        }
+
+        input[type="range"]::-moz-range-track {
+            height: 4px;
+            background: #D1D5DB; /* gray-300 */
+            border-radius: 2px;
+        }
+        .dark input[type="range"]::-moz-range-track {
+            background: #4B5563; /* gray-600 */
+        }
+
+        /* Estilos para los indicadores del calendario */
+        .day-indicators {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            display: flex;
+            gap: 2px;
+        }
+        .day-indicators i {
+            font-size: 0.7rem;
+            color: #10B981; /* green-500 */
+            opacity: 0.8;
+        }
+
+        /* Estilos para el modal del día */
+        .modal {
+            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+        }
+        
+        /* Estilo para drop target de playlist en NAV */
+        .nav-playlist-drop-target {
+            @apply bg-green-200 dark:bg-green-700 ring-2 ring-green-500;
+        }
+
+        /* NUEVO: Fondo de Gradiente Animado */
+        .bg-gradient-animated {
+            background: linear-gradient(45deg, #e0f2fe, #d8b4fe, #fbcfe8, #a5f3fc);
+            background-size: 400% 400%;
+            animation: gradient-animation 15s ease infinite;
+        }
+        .dark .bg-gradient-animated {
+            background: linear-gradient(45deg, #0c4a6e, #1e1b4b, #4a044e, #831843); /* Versión oscura */
+            background-size: 400% 400%;
+            animation: gradient-animation 15s ease infinite;
+        }
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* NUEVO: Canvas para animaciones */
+        #animation-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Detrás de todo */
+            display: none; /* Oculto por defecto */
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-h-screen flex flex-col transition-colors duration-200">
+
+    <canvas id="animation-canvas"></canvas> <!-- NUEVO: Canvas para fondos -->
+    <div id="mobile-menu-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
+
+    <!-- Contenedor principal (todo menos el player) --><div class="flex flex-grow"> 
+        
+        <!-- Sidebar (Menú) --><nav id="main-nav" class="w-64 bg-gray-50 dark:bg-black p-4 space-y-6 flex flex-col shadow-lg border-r border-gray-200 dark:border-gray-800 transition-transform duration-300 ease-in-out fixed inset-y-0 left-0 z-40 transform -translate-x-full md:translate-x-0 md:relative md:z-auto">
+            <h1 class="text-2xl font-bold text-green-600 dark:text-green-400 text-center flex items-center justify-center gap-2 relative z-10">
+                <i class="ph-bold ph-music-notes"></i>
+                <span>Datefy</span>
+            </h1>
+
+            <!-- NUEVO: Canvas del visualizador movido aquí -->
+            <canvas id="audio-visualizer-canvas" class="w-full h-24 absolute top-4 left-0 z-0 hidden" width="300" height="96"></canvas>
+
+            
+            <ul class="space-y-2 relative z-10"> <!-- Vistas principales -->
+                <li>
+                    <a href="#" class="nav-btn flex items-center gap-3 p-3 rounded-lg bg-green-100 text-green-700 dark:bg-gray-800 dark:text-white transition-colors" data-view="biblioteca">
+                        <i class="ph-bold ph-book-bookmark"></i>
+                        <span>Biblioteca</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-btn flex items-center gap-3 p-3 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" data-view="video">
+                        <i class="ph-bold ph-video"></i> 
+                        <span>Reproductor de Video</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-btn flex items-center gap-3 p-3 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" data-view="estadisticas">
+                        <i class="ph-bold ph-chart-bar"></i>
+                        <span>Estadísticas</span>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Sección de Playlists Dinámicas -->
+            <div class="flex-grow overflow-y-auto pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2 relative z-10">
+                <div class="flex justify-between items-center mb-1 px-3">
+                    <h2 class="text-xs font-semibold uppercase text-gray-400">Playlists</h2>
+                    <button id="nav-new-playlist-btn" class="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700" title="Crear nueva playlist">
+                        <i class="ph-bold ph-plus text-lg text-gray-500 dark:text-gray-400"></i>
+                    </button>
+                </div>
+                <ul id="nav-playlist-list" class="space-y-1">
+                    <!-- Las playlists se renderizarán aquí desde JS -->
+                </ul>
+            </div>
+            
+            <ul class="pt-4 border-t border-gray-200 dark:border-gray-700 relative z-10"> <!-- Vista de Ajustes -->
+                 <li>
+                    <a href="#" class="nav-btn flex items-center gap-3 p-3 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" data-view="ajustes">
+                        <i class="ph-bold ph-gear"></i>
+                        <span>Ajustes</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Contenido Principal (con scroll) --><main class="flex-grow p-4 md:p-8 overflow-y-auto bg-gray-100 dark:bg-gray-800 transition-colors duration-200 md:ml-64">
+            
+            <!-- Vistas --><!-- Vista 1: Biblioteca y Calendario --><div id="view-biblioteca" class="view-content active space-y-6">
+                
+                <!-- Cabecera de Playlist (oculta por defecto) -->
+                <div id="playlist-header" class="hidden flex-col sm:flex-row items-center gap-6 p-6 bg-gradient-to-t from-gray-200 to-white dark:from-gray-700 dark:to-gray-800 rounded-lg shadow-lg">
+                    <img id="playlist-header-img" src="https://placehold.co/150x150/1DB954/white?text=Playlist" alt="Playlist Cover" class="w-32 h-32 lg:w-40 lg:h-40 object-cover rounded-md shadow-lg flex-shrink-0 bg-gray-300 dark:bg-gray-600">
+                    <div class="flex flex-col truncate text-center sm:text-left">
+                        <span class="text-sm font-bold uppercase text-gray-500 dark:text-gray-400">Playlist</span>
+                        <h1 id="playlist-header-name" class="text-3xl lg:text-5xl font-extrabold truncate" title="Nombre de Playlist"></h1>
+                        <p id="playlist-header-desc" class="text-gray-600 dark:text-gray-300 mt-2 truncate"></p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- Columna de Biblioteca --><div class="space-y-4">
+                        <h2 id="library-title" class="text-2xl font-semibold text-green-700 dark:text-green-300 border-b border-gray-300 dark:border-gray-700 pb-2">Biblioteca de Audio</h2>
+                        
+                        <!-- Input para subir archivos --><div>
+                            <label for="file-input" class="cursor-pointer bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg inline-block transition-colors duration-200">
+                                <i class="ph ph-upload-simple mr-2"></i>
+                                Subir Audios Locales
+                            </label>
+                            <input type="file" id="file-input" class="hidden" multiple accept="audio/*">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Los archivos no se suben a ningún servidor, se quedan en tu navegador.</p>
+                        </div>
+                        
+                        <!-- Controles de Playlist --><div class="bg-white dark:bg-gray-900 p-3 rounded-lg border border-gray-300 dark:border-gray-700 space-y-3">
+                            <div class="flex items-center gap-2">
+                                <span class="relative flex-grow">
+                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                        <i class="ph ph-magnifying-glass text-gray-400"></i>
+                                    </span>
+                                    <input type="search" id="search-playlist" class="w-full p-2 pl-10 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Filtrar en la vista actual...">
+                                </span>
+                                <button id="sort-az-btn" class="p-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg" title="Ordenar A-Z">
+                                    <i class="ph ph-sort-ascending text-lg"></i>
+                                </button>
+                                <button id="sort-duration-btn" class="p-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg" title="Ordenar por Duración">
+                                    <i class="ph ph-timer text-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Lista de reproducción --><div id="playlist-container" class="h-64 overflow-y-auto bg-white dark:bg-gray-900 p-3 rounded-lg border border-gray-300 dark:border-gray-700 relative">
+                            <!-- Overlay para Drag & Drop --><div id="drop-overlay" class="absolute inset-0 bg-green-500 bg-opacity-75 flex-col items-center justify-center text-white font-bold text-lg rounded-lg border-4 border-dashed border-green-300 hidden">
+                                <i class="ph-bold ph-arrow-down-simple text-5xl"></i>
+                                <span>Suelta tus archivos aquí</span>
+                            </div>
+                            <div id="playlist-loading" class="text-gray-500 dark:text-gray-400 text-center py-10 hidden">
+                                <i class="ph-bold ph-spinner-gap text-5xl animate-spin mb-3"></i>
+                                Procesando archivos...
+                            </div>
+                            <ul id="playlist" class="space-y-2">
+                                <li id="playlist-empty" class="text-gray-500 dark:text-gray-400 text-center py-10">
+                                    <i class="ph-light ph-folder-open text-5xl mb-3 block"></i>
+                                    <span class="font-medium">Tu biblioteca está vacía</span><br>
+                                    <span class="text-sm">Sube archivos o arrástralos aquí.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Columna de Calendario --><div class="space-y-4">
+                        <h2 class="text-2xl font-semibold text-green-700 dark:text-green-300 border-b border-gray-300 dark:border-gray-700 pb-2">Calendario Musical</h2>
+                        
+                        <!-- Controles del Calendario --><div class="flex justify-between items-center bg-white dark:bg-gray-900 p-3 rounded-t-lg border border-gray-300 dark:border-gray-700">
+                            <button id="prev-month" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-md">
+                                <i class="ph-bold ph-caret-left"></i>
+                            </button>
+                            <h3 id="month-year" class="text-lg font-semibold"></h3>
+                            <button id="next-month" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-md">
+                                <i class="ph-bold ph-caret-right"></i>
+                            </button>
+                        </div>
+
+                        <!-- Grid del Calendario --><div id="calendar-grid" class="grid grid-cols-7 gap-1 bg-white dark:bg-gray-900 p-3 rounded-b-lg border border-t-0 border-gray-300 dark:border-gray-700">
+                            <!-- Días de la semana -->
+                            <div class="text-center font-medium text-xs text-green-600 dark:text-green-400">L</div>
+                            <div class="text-center font-medium text-xs text-green-600 dark:text-green-400">M</div>
+                            <div class="text-center font-medium text-xs text-green-600 dark:text-green-400">X</div>
+                            <div class="text-center font-medium text-xs text-green-600 dark:text-green-400">J</div>
+                            <div class="text-center font-medium text-xs text-green-600 dark:text-green-400">V</div>
+                            <div class="text-center font-medium text-xs text-green-600 dark:text-green-400">S</div>
+                            <div class="text-center font-medium text-xs text-green-600 dark:text-green-400">D</div>
+                            <!-- Las celdas del día se generan aquí -->
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Haz clic en un día para vincular una canción o añadir una nota.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vista 2: Video (MP4) --><div id="view-video" class="view-content space-y-4" style="display: none;">
+                <h2 class="text-2xl font-semibold text-green-700 dark:text-green-300">Reproductor de Video (MP4 Local)</h2>
+                
+                <!-- Input para subir video local -->
+                <div>
+                    <label for="video-file-input" class="cursor-pointer bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg inline-block transition-colors duration-200">
+                        <i class="ph ph-upload-simple mr-2"></i>
+                        Subir Video Local
+                    </label>
+                    <input type="file" id="video-file-input" class="hidden" accept="video/*">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">El video se reproducirá desde tu computadora.</p>
+                </div>
+                
+                <!-- Reproductor de MP4 -->
+                <div id="mp4-player-container" class="bg-black rounded-lg hidden aspect-video">
+                    <video id="mp4-player" controls class="w-full h-full rounded-lg"></video>
+                </div>
+                
+                 <p id="video-error" class="text-red-400 text-center hidden">No se pudo cargar el archivo de video.</p>
+                 <p class="text-sm text-gray-500 dark:text-gray-400 text-center">Nota: Los controles de la barra inferior (play, pausa, etc.) se sincronizarán con este video.</p>
+            </div>
+
+            <!-- Vista 3: Estadísticas --><div id="view-estadisticas" class="view-content space-y-4" style="display: none;">
+                <h2 class="text-2xl font-semibold text-green-700 dark:text-green-300 border-b border-gray-300 dark:border-gray-700 pb-2">Estadísticas</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg flex flex-col items-center justify-center">
+                        <i class="ph-bold ph-music-notes-simple text-5xl text-green-500 dark:text-green-400 mb-3"></i>
+                        <h3 class="text-lg font-medium text-gray-500 dark:text-gray-400">Audios en Biblioteca</h3>
+                        <p id="stats-total-songs" class="text-4xl font-bold text-green-600 dark:text-green-400">0</p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg flex flex-col items-center justify-center">
+                        <i class="ph-bold ph-waveform text-5xl text-green-500 dark:text-green-400 mb-3"></i>
+                        <h3 class="text-lg font-medium text-gray-500 dark:text-gray-400">Pista Actual</h3>
+                        <p id="stats-current-track" class="text-xl font-medium text-center truncate w-full">Ninguna</p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg flex flex-col items-center justify-center">
+                        <i class="ph-bold ph-play-circle text-5xl text-green-500 dark:text-green-400 mb-3"></i>
+                        <h3 class="text-lg font-medium text-gray-500 dark:text-gray-400">Reproducciones Totales</h3>
+                        <p id="stats-total-plays" class="text-4xl font-bold text-green-600 dark:text-green-400">0</p>
+                    </div>
+                </div>
+
+                <!-- NUEVO: Gráfico de Estadísticas -->
+                <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg mt-6">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Canciones Más Escuchadas (Top 10)</h3>
+                    <div class="relative h-64 md:h-80">
+                        <canvas id="stats-song-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vista 4: Ajustes --><div id="view-ajustes" class="view-content space-y-6" style="display: none;">
+                <h2 class="text-2xl font-semibold text-green-700 dark:text-green-300 border-b border-gray-300 dark:border-gray-700 pb-2">Ajustes</h2>
+                
+                <!-- Ajuste de Tema --><div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg">
+                    <label class="flex justify-between items-center text-lg font-medium cursor-pointer">
+                        <span>
+                            <i id="theme-icon" class="ph ph-moon mr-2"></i>
+                            Modo Oscuro
+                        </span>
+                        <span class="relative">
+                            <input type="checkbox" id="theme-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Personalización Visual --><div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg">
+                    <label for="background-select" class="block text-lg font-medium mb-3">Fondo Animado</label>
+                    <select id="background-select" class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="default">Color Sólido (Por defecto)</option>
+                        <option value="gradient">Gradiente Animado</option>
+                        <option value="particles">Partículas Flotantes</option>
+                        <option value="stars">Campo de Estrellas</option>
+                    </select>
+                </div>
+
+                <!-- Visualizador de Audio (Solo el interruptor) --><div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg">
+                    <label class="flex justify-between items-center text-lg font-medium cursor-pointer">
+                        <span>
+                            <i class="ph ph-waveform mr-2"></i>
+                            Visualizador de Audio
+                        </span>
+                        <span class="relative">
+                            <input type="checkbox" id="visualizer-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+                        </span>
+                    </label>
+                    <!-- El canvas se movió a la NAV -->
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Actívalo para ver las barras de sonido en la barra lateral.</p>
+                </div>
+
+                <!-- Ajuste de Volumen --><div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg">
+                    <label for="volume-slider" class="block text-lg font-medium mb-3">Volumen General</label>
+                    <div class="flex items-center gap-4">
+                        <i class="ph ph-speaker-low text-2xl text-gray-400"></i>
+                        <input type="range" id="volume-slider" min="0" max="1" step="0.01" class="w-full h-2 bg-gray-300 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <i class="ph ph-speaker-high text-2xl text-gray-400"></i>
+                    </div>
+                </div>
+                
+                <!-- Gestión de Datos --><div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg space-y-4">
+                    <h3 class="text-lg font-medium mb-3">Gestión de Datos</h3>
+                    <div>
+                        <button id="clear-playlist-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200">
+                            <i class="ph ph-trash-simple mr-2"></i>
+                            Limpiar Biblioteca (Audio)
+                        </button>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Eliminará todas las pistas y playlists de audio.</p>
+                    </div>
+                    <div>
+                        <button id="clear-calendar-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200">
+                            <i class="ph ph-calendar-x mr-2"></i>
+                            Limpiar Datos del Calendario
+                        </button>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Eliminará todas las notas y canciones vinculadas.</p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modales -->
+    
+    <!-- Modal del Día --><div id="day-modal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50 opacity-0 invisible" aria-hidden="true">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-lg transform scale-95 transition-all text-gray-900 dark:text-white">
+            <h3 class="text-xl font-semibold mb-4">Detalles del Día: <span id="modal-date"></span></h3>
+            
+            <!-- Vincular Canción -->
+            <div class="mb-4">
+                <label for="modal-song-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Vincular Canción:</label>
+                <select id="modal-song-select" class="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <!-- Opciones de canciones se añaden aquí -->
+                </select>
+            </div>
+
+            <!-- Notas del Día -->
+            <div class="mb-6">
+                <label for="modal-note-textarea" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notas Personales:</label>
+                <textarea id="modal-note-textarea" rows="4" class="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Escribe tus notas aquí..."></textarea>
+            </div>
+
+            <!-- Botones del Modal -->
+            <div class="flex flex-wrap justify-between items-center gap-2">
+                <div class="flex gap-2">
+                    <button id="modal-play-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <i class="ph ph-play mr-1"></i> Reproducir
+                    </button>
+                    <button id="modal-delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <i class="ph ph-trash mr-1"></i> Borrar
+                    </button>
+                </div>
+                <div class="flex gap-2">
+                    <button id="modal-close-btn" class="bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                        Cancelar
+                    </button>
+                    <button id="modal-save-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Alerta/Confirmación --><div id="confirm-modal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50 opacity-0 invisible" aria-hidden="true">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-sm transform scale-95 transition-all text-gray-900 dark:text-white">
+            <h3 id="confirm-modal-title" class="text-xl font-semibold mb-4"></h3>
+            <p id="confirm-modal-message" class="text-gray-700 dark:text-gray-300 mb-6"></p>
+            <div class="flex justify-end gap-3">
+                <button id="confirm-modal-cancel" class="bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                    Cancelar
+                </button>
+                <button id="confirm-modal-ok" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                    Aceptar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Prompt (Input) --><div id="prompt-modal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50 opacity-0 invisible" aria-hidden="true">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-sm transform scale-95 transition-all text-gray-900 dark:text-white">
+            <h3 id="prompt-modal-title" class="text-xl font-semibold mb-4"></h3>
+            <label id="prompt-modal-label" for="prompt-modal-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"></label>
+            <input type="text" id="prompt-modal-input" class="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+            <div class="flex justify-end gap-3 mt-6">
+                <button id="prompt-modal-cancel" class="bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                    Cancelar
+                </button>
+                <button id="prompt-modal-save" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalles de Playlist --><div id="playlist-details-modal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50 opacity-0 invisible" aria-hidden="true">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md transform scale-95 transition-all text-gray-900 dark:text-white">
+            <h3 class="text-xl font-semibold mb-4">Editar Detalles de Playlist</h3>
+            
+            <input type="hidden" id="playlist-details-old-name">
+            
+            <div class="mb-4">
+                <label for="playlist-details-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nombre:</label>
+                <input type="text" id="playlist-details-name" class="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+
+            <div class="mb-4">
+                <label for="playlist-details-desc" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descripción:</label>
+                <textarea id="playlist-details-desc" rows="3" class="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Añade una descripción..."></textarea>
+            </div>
+
+            <div class="mb-6">
+                <label for="playlist-details-image" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">URL de la Imagen:</label>
+                <input type="text" id="playlist-details-image" class="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="https://ejemplo.com/imagen.png">
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button id="playlist-details-cancel" class="bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                    Cancelar
+                </button>
+                <button id="playlist-details-save" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Barra de Reproducción Profesional (Sticky Footer) --><footer class="h-auto md:h-[90px] bg-white dark:bg-black border-t border-gray-200 dark:border-green-800 shadow-xl p-3 flex flex-col md:flex-row items-center justify-between transition-colors duration-200">
+        
+        <div class="flex items-center justify-between w-full md:w-1/4">
+            <!-- Info de la pista actual -->
+            <div class="flex items-center truncate">
+                <div class="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-md flex-shrink-0 mr-3 flex items-center justify-center">
+                    <i id="now-playing-icon" class="ph-bold ph-music-note text-xl text-green-600 dark:text-green-400"></i>
+                </div>
+                <div class="flex flex-col truncate">
+                    <span id="current-track-name" class="text-gray-900 dark:text-white font-medium truncate">No hay nada en reproducción</span>
+                    <span id="current-artist-name" class="text-gray-500 dark:text-gray-400 text-sm truncate">Reproductor Local</span>
+                </div>
+            </div>
+            <!-- Botón de Menú Móvil -->
+            <button id="mobile-menu-btn" class="p-2 md:hidden text-gray-900 dark:text-white">
+                <i class="ph-bold ph-list text-2xl"></i>
+            </button>
+        </div>
+
+        <div class="flex flex-col items-center justify-center w-full md:w-1/2 px-0 md:px-4 pt-3 md:pt-0">
+            <!-- Controles de Reproducción --><div class="flex items-center gap-4 mb-2">
+                <button id="shuffle-btn" class="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    <i class="ph-bold ph-shuffle text-xl"></i>
+                </button>
+                <button id="prev-track-btn" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <i class="ph-bold ph-skip-back text-2xl"></i>
+                </button>
+                <button id="play-pause-btn" class="text-gray-900 dark:text-white hover:scale-110 transition-transform">
+                    <i id="play-pause-icon" class="ph-bold ph-play-circle text-4xl text-green-600 dark:text-green-500"></i>
+                </button>
+                <button id="next-track-btn" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <i class="ph-bold ph-skip-forward text-2xl"></i>
+                </button>
+                <button id="repeat-btn" class="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    <i class="ph-bold ph-repeat text-xl"></i>
+                </button>
+            </div>
+            <!-- Barra de Progreso --><div class="flex items-center w-full gap-2">
+                <span id="current-time" class="text-xs text-gray-500 dark:text-gray-400">0:00</span>
+                <input type="range" id="progress-bar" min="0" value="0" step="0.01" class="w-full h-1 bg-gray-300 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                <span id="duration-time" class="text-xs text-gray-500 dark:text-gray-400">0:00</span>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-center md:justify-end w-full md:w-1/4 gap-4 pt-3 md:pt-0">
+            <!-- Controles de Volumen --><button id="mute-btn" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <i id="volume-icon" class="ph-bold ph-speaker-high text-xl"></i>
+            </button>
+            <input type="range" id="player-volume-slider" min="0" max="1" step="0.01" value="0.7" class="w-24 h-1 bg-gray-300 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer">
+        </div>
+    </footer>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- REFERENCIAS DEL DOM ---
+            const audioPlayer = new Audio();
+            const fileInput = document.getElementById('file-input');
+            const playlistElement = document.getElementById('playlist');
+            const playlistEmpty = document.getElementById('playlist-empty');
+            const playlistLoading = document.getElementById('playlist-loading'); 
+            const searchPlaylistInput = document.getElementById('search-playlist'); 
+            
+            const libraryDropZone = document.getElementById('view-biblioteca').querySelector('.space-y-4'); 
+            const dropOverlay = document.getElementById('drop-overlay'); 
+            const sortAZBtn = document.getElementById('sort-az-btn');
+            const sortDurationBtn = document.getElementById('sort-duration-btn');
+
+            const playlistHeader = document.getElementById('playlist-header');
+            const playlistHeaderImg = document.getElementById('playlist-header-img');
+            const playlistHeaderName = document.getElementById('playlist-header-name');
+            const playlistHeaderDesc = document.getElementById('playlist-header-desc');
+            const libraryTitle = document.getElementById('library-title');
+
+            const navPlaylistList = document.getElementById('nav-playlist-list');
+            const navNewPlaylistBtn = document.getElementById('nav-new-playlist-btn');
+
+            // Responsive Nav
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const mainNav = document.getElementById('main-nav');
+            const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const viewContents = document.querySelectorAll('.view-content');
+
+            // Video (SOLO MP4)
+            const videoFileInput = document.getElementById('video-file-input');
+            const mp4PlayerContainer = document.getElementById('mp4-player-container');
+            const mp4Player = document.getElementById('mp4-player');
+            const videoError = document.getElementById('video-error');
+
+            // Calendario
+            const calendarGrid = document.getElementById('calendar-grid');
+            const monthYearElement = document.getElementById('month-year');
+            const prevMonthBtn = document.getElementById('prev-month');
+            const nextMonthBtn = document.getElementById('next-month');
+
+            // Ajustes
+            const volumeSliderSettings = document.getElementById('volume-slider'); 
+            const clearPlaylistBtn = document.getElementById('clear-playlist-btn');
+            const clearCalendarBtn = document.getElementById('clear-calendar-btn'); 
+            const themeToggle = document.getElementById('theme-toggle'); 
+            const themeIcon = document.getElementById('theme-icon'); 
+            const backgroundSelect = document.getElementById('background-select'); 
+            const visualizerToggle = document.getElementById('visualizer-toggle'); 
+            const visualizerCanvas = document.getElementById('audio-visualizer-canvas'); 
+
+            // Estadísticas
+            const statsTotalSongs = document.getElementById('stats-total-songs');
+            const statsCurrentTrack = document.getElementById('stats-current-track');
+            const statsTotalPlays = document.getElementById('stats-total-plays');
+            // NUEVO: Referencia al canvas del gráfico
+            const statsChartCanvas = document.getElementById('stats-song-chart');
+
+            // Reproductor Profesional (FOOTER)
+            const nowPlayingIcon = document.getElementById('now-playing-icon');
+            const currentTrackName = document.getElementById('current-track-name');
+            const currentArtistName = document.getElementById('current-artist-name'); 
+            const prevTrackBtn = document.getElementById('prev-track-btn');
+            const playPauseBtn = document.getElementById('play-pause-btn');
+            const playPauseIcon = document.getElementById('play-pause-icon');
+            const nextTrackBtn = document.getElementById('next-track-btn');
+            const shuffleBtn = document.getElementById('shuffle-btn'); 
+            const repeatBtn = document.getElementById('repeat-btn'); 
+            const currentTimeSpan = document.getElementById('current-time');
+            const durationTimeSpan = document.getElementById('duration-time');
+            const progressBar = document.getElementById('progress-bar');
+            const muteBtn = document.getElementById('mute-btn');
+            const volumeIcon = document.getElementById('volume-icon');
+            const playerVolumeSlider = document.getElementById('player-volume-slider'); 
+
+            // Modal del Día
+            const dayModal = document.getElementById('day-modal');
+            const modalDate = document.getElementById('modal-date');
+            const modalSongSelect = document.getElementById('modal-song-select');
+            const modalNoteTextarea = document.getElementById('modal-note-textarea');
+            const modalSaveBtn = document.getElementById('modal-save-btn');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+            const modalPlayBtn = document.getElementById('modal-play-btn');
+            const modalDeleteBtn = document.getElementById('modal-delete-btn');
+
+            // Refs de Modales de Alerta/Prompt
+            const confirmModal = document.getElementById('confirm-modal');
+            const confirmModalTitle = document.getElementById('confirm-modal-title');
+            const confirmModalMessage = document.getElementById('confirm-modal-message');
+            const confirmModalCancel = document.getElementById('confirm-modal-cancel');
+            const confirmModalOk = document.getElementById('confirm-modal-ok');
+
+            const promptModal = document.getElementById('prompt-modal');
+            const promptModalTitle = document.getElementById('prompt-modal-title');
+            const promptModalLabel = document.getElementById('prompt-modal-label');
+            const promptModalInput = document.getElementById('prompt-modal-input');
+            const promptModalCancel = document.getElementById('prompt-modal-cancel');
+            const promptModalSave = document.getElementById('prompt-modal-save');
+
+            // Refs de Modal de Detalles de Playlist
+            const playlistDetailsModal = document.getElementById('playlist-details-modal');
+            const playlistDetailsOldName = document.getElementById('playlist-details-old-name');
+            const playlistDetailsName = document.getElementById('playlist-details-name');
+            const playlistDetailsDesc = document.getElementById('playlist-details-desc');
+            const playlistDetailsImage = document.getElementById('playlist-details-image');
+            const playlistDetailsCancel = document.getElementById('playlist-details-cancel');
+            const playlistDetailsSave = document.getElementById('playlist-details-save');
+            
+            let confirmCallback = null;
+            let promptCallback = null;
+            let playlistDetailsCallback = null;
+
+            // --- ESTADO DE LA APP ---
+            let masterSongList = []; 
+            let currentViewList = []; 
+            let playlists = { 'Biblioteca': { name: 'Biblioteca', description: 'Todas tus canciones', image: '', songs: [] } }; 
+            let currentPlaylistName = 'Biblioteca'; 
+            let currentTrackMasterIndex = -1; 
+            let currentMonth = new Date();
+            let totalPlays = parseInt(localStorage.getItem('mediaPlayerTotalPlays')) || 0;
+            let currentVideoType = 'none'; // 'none', 'mp4'
+            let lastVolume = 0.7; 
+            let calendarData = {}; 
+            let selectedDateKey = null; 
+            let isShuffle = false; 
+            let isRepeat = false; 
+            
+            // NUEVO: Estado para estadísticas de canciones y gráfico
+            let songStats = {};
+            let statsChartInstance = null;
+
+            // Variables de animación
+            let animationCanvas = null;
+            let canvasCtx = null;
+            let currentAnimationLoop = null;
+            let particles = [];
+            let stars = [];
+
+            // Variables del Visualizador de Audio
+            let visualizerCtx = visualizerCanvas.getContext('2d');
+            let audioContext;
+            let analyser;
+            let audioSource;
+            let dataArray;
+            let isAudioContextSetup = false;
+            let isVisualizerEnabled = false;
+
+            // --- FUNCIONES DE UTILIDAD ---
+            function formatTime(seconds) {
+                if (isNaN(seconds)) return '0:00';
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = Math.floor(seconds % 60);
+                return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+            }
+
+            // --- Funciones de Modales Personalizados ---
+            function openModal(modal) {
+                modal.classList.remove('hidden', 'invisible', 'opacity-0');
+                modal.querySelector('div').classList.remove('scale-95');
+                modal.ariaHidden = false;
+            }
+
+            function closeModal(modal) {
+                modal.classList.add('opacity-0', 'invisible');
+                modal.querySelector('div').classList.add('scale-95');
+                modal.ariaHidden = true;
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 200);
+            }
+
+            function openAlertModal(title, message) {
+                confirmModalTitle.textContent = title;
+                confirmModalMessage.textContent = message;
+                confirmModalCancel.classList.add('hidden');
+                confirmModalOk.textContent = 'OK';
+                openModal(confirmModal);
+
+                confirmCallback = () => {
+                    closeModal(confirmModal);
+                    confirmModalCancel.classList.remove('hidden'); 
+                    confirmModalOk.textContent = 'Aceptar';
+                };
+            }
+
+            function openConfirmModal(title, message, callback) {
+                confirmModalTitle.textContent = title;
+                confirmModalMessage.textContent = message;
+                confirmModalCancel.classList.remove('hidden'); 
+                confirmModalOk.textContent = 'Aceptar';
+                openModal(confirmModal);
+                
+                confirmCallback = () => {
+                    callback();
+                    closeModal(confirmModal);
+                };
+            }
+            
+            function openPromptModal(title, label, callback, defaultValue = '') {
+                promptModalTitle.textContent = title;
+                promptModalLabel.textContent = label;
+                promptModalInput.value = defaultValue;
+                openModal(promptModal);
+
+                promptCallback = (value) => {
+                    if (value) { 
+                        callback(value);
+                    }
+                    closeModal(promptModal);
+                };
+            }
+
+            function openPlaylistDetailsModal(playlistName) {
+                const playlist = playlists[playlistName];
+                if (!playlist) return;
+
+                playlistDetailsOldName.value = playlist.name;
+                playlistDetailsName.value = playlist.name;
+                playlistDetailsDesc.value = playlist.description || '';
+                playlistDetailsImage.value = playlist.image || '';
+
+                openModal(playlistDetailsModal);
+
+                playlistDetailsCallback = () => {
+                    const newName = playlistDetailsName.value.trim();
+                    const newDesc = playlistDetailsDesc.value.trim();
+                    const newImage = playlistDetailsImage.value.trim();
+                    const oldName = playlistDetailsOldName.value;
+
+                    if (!newName) {
+                        openAlertModal("Error", "El nombre de la playlist no puede estar vacío.");
+                        return;
+                    }
+
+                    if (newName !== oldName && playlists[newName]) {
+                        openAlertModal("Error", "Ya existe una playlist con ese nombre.");
+                        return;
+                    }
+
+                    if (newName !== oldName) {
+                        delete playlists[oldName];
+                    }
+                    playlists[newName] = {
+                        ...playlist, 
+                        name: newName,
+                        description: newDesc,
+                        image: newImage
+                    };
+                    
+                    if (currentPlaylistName === oldName) {
+                        currentPlaylistName = newName;
+                    }
+
+                    savePlaylistsToStorage();
+                    renderNavPlaylists();
+                    updateCurrentViewAndRender(); 
+                    closeModal(playlistDetailsModal);
+                };
+            }
+            
+            // --- FIN Modales ---
+
+            function getAudioMetadata(file) {
+                return new Promise((resolve, reject) => {
+                    try {
+                        const audio = document.createElement('audio');
+                        const objectUrl = URL.createObjectURL(file);
+                        
+                        audio.addEventListener('loadedmetadata', () => {
+                            resolve({
+                                file: file,
+                                name: file.name,
+                                duration: audio.duration
+                            });
+                            URL.revokeObjectURL(objectUrl);
+                        });
+
+                        audio.addEventListener('error', (e) => {
+                            console.error("Error al leer metadatos de audio:", e);
+                            resolve({ file: file, name: file.name, duration: 0 });
+                            URL.revokeObjectURL(objectUrl);
+                        });
+
+                        audio.src = objectUrl;
+                    } catch (error) {
+                        console.error("Excepción en getAudioMetadata:", error);
+                        reject(error);
+                    }
+                });
+            }
+
+            // --- LÓGICA DE NAVEGACIÓN (VISTAS Y MENÚ MÓVIL) ---
+            mobileMenuBtn.addEventListener('click', () => {
+                mainNav.classList.remove('-translate-x-full');
+                mobileMenuOverlay.classList.remove('hidden');
+            });
+
+            mobileMenuOverlay.addEventListener('click', () => {
+                mainNav.classList.add('-translate-x-full');
+                mobileMenuOverlay.classList.add('hidden');
+            });
+
+            function closeMobileMenu() {
+                mainNav.classList.add('-translate-x-full');
+                mobileMenuOverlay.classList.add('hidden');
+            }
+
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const viewName = button.dataset.view;
+
+                    viewContents.forEach(content => {
+                        content.style.display = 'none';
+                        content.classList.remove('active');
+                    });
+                    
+                    navButtons.forEach(btn => {
+                        btn.classList.remove('bg-green-100', 'text-green-700', 'dark:bg-gray-800', 'dark:text-white');
+                        btn.classList.add('hover:bg-gray-200', 'dark:hover:bg-gray-800', 'text-gray-500', 'dark:text-gray-400', 'hover:text-gray-900', 'dark:hover:text-white');
+                    });
+
+                    const activeView = document.getElementById(`view-${viewName}`);
+                    if (activeView) {
+                        activeView.style.display = 'block';
+                        activeView.classList.add('active'); 
+                    }
+                    button.classList.add('bg-green-100', 'text-green-700', 'dark:bg-gray-800', 'dark:text-white');
+                    button.classList.remove('hover:bg-gray-200', 'dark:hover:bg-gray-800', 'text-gray-500', 'dark:text-gray-400', 'hover:text-gray-900', 'dark:hover:text-white');
+
+                    if (viewName === 'biblioteca') {
+                        currentPlaylistName = 'Biblioteca';
+                        updateCurrentViewAndRender(); 
+                    }
+                    renderNavPlaylists(); 
+
+                    // Detener videos si salimos de la vista de video
+                    if (viewName !== 'video') {
+                        mp4Player.pause();
+                        currentVideoType = 'none';
+                    }
+                    
+                    // NUEVO: Destruir/Crear gráfico al cambiar de vista
+                    if (viewName !== 'estadisticas' && statsChartInstance) {
+                        statsChartInstance.destroy();
+                        statsChartInstance = null;
+                    }
+                    if (viewName === 'estadisticas') {
+                        updateStats();
+                        renderStatsChart();
+                    }
+                    
+                    closeMobileMenu(); // Cierra el menú al cambiar de vista
+                });
+            });
+
+            // --- LÓGICA DE BIBLIOTECA DE AUDIO ---
+            
+            fileInput.addEventListener('change', (event) => {
+                const newFiles = Array.from(event.target.files).filter(file => file.type.startsWith('audio/'));
+                if (newFiles.length === 0) return;
+                processUploadedFiles(newFiles);
+                fileInput.value = null; 
+            });
+
+            libraryDropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropOverlay.classList.remove('hidden');
+            });
+
+            libraryDropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (e.relatedTarget === null || !libraryDropZone.contains(e.relatedTarget)) {
+                    dropOverlay.classList.add('hidden');
+                }
+            });
+
+            libraryDropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropOverlay.classList.add('hidden');
+                
+                const newFiles = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('audio/'));
+                if (newFiles.length > 0) {
+                    processUploadedFiles(newFiles);
+                }
+            });
+
+            async function processUploadedFiles(files) {
+                playlistEmpty.classList.add('hidden');
+                playlistLoading.classList.remove('hidden');
+
+                try {
+                    const promises = files.map(getAudioMetadata);
+                    const newSongs = await Promise.all(promises);
+                    
+                    masterSongList.push(...newSongs);
+                    
+                    if (currentPlaylistName === 'Biblioteca') {
+                        updateCurrentViewAndRender();
+                    }
+                    
+                    updateNavigationButtons();
+                } catch (error) {
+                    console.error("Error procesando archivos:", error);
+                } finally {
+                    playlistLoading.classList.add('hidden');
+                }
+            }
+
+
+            function renderPlaylist() {
+                if (currentViewList.length === 0) {
+                    playlistEmpty.classList.remove('hidden');
+                    playlistElement.innerHTML = '';
+                    updateStats(); 
+                    return;
+                }
+                
+                playlistEmpty.classList.add('hidden');
+                playlistElement.innerHTML = '';
+
+                currentViewList.forEach(({ song, masterIndex }) => {
+                    const li = document.createElement('li');
+                    li.className = 'playlist-item flex justify-between items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors';
+                    li.setAttribute('data-master-index', masterIndex); 
+                    li.setAttribute('draggable', true); 
+
+                    li.innerHTML = `
+                        <div class="flex items-center gap-3 truncate">
+                            <i class="ph ph-music-note text-gray-500"></i>
+                            <div class="flex flex-col truncate">
+                                <span class="track-name truncate">${song.name}</span>
+                                <span class="text-xs text-gray-400">${formatTime(song.duration)}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <button data-index="${masterIndex}" class="play-item-btn ml-2 text-green-600 dark:text-green-400 hover:text-green-500 dark:hover:text-green-300">
+                                <i class="ph ph-play"></i>
+                            </button>
+                            ${currentPlaylistName !== 'Biblioteca' ? 
+                                `<button data-index="${masterIndex}" class="remove-from-playlist-btn ml-2 text-red-500 hover:text-red-700" title="Quitar de esta playlist">
+                                    <i class="ph ph-minus-circle text-lg"></i>
+                                </button>` 
+                                : 
+                                `<button data-index="${masterIndex}" class="remove-item-btn ml-2 text-red-500 hover:text-red-700" title="Eliminar de la biblioteca">
+                                    <i class="ph ph-x-circle text-lg"></i>
+                                </button>`
+                            }
+                        </div>
+                    `;
+                    
+                    const playItemBtn = li.querySelector('.play-item-btn');
+                    playItemBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        playAudioFile(parseInt(e.currentTarget.dataset.index));
+                    });
+                    
+                    const removeItemBtn = li.querySelector('.remove-item-btn');
+                    if (removeItemBtn) {
+                        removeItemBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            removeTrack(parseInt(e.currentTarget.dataset.index));
+                        });
+                    }
+
+                    const removeFromPlaylistBtn = li.querySelector('.remove-from-playlist-btn');
+                    if (removeFromPlaylistBtn) {
+                        removeFromPlaylistBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            removeTrackFromPlaylist(parseInt(e.currentTarget.dataset.index));
+                        });
+                    }
+                    
+                    li.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/plain', masterIndex);
+                        e.dataTransfer.effectAllowed = 'copy';
+                    });
+                    
+                    li.addEventListener('click', () => playAudioFile(masterIndex));
+                    
+                    playlistElement.appendChild(li);
+                });
+                updateStats();
+                updatePlaylistHighlight(); 
+            }
+
+            function updateCurrentViewAndRender() {
+                const filter = searchPlaylistInput.value.toLowerCase();
+                
+                let view;
+                if (currentPlaylistName === 'Biblioteca') {
+                    playlistHeader.classList.add('hidden');
+                    libraryTitle.textContent = "Biblioteca de Audio"; 
+
+                    view = masterSongList.map((song, index) => ({ song, masterIndex: index }));
+                } else {
+                    const playlist = playlists[currentPlaylistName];
+                    if (playlist) {
+                        playlistHeader.classList.remove('hidden');
+                        playlistHeaderImg.src = playlist.image || 'https://placehold.co/150x150/1DB954/white?text=Playlist';
+                        playlistHeaderName.textContent = playlist.name;
+                        playlistHeaderDesc.textContent = playlist.description || 'Haz clic en el lápiz en el menú para añadir una descripción.';
+                        libraryTitle.textContent = "Canciones"; 
+                    }
+                    
+                    const indices = playlist.songs || [];
+                    view = indices.map(index => ({ song: masterSongList[index], masterIndex: index }))
+                                 .filter(item => item.song); 
+                }
+
+                currentViewList = view.filter(({ song }) => song.name.toLowerCase().includes(filter));
+                
+                renderPlaylist();
+            }
+
+
+            function removeTrack(masterIndex) {
+                if (masterIndex < 0 || masterIndex >= masterSongList.length) return;
+
+                masterSongList.splice(masterIndex, 1);
+
+                Object.keys(playlists).forEach(playlistName => {
+                    if (playlistName !== 'Biblioteca') {
+                        playlists[playlistName].songs = playlists[playlistName].songs
+                            .filter(index => index !== masterIndex) 
+                            .map(index => (index > masterIndex ? index - 1 : index)); 
+                    }
+                });
+                
+                if (masterIndex === currentTrackMasterIndex) {
+                    audioPlayer.pause();
+                    audioPlayer.src = '';
+                    currentTrackMasterIndex = -1;
+                    resetPlayerUI();
+                } else if (masterIndex < currentTrackMasterIndex) {
+                    currentTrackMasterIndex--;
+                }
+
+                updateCurrentViewAndRender();
+                updateNavigationButtons();
+                renderCalendar(); 
+            }
+            
+            function removeTrackFromPlaylist(masterIndex) {
+                if (currentPlaylistName === 'Biblioteca' || !playlists[currentPlaylistName]) return;
+
+                playlists[currentPlaylistName].songs = playlists[currentPlaylistName].songs.filter(index => index !== masterIndex);
+                
+                savePlaylistsToStorage(); 
+                updateCurrentViewAndRender();
+            }
+
+            searchPlaylistInput.addEventListener('input', () => {
+                updateCurrentViewAndRender();
+            });
+
+            sortAZBtn.addEventListener('click', () => {
+                currentViewList.sort((a, b) => a.song.name.localeCompare(b.song.name));
+                renderPlaylist();
+            });
+
+            sortDurationBtn.addEventListener('click', () => {
+                currentViewList.sort((a, b) => a.song.duration - b.song.duration);
+                renderPlaylist();
+            });
+
+            function playAudioFile(masterIndex) {
+                if (masterIndex < 0 || masterIndex >= masterSongList.length) {
+                    console.error("Índice de archivo no válido.");
+                    return;
+                }
+                
+                // Detener cualquier video que se esté reproduciendo
+                mp4Player.pause();
+                mp4PlayerContainer.classList.add('hidden');
+                currentVideoType = 'none';
+
+                const file = masterSongList[masterIndex].file;
+                const fileURL = URL.createObjectURL(file);
+                
+                currentTrackMasterIndex = masterIndex;
+                audioPlayer.src = fileURL;
+                
+                setupAudioContext(); // Asegurarse de que el contexto esté listo
+                
+                audioPlayer.play().catch(error => console.error("Error al reproducir audio:", error));
+                
+                const songName = masterSongList[masterIndex].name; // NUEVO: para stats
+                currentTrackName.textContent = songName;
+                currentArtistName.textContent = "Biblioteca Local";
+                nowPlayingIcon.className = 'ph-bold ph-music-note text-xl text-green-600 dark:text-green-400';
+                
+                // NUEVO: Registrar reproducción para estadísticas
+                songStats[songName] = (songStats[songName] || 0) + 1;
+                saveSongStatsToStorage();
+                
+                progressBar.disabled = false;
+                updatePlayPauseButton(true);
+                updatePlaylistHighlight();
+                updateNavigationButtons();
+                updateStats(songName);
+                incrementTotalPlays();
+            }
+
+            function updatePlaylistHighlight() {
+                const items = playlistElement.querySelectorAll('li.playlist-item');
+                items.forEach(item => {
+                    const itemMasterIndex = parseInt(item.dataset.masterIndex);
+                    const playBtnIcon = item.querySelector('.play-item-btn i');
+                    const trackIcon = item.querySelector('.ph-music-note');
+
+                    if (itemMasterIndex === currentTrackMasterIndex && currentVideoType === 'none') {
+                        item.classList.add('bg-green-100', 'dark:bg-green-800', 'text-green-700', 'dark:text-green-300');
+                        trackIcon.classList.replace('text-gray-500', 'text-green-700');
+                        playBtnIcon.classList.replace('ph-play', 'ph-pause');
+                    } else {
+                        item.classList.remove('bg-green-100', 'dark:bg-green-800', 'text-green-700', 'dark:text-green-300');
+                        trackIcon.classList.replace('text-green-700', 'text-gray-500');
+                        playBtnIcon.classList.replace('ph-pause', 'ph-play');
+                    }
+                });
+            }
+
+            function updatePlayPauseButton(isPlaying) {
+                if (isPlaying) {
+                    playPauseIcon.classList.replace('ph-play-circle', 'ph-pause-circle');
+                } else {
+                    playPauseIcon.classList.replace('ph-pause-circle', 'ph-play-circle');
+                }
+            }
+            
+            function updateNavigationButtons() {
+                const hasSongs = masterSongList.length > 0;
+                prevTrackBtn.disabled = !hasSongs && currentVideoType === 'none';
+                nextTrackBtn.disabled = !hasSongs && currentVideoType === 'none';
+            }
+
+            function resetPlayerUI() {
+                currentTrackName.textContent = 'No hay nada en reproducción';
+                currentArtistName.textContent = 'Reproductor Local';
+                nowPlayingIcon.className = 'ph-bold ph-music-note text-xl text-green-600 dark:text-green-400';
+                currentTimeSpan.textContent = '0:00';
+                durationTimeSpan.textContent = '0:00';
+                progressBar.value = 0;
+                progressBar.disabled = false;
+                currentVideoType = 'none';
+                currentTrackMasterIndex = -1;
+                updatePlayPauseButton(false);
+                updateStats('Ninguna');
+                updateNavigationButtons();
+                updatePlaylistHighlight();
+            }
+
+            playPauseBtn.addEventListener('click', () => {
+                if (currentVideoType === 'mp4') {
+                    if (mp4Player.paused) {
+                        mp4Player.play();
+                    } else {
+                        mp4Player.pause();
+                    }
+                } else if (audioPlayer.src) { 
+                    if (audioPlayer.paused) {
+                        setupAudioContext(); // Asegurarse al reanudar
+                        audioPlayer.play().catch(error => console.error("Error al reanudar audio:", error));
+                    } else {
+                        audioPlayer.pause();
+                    }
+                } else if (masterSongList.length > 0) {
+                    playAudioFile(isShuffle ? Math.floor(Math.random() * masterSongList.length) : 0);
+                }
+            });
+
+            function playNextTrack() {
+                if (currentVideoType !== 'none' || masterSongList.length === 0) return;
+                
+                let nextIndex;
+                if (isShuffle) {
+                    nextIndex = Math.floor(Math.random() * masterSongList.length);
+                } else {
+                    if (currentPlaylistName === 'Biblioteca') {
+                        nextIndex = (currentTrackMasterIndex + 1) % masterSongList.length; 
+                    } else {
+                        const currentPlaylistIndices = playlists[currentPlaylistName].songs || [];
+                        if (currentPlaylistIndices.length === 0) return;
+                        const currentIndexInPlaylist = currentPlaylistIndices.indexOf(currentTrackMasterIndex);
+                        nextIndex = currentPlaylistIndices[(currentIndexInPlaylist + 1) % currentPlaylistIndices.length]; 
+                    }
+                }
+                playAudioFile(nextIndex);
+            }
+
+            function playPrevTrack() {
+                if (currentVideoType !== 'none' || masterSongList.length === 0) return;
+
+                let prevIndex;
+                if (isShuffle) {
+                    prevIndex = Math.floor(Math.random() * masterSongList.length);
+                } else {
+                    if (currentPlaylistName === 'Biblioteca') {
+                        prevIndex = (currentTrackMasterIndex - 1 + masterSongList.length) % masterSongList.length; 
+                    } else {
+                        const currentPlaylistIndices = playlists[currentPlaylistName].songs || [];
+                        if (currentPlaylistIndices.length === 0) return;
+                        const currentIndexInPlaylist = currentPlaylistIndices.indexOf(currentTrackMasterIndex);
+                        prevIndex = currentPlaylistIndices[(currentIndexInPlaylist - 1 + currentPlaylistIndices.length) % currentPlaylistIndices.length]; 
+                    }
+                }
+                playAudioFile(prevIndex);
+            }
+
+            prevTrackBtn.addEventListener('click', playPrevTrack);
+            nextTrackBtn.addEventListener('click', playNextTrack);
+
+            shuffleBtn.addEventListener('click', () => {
+                isShuffle = !isShuffle;
+                shuffleBtn.classList.toggle('text-green-500', isShuffle); 
+                shuffleBtn.classList.toggle('text-gray-400', !isShuffle); 
+            });
+
+            repeatBtn.addEventListener('click', () => {
+                isRepeat = !isRepeat;
+                repeatBtn.classList.toggle('text-green-500', isRepeat); 
+                repeatBtn.classList.toggle('text-gray-400', !isRepeat); 
+            });
+
+
+            // --- Eventos de Reproductores (Audio y MP4) ---
+            audioPlayer.addEventListener('timeupdate', () => {
+                if (currentVideoType === 'none' && !isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
+                    progressBar.value = audioPlayer.currentTime / audioPlayer.duration;
+                    currentTimeSpan.textContent = formatTime(audioPlayer.currentTime);
+                }
+            });
+            audioPlayer.addEventListener('loadedmetadata', () => {
+                if (currentVideoType === 'none' && !isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
+                    durationTimeSpan.textContent = formatTime(audioPlayer.duration);
+                    progressBar.max = 1; 
+                    progressBar.value = 0;
+                }
+            });
+            audioPlayer.addEventListener('ended', () => {
+                 if (isRepeat) {
+                    audioPlayer.currentTime = 0;
+                    audioPlayer.play();
+                 } else {
+                    playNextTrack(); // La lógica de 'next' ya maneja el fin de la playlist
+                 }
+            });
+            audioPlayer.addEventListener('play', () => {
+                if (currentVideoType === 'none') updatePlayPauseButton(true);
+            });
+            audioPlayer.addEventListener('pause', () => {
+                 if (currentVideoType === 'none') updatePlayPauseButton(false);
+            });
+
+            // Sincronización del reproductor MP4 con la barra inferior
+            mp4Player.addEventListener('timeupdate', () => {
+                if (currentVideoType === 'mp4' && !isNaN(mp4Player.duration) && mp4Player.duration > 0) {
+                    progressBar.value = mp4Player.currentTime / mp4Player.duration;
+                    currentTimeSpan.textContent = formatTime(mp4Player.currentTime);
+                }
+            });
+            mp4Player.addEventListener('loadedmetadata', () => {
+                if (currentVideoType === 'mp4' && !isNaN(mp4Player.duration) && mp4Player.duration > 0) {
+                    durationTimeSpan.textContent = formatTime(mp4Player.duration);
+                    progressBar.max = 1; 
+                    progressBar.value = 0;
+                }
+            });
+            mp4Player.addEventListener('play', () => {
+                if (currentVideoType === 'mp4') updatePlayPauseButton(true);
+            });
+            mp4Player.addEventListener('pause', () => {
+                if (currentVideoType === 'mp4') updatePlayPauseButton(false);
+            });
+            mp4Player.addEventListener('ended', () => {
+                if (currentVideoType === 'mp4') {
+                    resetPlayerUI();
+                }
+            });
+
+
+            progressBar.addEventListener('input', () => {
+                if (currentVideoType === 'none' && audioPlayer.duration) {
+                    audioPlayer.currentTime = progressBar.value * audioPlayer.duration;
+                } else if (currentVideoType === 'mp4' && mp4Player.duration) {
+                    mp4Player.currentTime = progressBar.value * mp4Player.duration;
+                }
+            });
+
+            // --- LÓGICA DE VIDEO (SOLO MP4 LOCAL) ---
+            videoFileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                videoError.classList.add('hidden');
+
+                if (file && file.type.startsWith('video/')) {
+                    // Pausar todo lo demás
+                    audioPlayer.pause();
+                    mp4Player.pause();
+
+                    const fileURL = URL.createObjectURL(file);
+
+                    // Es un MP4 local
+                    currentVideoType = 'mp4';
+                    mp4PlayerContainer.classList.remove('hidden');
+                    mp4Player.src = fileURL;
+                    mp4Player.play();
+                    
+                    const videoName = `Video: ${file.name}`; // NUEVO: para stats
+                    currentTrackName.textContent = videoName;
+                    currentArtistName.textContent = "Video Local";
+                    nowPlayingIcon.className = 'ph-bold ph-film-strip text-xl text-green-600 dark:text-green-400';
+                    
+                    // NUEVO: Registrar reproducción para estadísticas
+                    songStats[videoName] = (songStats[videoName] || 0) + 1;
+                    saveSongStatsToStorage();
+                    
+                    progressBar.disabled = false;
+                    incrementTotalPlays();
+                    updateStats(videoName);
+                    
+                } else if (file) {
+                    // No es un video
+                    videoError.textContent = "Archivo no válido. Por favor, selecciona un archivo de video.";
+                    videoError.classList.remove('hidden');
+                    currentVideoType = 'none';
+                    mp4PlayerContainer.classList.add('hidden');
+                }
+                
+                videoFileInput.value = null; // Limpiar input
+            });
+            
+            // --- LÓGICA DEL CALENDARIO ---
+            
+            function renderCalendar() {
+                const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+                const year = date.getFullYear();
+                const month = date.getMonth();
+
+                monthYearElement.textContent = date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+                const dayCells = calendarGrid.querySelectorAll('.day-cell, .empty-cell');
+                dayCells.forEach(cell => cell.remove());
+
+                const firstDayOfMonth = (date.getDay() + 6) % 7; 
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                for (let i = 0; i < firstDayOfMonth; i++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.className = 'empty-cell p-2 h-12';
+                    calendarGrid.appendChild(emptyCell);
+                }
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayCell = document.createElement('div');
+                    dayCell.className = 'day-cell relative p-2 h-12 text-center rounded-md cursor-pointer transition-colors duration-200 flex items-center justify-center';
+                    dayCell.textContent = day;
+
+                    const today = new Date();
+                    if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                        dayCell.classList.add('bg-green-600', 'text-white', 'font-bold'); 
+                    } else {
+                         dayCell.classList.add('bg-gray-200', 'dark:bg-gray-800', 'hover:bg-gray-300', 'dark:hover:bg-gray-700');
+                    }
+
+                    const dateKey = `${year}-${month + 1}-${day}`; 
+                    const data = calendarData[dateKey];
+
+                    const indicatorsContainer = document.createElement('div');
+                    indicatorsContainer.className = 'day-indicators';
+                    
+                    if (data) {
+                        if (data.songIndex !== -1 && data.songIndex < masterSongList.length) {
+                            const songIcon = document.createElement('i');
+                            songIcon.className = 'ph-bold ph-music-note-simple';
+                            indicatorsContainer.appendChild(songIcon);
+                        } else if (data.songIndex !== -1) {
+                            data.songIndex = -1;
+                            if (!data.note) delete calendarData[dateKey];
+                            saveCalendarDataToStorage();
+                        }
+                        if (data.note) {
+                            const noteIcon = document.createElement('i');
+                            noteIcon.className = 'ph-bold ph-note-pencil';
+                            indicatorsContainer.appendChild(noteIcon);
+                        }
+                    }
+                    dayCell.appendChild(indicatorsContainer);
+
+                    dayCell.addEventListener('click', () => {
+                        openDayModal(dateKey, day);
+                    });
+
+                    calendarGrid.appendChild(dayCell);
+                }
+            }
+
+            prevMonthBtn.addEventListener('click', () => {
+                currentMonth.setMonth(currentMonth.getMonth() - 1);
+                renderCalendar();
+            });
+
+            nextMonthBtn.addEventListener('click', () => {
+                currentMonth.setMonth(currentMonth.getMonth() + 1);
+                renderCalendar();
+            });
+            
+            // --- LÓGICA DE ESTADÍSTICAS (CON GRÁFICO) ---
+            function updateStats(trackName = null) {
+                statsTotalSongs.textContent = masterSongList.length;
+                if (trackName) {
+                    statsCurrentTrack.textContent = trackName;
+                } else if (currentTrackMasterIndex !== -1) {
+                    statsCurrentTrack.textContent = masterSongList[currentTrackMasterIndex].name;
+                } else if (currentVideoType === 'none') {
+                    statsCurrentTrack.textContent = 'Ninguna';
+                }
+                // Si es un video, el nombre ya se actualizó al cargarlo
+                statsTotalPlays.textContent = totalPlays;
+            }
+
+            function incrementTotalPlays() {
+                totalPlays++;
+                localStorage.setItem('mediaPlayerTotalPlays', totalPlays);
+                updateStats();
+            }
+
+            // NUEVO: Función para guardar estadísticas de canciones
+            function saveSongStatsToStorage() {
+                localStorage.setItem('mediaPlayerSongStats', JSON.stringify(songStats));
+            }
+
+            // NUEVO: Función para renderizar el gráfico
+            function renderStatsChart() {
+                if (statsChartInstance) {
+                    statsChartInstance.destroy();
+                    statsChartInstance = null;
+                }
+                
+                const ctx = statsChartCanvas.getContext('2d');
+                if (!ctx) return;
+
+                // Ordenar datos y tomar el Top 10
+                const sortedStats = Object.entries(songStats).sort(([, a], [, b]) => b - a);
+                const topStats = sortedStats.slice(0, 10);
+                
+                const labels = topStats.map(item => {
+                    // Acortar nombres largos para el gráfico
+                    let name = item[0];
+                    if (name.length > 25) {
+                        return name.substring(0, 22) + '...';
+                    }
+                    return name;
+                });
+                const data = topStats.map(item => item[1]);
+                
+                const isDark = document.documentElement.classList.contains('dark');
+                const tickColor = isDark ? '#e5e7eb' : '#374151'; // gray-200 / gray-700
+                const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
+                statsChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Reproducciones',
+                            data: data,
+                            backgroundColor: 'rgba(16, 185, 129, 0.6)', // green-500
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y', // Hacer el gráfico horizontal para mejor lectura de nombres
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: tickColor,
+                                }
+                            },
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: tickColor,
+                                    precision: 0 // No decimales
+                                },
+                                grid: {
+                                    color: gridColor
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    // Mostrar nombre completo en el tooltip
+                                    title: function(context) {
+                                        return sortedStats[context[0].dataIndex][0];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+
+            // --- LÓGICA DE AJUSTES, VOLUMEN Y TEMA ---
+            
+            function loadSettings() {
+                const savedVolume = localStorage.getItem('mediaPlayerVolume');
+                if (savedVolume !== null) {
+                    const volume = parseFloat(savedVolume);
+                    setVolume(volume);
+                } else {
+                    setVolume(0.7);
+                }
+                
+                const savedTheme = localStorage.getItem('mediaPlayerTheme') || 'dark';
+                const savedBackground = localStorage.getItem('mediaPlayerBackground') || 'default';
+                
+                applyTheme(savedTheme); 
+                applyBackground(savedBackground); 
+                
+                backgroundSelect.value = savedBackground; 
+
+                const savedVisualizer = localStorage.getItem('mediaPlayerVisualizer') === 'true';
+                if (savedVisualizer) {
+                    visualizerToggle.checked = true;
+                    // No se inicia aquí, se inicia al reproducir si está activado
+                }
+
+                loadCalendarDataFromStorage();
+                loadPlaylistsFromStorage();
+                // NUEVO: Cargar estadísticas de canciones
+                songStats = JSON.parse(localStorage.getItem('mediaPlayerSongStats')) || {};
+            }
+
+            function setVolume(volume, save = false) {
+                audioPlayer.volume = volume;
+                mp4Player.volume = volume; // Añadido
+                playerVolumeSlider.value = volume;
+                volumeSliderSettings.value = volume;
+                updateVolumeIcon(volume);
+                
+                if (save) {
+                    localStorage.setItem('mediaPlayerVolume', volume);
+                }
+            }
+            
+            volumeSliderSettings.addEventListener('input', (e) => {
+                const newVolume = parseFloat(e.target.value);
+                setVolume(newVolume, true);
+                lastVolume = newVolume;
+            });
+            
+            playerVolumeSlider.addEventListener('input', (e) => {
+                const newVolume = parseFloat(e.target.value);
+                setVolume(newVolume, true);
+                lastVolume = newVolume;
+            });
+
+            muteBtn.addEventListener('click', () => {
+                const currentVolume = audioPlayer.volume; // Usar audioPlayer como referencia
+                if (currentVolume > 0) {
+                    lastVolume = currentVolume; 
+                    setVolume(0, true); 
+                } else {
+                    setVolume(lastVolume > 0 ? lastVolume : 0.7, true); 
+                }
+            });
+
+            function updateVolumeIcon(volume) {
+                if (volume === 0) {
+                    volumeIcon.className = 'ph-bold ph-speaker-slash text-xl';
+                } else if (volume > 0 && volume < 0.5) {
+                    volumeIcon.className = 'ph-bold ph-speaker-low text-xl';
+                } else {
+                    volumeIcon.className = 'ph-bold ph-speaker-high text-xl';
+                }
+            }
+            
+            clearPlaylistBtn.addEventListener('click', () => {
+                masterSongList = [];
+                currentViewList = [];
+                
+                playlists = { 'Biblioteca': { name: 'Biblioteca', description: 'Todas tus canciones', image: '', songs: [] } }; 
+                savePlaylistsToStorage();
+                renderNavPlaylists();
+                currentPlaylistName = 'Biblioteca';
+                
+                currentTrackMasterIndex = -1;
+                audioPlayer.pause();
+                audioPlayer.src = '';
+                
+                mp4Player.pause();
+                mp4Player.src = '';
+                mp4PlayerContainer.classList.add('hidden');
+                
+                currentVideoType = 'none';
+
+                resetPlayerUI();
+                playlistElement.innerHTML = ''; 
+                playlistEmpty.classList.remove('hidden'); 
+                
+                // NUEVO: Limpiar estadísticas
+                songStats = {};
+                saveSongStatsToStorage();
+                totalPlays = 0;
+                localStorage.setItem('mediaPlayerTotalPlays', totalPlays);
+                
+                updateStats(); 
+                renderCalendar(); 
+            });
+            
+            clearCalendarBtn.addEventListener('click', () => {
+                calendarData = {};
+                saveCalendarDataToStorage();
+                renderCalendar();
+            });
+
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    themeToggle.checked = true;
+                    themeIcon.className = 'ph ph-moon';
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    themeToggle.checked = false;
+                    themeIcon.className = 'ph ph-sun';
+                }
+                localStorage.setItem('mediaPlayerTheme', theme);
+                
+                // NUEVO: Actualizar gráfico si existe
+                if (statsChartInstance) {
+                    renderStatsChart();
+                }
+            }
+
+            themeToggle.addEventListener('change', () => {
+                const newTheme = themeToggle.checked ? 'dark' : 'light';
+                applyTheme(newTheme);
+                applyBackground(backgroundSelect.value);
+            });
+
+            // Funciones de Personalización de Fondo
+            backgroundSelect.addEventListener('change', () => {
+                applyBackground(backgroundSelect.value);
+            });
+
+            function applyBackground(backgroundType) {
+                const navElement = document.querySelector('nav');
+                const mainElement = document.querySelector('main');
+                const footerElement = document.querySelector('footer');
+
+                if (currentAnimationLoop) {
+                    cancelAnimationFrame(currentAnimationLoop);
+                    currentAnimationLoop = null;
+                }
+                
+                document.body.classList.remove('bg-gradient-animated');
+                if (animationCanvas) animationCanvas.style.display = 'none';
+
+                navElement.classList.remove('bg-transparent', 'dark:bg-transparent');
+                mainElement.classList.remove('bg-transparent', 'dark:bg-transparent');
+                footerElement.classList.remove('bg-transparent', 'dark:bg-transparent');
+
+                navElement.classList.add('bg-gray-50', 'dark:bg-black');
+                mainElement.classList.add('bg-gray-100', 'dark:bg-gray-800');
+                footerElement.classList.add('bg-white', 'dark:bg-black');
+
+
+                localStorage.setItem('mediaPlayerBackground', backgroundType);
+
+                const setUITransparent = () => {
+                    navElement.classList.remove('bg-gray-50', 'dark:bg-black');
+                    mainElement.classList.remove('bg-gray-100', 'dark:bg-gray-800');
+                    footerElement.classList.remove('bg-white', 'dark:bg-black');
+
+                    navElement.classList.add('bg-transparent', 'dark:bg-transparent');
+                    mainElement.classList.add('bg-transparent', 'dark:bg-transparent');
+                    footerElement.classList.add('bg-transparent', 'dark:bg-transparent');
+                };
+
+                switch (backgroundType) {
+                    case 'gradient':
+                        document.body.classList.add('bg-gradient-animated');
+                        setUITransparent(); 
+                        break;
+                    case 'particles':
+                        if (!animationCanvas) {
+                            animationCanvas = document.getElementById('animation-canvas');
+                            canvasCtx = animationCanvas.getContext('2d');
+                        }
+                        animationCanvas.style.display = 'block';
+                        initParticles();
+                        animateParticles();
+                        setUITransparent(); 
+                        break;
+                    case 'stars':
+                        if (!animationCanvas) {
+                            animationCanvas = document.getElementById('animation-canvas');
+                            canvasCtx = animationCanvas.getContext('2d');
+                        }
+                        animationCanvas.style.display = 'block';
+                        initStars();
+                        animateStars();
+                        setUITransparent(); 
+                        break;
+                    case 'default':
+                    default:
+                        break;
+                }
+            }
+
+            // --- Lógica de Partículas ---
+            function initParticles() {
+                particles = [];
+                const numParticles = 50;
+                for (let i = 0; i < numParticles; i++) {
+                    particles.push({
+                        x: Math.random() * window.innerWidth,
+                        y: Math.random() * window.innerHeight,
+                        vx: Math.random() * 1 - 0.5,
+                        vy: Math.random() * 1 - 0.5,
+                        radius: Math.random() * 2 + 1
+                    });
+                }
+            }
+
+            function animateParticles() {
+                animationCanvas.width = window.innerWidth;
+                animationCanvas.height = window.innerHeight;
+                const isDark = document.documentElement.classList.contains('dark');
+                canvasCtx.clearRect(0, 0, animationCanvas.width, animationCanvas.height);
+                
+                canvasCtx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(55, 65, 81, 0.5)'; // gray-600
+
+                for (let p of particles) {
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    if (p.x < 0 || p.x > animationCanvas.width) p.vx *= -1;
+                    if (p.y < 0 || p.y > animationCanvas.height) p.vy *= -1;
+
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    canvasCtx.fill();
+                }
+
+                currentAnimationLoop = requestAnimationFrame(animateParticles);
+            }
+
+            // --- Lógica de Estrellas ---
+            function initStars() {
+                stars = [];
+                const numStars = 100;
+                for (let i = 0; i < numStars; i++) {
+                    stars.push({
+                        x: Math.random() * window.innerWidth,
+                        y: Math.random() * window.innerHeight,
+                        z: Math.random() * window.innerWidth // "Profundidad"
+                    });
+                }
+            }
+
+            function animateStars() {
+                animationCanvas.width = window.innerWidth;
+                animationCanvas.height = window.innerHeight;
+                const isDark = document.documentElement.classList.contains('dark');
+                
+                canvasCtx.fillStyle = isDark ? '#0f172a' : '#1e293b'; // slate-900 / slate-800
+                canvasCtx.fillRect(0, 0, animationCanvas.width, animationCanvas.height);
+                
+                canvasCtx.fillStyle = 'white';
+                const centerX = animationCanvas.width / 2;
+                const centerY = animationCanvas.height / 2;
+
+                for (let star of stars) {
+                    star.z -= 1.5; // Velocidad
+
+                    if (star.z <= 0) {
+                        star.z = window.innerWidth;
+                        star.x = Math.random() * window.innerWidth;
+                        star.y = Math.random() * window.innerHeight;
+                    }
+
+                    const k = 128 / star.z;
+                    const px = (star.x - centerX) * k + centerX;
+                    const py = (star.y - centerY) * k + centerY;
+                    const radius = (1 - star.z / window.innerWidth) * 2;
+
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(px, py, radius, 0, Math.PI * 2);
+                    canvasCtx.fill();
+                }
+
+                currentAnimationLoop = requestAnimationFrame(animateStars);
+            }
+
+            // --- Lógica del Visualizador de Audio ---
+            function setupAudioContext() {
+                if (isAudioContextSetup) {
+                    audioContext.resume(); 
+                    return;
+                }
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    audioSource = audioContext.createMediaElementSource(audioPlayer);
+                    
+                    audioSource.connect(analyser);
+                    analyser.connect(audioContext.destination);
+                    
+                    analyser.fftSize = 128; 
+                    const bufferLength = analyser.frequencyBinCount;
+                    dataArray = new Uint8Array(bufferLength);
+                    
+                    isAudioContextSetup = true;
+                    
+                    if (isVisualizerEnabled) {
+                        startVisualizer();
+                    }
+                } catch (e) {
+                    console.error("Error al configurar el AudioContext:", e);
+                }
+            }
+
+            function startVisualizer() {
+                isVisualizerEnabled = true;
+                visualizerCanvas.classList.remove('hidden');
+                requestAnimationFrame(drawVisualizer);
+            }
+
+            function stopVisualizer() {
+                isVisualizerEnabled = false;
+                visualizerCanvas.classList.add('hidden');
+            }
+
+            function drawVisualizer() {
+                if (!isVisualizerEnabled || !isAudioContextSetup || audioPlayer.paused) {
+                    visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+                    if(isVisualizerEnabled) requestAnimationFrame(drawVisualizer); 
+                    return;
+                }
+
+                requestAnimationFrame(drawVisualizer);
+
+                analyser.getByteFrequencyData(dataArray);
+                
+                visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+                
+                const bufferLength = analyser.frequencyBinCount;
+                const barWidth = (visualizerCanvas.width / bufferLength) * 1.5;
+                let barHeight;
+                let x = 0;
+                
+                const isDark = document.documentElement.classList.contains('dark');
+                visualizerCtx.fillStyle = isDark ? 'rgba(16, 185, 129, 0.5)' : 'rgba(5, 150, 105, 0.5)'; // green-500/600 with 50% opacity
+
+                for (let i = 0; i < bufferLength; i++) {
+                    barHeight = (dataArray[i] / 255) * visualizerCanvas.height;
+                    
+                    visualizerCtx.fillRect(
+                        x, 
+                        visualizerCanvas.height - barHeight, 
+                        barWidth, 
+                        barHeight
+                    );
+                    
+                    x += barWidth + 2; 
+                }
+            }
+
+            visualizerToggle.addEventListener('change', () => {
+                if (visualizerToggle.checked) {
+                    setupAudioContext(); 
+                    startVisualizer();
+                    localStorage.setItem('mediaPlayerVisualizer', 'true');
+                } else {
+                    stopVisualizer();
+                    localStorage.setItem('mediaPlayerVisualizer', 'false');
+                }
+            });
+
+            // --- LÓGICA DE GESTIÓN DE PLAYLISTS ---
+
+            function loadPlaylistsFromStorage() {
+                const saved = localStorage.getItem('mediaPlayerPlaylists');
+                if (saved) {
+                    let oldPlaylists = JSON.parse(saved);
+                    Object.keys(oldPlaylists).forEach(name => {
+                        if (name === 'Biblioteca') return; 
+
+                        if (Array.isArray(oldPlaylists[name])) { 
+                            playlists[name] = {
+                                name: name,
+                                description: '',
+                                image: '',
+                                songs: oldPlaylists[name] 
+                            };
+                        } else {
+                            playlists[name] = oldPlaylists[name]; 
+                        }
+                    });
+                }
+                delete playlists['Biblioteca'];
+            }
+
+            function savePlaylistsToStorage() {
+                const { Biblioteca, ...savablePlaylists } = playlists;
+                localStorage.setItem('mediaPlayerPlaylists', JSON.stringify(savablePlaylists));
+            }
+
+            navNewPlaylistBtn.addEventListener('click', () => {
+                openPromptModal('Crear Playlist', 'Introduce el nombre de la nueva playlist:', (name) => {
+                    if (name && name.trim() && !playlists[name]) {
+                        playlists[name] = { 
+                            name: name,
+                            description: '',
+                            image: '',
+                            songs: [] 
+                        };
+                        savePlaylistsToStorage(); 
+                        renderNavPlaylists(); 
+                        
+                        const newBtn = navPlaylistList.querySelector(`[data-playlist-name="${name}"]`);
+                        if (newBtn) newBtn.click();
+
+                    } else if (playlists[name]) {
+                        openAlertModal("Error", "Ya existe una playlist con ese nombre.");
+                    }
+                });
+            });
+
+            function renderNavPlaylists() {
+                navPlaylistList.innerHTML = ''; 
+                
+                Object.keys(playlists).forEach(name => {
+                    if (name === 'Biblioteca') return; 
+
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center justify-between group rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700';
+                    
+                    const a = document.createElement('a');
+                    a.href = '#';
+                    a.className = 'nav-playlist-btn flex-grow truncate p-3 text-sm transition-colors duration-150'; 
+                    a.textContent = name;
+                    a.setAttribute('data-playlist-name', name);
+
+                    if (name === currentPlaylistName) {
+                        a.classList.add('text-green-700', 'dark:text-green-400', 'font-semibold');
+                    } else {
+                        a.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-900', 'dark:hover:text-white');
+                    }
+
+                    a.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        currentPlaylistName = name;
+                        
+                        navButtons.forEach(btn => {
+                            btn.classList.remove('bg-green-100', 'text-green-700', 'dark:bg-gray-800', 'dark:text-white');
+                            btn.classList.add('hover:bg-gray-200', 'dark:hover:bg-gray-800', 'text-gray-500', 'dark:text-gray-400', 'hover:text-gray-900', 'dark:hover:text-white');
+                        });
+                        
+                        renderNavPlaylists(); 
+                        updateCurrentViewAndRender();
+                        
+                        viewContents.forEach(content => content.style.display = 'none');
+                        document.getElementById('view-biblioteca').style.display = 'block';
+                        
+                        closeMobileMenu(); // Cierra el menú al seleccionar playlist
+                    });
+
+                    a.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'copy';
+                        a.classList.add('nav-playlist-drop-target'); 
+                    });
+
+                    a.addEventListener('dragleave', (e) => {
+                        e.preventDefault();
+                        a.classList.remove('nav-playlist-drop-target');
+                    });
+
+                    a.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation(); 
+                        a.classList.remove('nav-playlist-drop-target');
+
+                        try {
+                            const index = parseInt(e.dataTransfer.getData('text/plain'));
+                            const playlistName = e.currentTarget.dataset.playlistName;
+
+                            if (playlists[playlistName] && !playlists[playlistName].songs.includes(index)) {
+                                playlists[playlistName].songs.push(index);
+                                savePlaylistsToStorage();
+                                a.classList.add('bg-green-500', 'text-white');
+                                setTimeout(() => {
+                                    a.classList.remove('bg-green-500', 'text-white');
+                                }, 500);
+                            }
+                        } catch (err) {
+                            console.error("Error al soltar en playlist:", err);
+                        }
+                    });
+
+                    const controls = document.createElement('div');
+                    controls.className = 'hidden group-hover:flex items-center flex-shrink-0 pr-2';
+                    
+                    controls.innerHTML = `
+                        <button class="rename-playlist-btn p-1 text-gray-400 hover:text-blue-500" title="Editar detalles">
+                            <i class="ph-bold ph-pencil-simple text-base"></i>
+                        </button>
+                        <button class="delete-playlist-btn p-1 text-gray-400 hover:text-red-500" title="Eliminar">
+                            <i class="ph-bold ph-trash text-base"></i>
+                        </button>
+                    `;
+
+                    controls.querySelector('.rename-playlist-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openPlaylistDetailsModal(name);
+                    });
+                    controls.querySelector('.delete-playlist-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deletePlaylist(name);
+                    });
+
+                    li.appendChild(a);
+                    li.appendChild(controls);
+                    navPlaylistList.appendChild(li);
+                });
+            }
+
+            function deletePlaylist(name) {
+                openConfirmModal('Eliminar Playlist', `¿Estás seguro de que quieres eliminar la playlist "${name}"? Esta acción no se puede deshacer.`, () => {
+                    delete playlists[name];
+                    savePlaylistsToStorage();
+                    
+                    if (currentPlaylistName === name) {
+                        document.querySelector('.nav-btn[data-view="biblioteca"]').click(); 
+                    } else {
+                        renderNavPlaylists(); 
+                    }
+                });
+            }
+            
+            // --- LÓGICA DEL MODAL DEL DÍA ---
+
+            function loadCalendarDataFromStorage() {
+                calendarData = JSON.parse(localStorage.getItem('mediaPlayerCalendarData')) || {};
+            }
+
+            function saveCalendarDataToStorage() {
+                localStorage.setItem('mediaPlayerCalendarData', JSON.stringify(calendarData));
+            }
+
+            function openDayModal(dateKey, day) {
+                selectedDateKey = dateKey;
+                const date = new Date(dateKey);
+                modalDate.textContent = date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+                
+                modalSongSelect.innerHTML = '<option value="-1">-- Ninguna canción vinculada --</option>';
+                masterSongList.forEach((song, index) => {
+                    const option = document.createElement('option');
+                    option.value = index; 
+                    option.textContent = song.name;
+                    modalSongSelect.appendChild(option);
+                });
+
+                const data = calendarData[dateKey];
+                if (data) {
+                    if (data.songIndex !== -1 && data.songIndex < masterSongList.length) {
+                        modalSongSelect.value = data.songIndex;
+                        modalPlayBtn.disabled = false;
+                    } else {
+                        modalSongSelect.value = -1;
+                        modalPlayBtn.disabled = true;
+                    }
+                    modalNoteTextarea.value = data.note || '';
+                    modalDeleteBtn.disabled = false;
+                } else {
+                    modalSongSelect.value = -1;
+                    modalNoteTextarea.value = '';
+                    modalPlayBtn.disabled = true;
+                    modalDeleteBtn.disabled = true;
+                }
+                
+                openModal(dayModal);
+            }
+
+            function closeDayModal() {
+                selectedDateKey = null;
+                closeModal(dayModal);
+            }
+
+            modalCloseBtn.addEventListener('click', closeDayModal);
+            
+            modalSaveBtn.addEventListener('click', () => {
+                const songIndex = parseInt(modalSongSelect.value);
+                const note = modalNoteTextarea.value.trim();
+
+                if (songIndex !== -1 || note) {
+                    calendarData[selectedDateKey] = { songIndex, note };
+                } else {
+                    delete calendarData[selectedSDateKey];
+                }
+                
+                saveCalendarDataToStorage(); 
+                renderCalendar(); 
+                closeDayModal(); 
+            }); 
+
+            modalPlayBtn.addEventListener('click', () => {
+                const songIndex = parseInt(modalSongSelect.value);
+                if (songIndex !== -1) {
+                    playAudioFile(songIndex);
+                    const bibliotecaBtn = document.querySelector('.nav-btn[data-view="biblioteca"]');
+                    if(bibliotecaBtn) bibliotecaBtn.click();
+                    closeDayModal();
+                }
+            });
+
+            modalDeleteBtn.addEventListener('click', () => {
+                if (selectedDateKey) {
+                    delete calendarData[selectedDateKey];
+                    saveCalendarDataToStorage();
+                    renderCalendar();
+                    closeDayModal();
+                }
+            });
+
+            dayModal.addEventListener('click', (e) => {
+                if (e.target === dayModal) {
+                    closeDayModal();
+                }
+            });
+
+            // --- Listeners para Modales (Alerta, Prompt, Detalles) ---
+            confirmModalOk.addEventListener('click', () => {
+                if (confirmCallback) confirmCallback();
+                confirmCallback = null;
+            });
+            confirmModalCancel.addEventListener('click', () => {
+                closeModal(confirmModal);
+                confirmCallback = null;
+            });
+            confirmModal.addEventListener('click', (e) => {
+                if (e.target === confirmModal) {
+                    closeModal(confirmModal);
+                    confirmCallback = null;
+                }
+            });
+
+            promptModalSave.addEventListener('click', () => {
+                if (promptCallback) promptCallback(promptModalInput.value);
+                promptCallback = null;
+            });
+            promptModalCancel.addEventListener('click', () => {
+                closeModal(promptModal);
+                promptCallback = null;
+            });
+            promptModal.addEventListener('click', (e) => {
+                if (e.target === promptModal) {
+                    closeModal(promptModal);
+                    promptCallback = null;
+                }
+            });
+
+            playlistDetailsSave.addEventListener('click', () => {
+                if (playlistDetailsCallback) playlistDetailsCallback();
+            });
+            playlistDetailsCancel.addEventListener('click', () => {
+                closeModal(playlistDetailsModal);
+                playlistDetailsCallback = null;
+            });
+            playlistDetailsModal.addEventListener('click', (e) => {
+                if (e.target === playlistDetailsModal) {
+                    closeModal(playlistDetailsModal);
+                    playlistDetailsCallback = null;
+                }
+            });
+
+            // --- Resize handler para canvas ---
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    const currentBg = backgroundSelect.value;
+                    if (currentBg === 'particles') {
+                        initParticles(); 
+                    } else if (currentBg === 'stars') {
+                        initStars(); 
+                    }
+                }, 250); 
+            });
+
+
+            // --- INICIALIZACIÓN ---
+            loadSettings(); 
+            renderCalendar();
+            renderNavPlaylists(); 
+            updateCurrentViewAndRender(); 
+            updateStats(); 
+            updatePlayPauseButton(false);
+            updateNavigationButtons(); 
+
+        }); 
+    </script>
+
+</body>
+</html>
+
