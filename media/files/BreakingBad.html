@@ -1,0 +1,1915 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Breaking Bad: La Guía Maestra</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet CSS (Mapas) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto+Condensed:wght@300;400;700&family=Rock+Salt&family=Covered+By+Your+Grace&family=Special+Elite&display=swap" rel="stylesheet">
+
+    <script>
+        window.handleImgError = function(imgElement) {
+            imgElement.onerror = null; 
+            const width = imgElement.width || 300;
+            const height = imgElement.height || 200;
+            imgElement.src = `https://placehold.co/${width}x${height}/1e293b/22c55e?text=No+Signal`;
+        };
+    </script>
+
+    <style>
+        /* --- ESTILOS BASE & TIPOGRAFÍA --- */
+        body {
+            font-family: 'Roboto Condensed', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #e2e8f0;
+            padding-bottom: 120px;
+            -webkit-tap-highlight-color: transparent;
+            transition: filter 0.5s ease;
+            overflow-x: hidden;
+        }
+        
+        .brand-font { font-family: 'Oswald', sans-serif; }
+        .handwritten-font { font-family: 'Rock Salt', cursive; }
+        .saul-font { font-family: 'Covered By Your Grace', cursive; }
+        .files-font { font-family: 'Special Elite', cursive; } 
+
+        /* Animaciones de Entrada */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.8s ease-out forwards; }
+
+        .periodic-element {
+            display: inline-block;
+            background-color: #15803d; /* Green 700 */
+            color: white;
+            padding: 2px 8px;
+            font-weight: bold;
+            border: 2px solid white;
+            margin-right: 2px;
+            box-shadow: 0 0 10px rgba(21, 128, 61, 0.5);
+            cursor: default;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+        .periodic-element:hover { transform: scale(1.1); }
+
+        .smoke-bg {
+            background-image: url('https://www.transparenttextures.com/patterns/black-scales.png');
+            background-attachment: fixed;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #15803d; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #22c55e; }
+
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(34, 197, 94, 0.2);
+            border-color: #22c55e;
+        }
+
+        .map-container {
+            width: 100%;
+            border-radius: 0.5rem;
+            z-index: 1;
+        }
+
+        /* Spoiler CSS */
+        .spoiler-overlay {
+            backdrop-filter: blur(12px);
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+        
+        .censored-text {
+            color: transparent;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+            background-color: #333;
+            user-select: none;
+            border-radius: 4px;
+        }
+
+        .stamp {
+            transform: rotate(-15deg);
+            border: 0.25rem solid #ef4444;
+            color: #ef4444;
+            padding: 0.5rem 1rem;
+            font-family: 'Oswald', sans-serif;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: inline-block;
+            opacity: 0.8;
+            mask-image: url('https://www.transparenttextures.com/patterns/black-scales.png'); 
+        }
+        
+        .play-overlay { opacity: 0; transition: opacity 0.3s ease; }
+        @media (hover: none) { .play-overlay { opacity: 1; background-color: rgba(0,0,0,0.2); } }
+        .group:hover .play-overlay { opacity: 1; }
+
+        /* Music Player Styles */
+        .music-equalizer span {
+            display: inline-block; width: 3px; background-color: #22c55e; animation: equalize 1s infinite;
+        }
+        .music-equalizer span:nth-child(1) { animation-delay: 0.1s; height: 10px; }
+        .music-equalizer span:nth-child(2) { animation-delay: 0.3s; height: 15px; }
+        .music-equalizer span:nth-child(3) { animation-delay: 0.6s; height: 8px; }
+        .music-equalizer span:nth-child(4) { animation-delay: 0.2s; height: 12px; }
+
+        @keyframes equalize { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.5); } }
+
+        .player-progress { transition: width 0.5s linear; }
+
+        /* SETTINGS WHEEL & THEMES */
+        .settings-btn {
+            position: fixed; bottom: 100px; right: 20px; z-index: 80;
+            width: 50px; height: 50px; background-color: #1e293b; border: 2px solid #f59e0b;
+            border-radius: 50%; color: #f59e0b; display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: all 0.3s ease; cursor: pointer;
+        }
+        .settings-btn:hover { transform: rotate(90deg) scale(1.1); background-color: #f59e0b; color: #1e293b; }
+
+        /* BURNER PHONE STYLE */
+        .burner-phone-btn {
+            position: fixed; bottom: 160px; right: 20px; z-index: 80;
+            width: 50px; height: 50px; background-color: #000; border: 2px solid #4ade80;
+            border-radius: 12px; color: #4ade80; display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3); transition: all 0.3s ease;
+            cursor: pointer; animation: pulse-green 2s infinite;
+        }
+        .burner-phone-btn:hover { transform: scale(1.1); background-color: #111; }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+        }
+        .burner-notification {
+            position: absolute; top: -5px; right: -5px; background-color: #ef4444;
+            color: white; font-size: 0.7rem; font-weight: bold; width: 20px; height: 20px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #000;
+        }
+
+        /* FILTROS VISUALES */
+        body.mexico-mode { filter: sepia(0.8) hue-rotate(-10deg) saturate(1.5) contrast(1.1); }
+        body.mexico-mode .leaflet-layer { filter: sepia(0.5); }
+        body.meth-mode { filter: contrast(1.2) brightness(1.1); }
+        body.meth-mode::after {
+            content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 9999; background-size: 100% 2px, 3px 100%; pointer-events: none;
+        }
+        
+        body.heisenberg-mode { filter: invert(1) hue-rotate(180deg); }
+
+        /* Crystal Cursor */
+        body.crystal-cursor, body.crystal-cursor a, body.crystal-cursor button {
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="%2306b6d4" stroke="white" stroke-width="2"><path d="M12 2l10 10-10 10L2 12z"/></svg>') 12 12, auto !important;
+        }
+
+        /* The Fly Animation */
+        .the-fly {
+            position: fixed; width: 30px; height: 30px; color: #000; text-shadow: 0 0 2px white;
+            pointer-events: none; z-index: 9998; animation: flyMove 8s infinite linear;
+            opacity: 0; transition: opacity 0.3s; display: flex; align-items: center; justify-content: center; font-size: 24px;
+        }
+        body.fly-mode .the-fly { opacity: 1; }
+        @keyframes flyMove {
+            0% { top: 10%; left: 10%; transform: rotate(0deg); }
+            50% { top: 80%; left: 80%; transform: rotate(180deg); }
+            100% { top: 10%; left: 10%; transform: rotate(360deg); }
+        }
+
+        /* Money Rain Animation */
+        .money-bill { position: fixed; top: -50px; color: #85bb65; font-size: 24px; z-index: 90; animation: fall linear infinite; }
+        @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+        /* Settings Panel */
+        #settings-panel { transform: translateX(100%); transition: transform 0.3s ease-in-out; }
+        #settings-panel.open { transform: translateX(0); }
+
+        /* Switch Toggle Custom Style */
+        .toggle-checkbox:checked { right: 0; border-color: #10B981; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #10B981; }
+
+        /* --- ESTILOS DE TARJETA DE CRISTAL (CITAS) --- */
+        .crystal-card {
+            background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .crystal-card:hover { transform: translateY(-5px); border-color: rgba(56, 189, 248, 0.5); }
+
+        .bubbles { position: absolute; width: 100%; height: 100%; z-index: 0; overflow: hidden; top: 0; left: 0; pointer-events: none; }
+        .bubble {
+            position: absolute; bottom: -10px; background-color: rgba(56, 189, 248, 0.3);
+            border-radius: 50%; animation: rise 4s infinite ease-in;
+        }
+        @keyframes rise {
+            0% { bottom: -10px; transform: translateX(0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { bottom: 100%; transform: translateX(-20px); opacity: 0; }
+        }
+
+        .chemical-loader {
+            border: 3px solid rgba(56, 189, 248, 0.1); border-left-color: #38bdf8;
+            border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite;
+        }
+        
+        /* Lab Animations */
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* DRAG AND DROP STYLES */
+        .draggable-item { cursor: grab; transition: transform 0.2s; }
+        .draggable-item:active { cursor: grabbing; transform: scale(0.95); }
+        .drop-zone { transition: all 0.3s; }
+        .drop-zone.drag-over { border-color: #22c55e; background-color: rgba(34, 197, 94, 0.1); transform: scale(1.05); }
+
+        /* NFPA 704 Diamond */
+        .nfpa-diamond {
+            position: relative; width: 60px; height: 60px; transform: rotate(45deg);
+            border: 1px solid rgba(255,255,255,0.1); margin: 10px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+        }
+        .nfpa-quadrant {
+            position: absolute; width: 50%; height: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-family: sans-serif; font-size: 12px; transform: rotate(-45deg); color: black;
+        }
+        .nfpa-blue { top: 0; left: 0; background-color: #4285F4; }
+        .nfpa-red { top: 0; right: 0; background-color: #EA4335; }
+        .nfpa-yellow { bottom: 0; right: 0; background-color: #FBBC05; }
+        .nfpa-white { bottom: 0; left: 0; background-color: white; }
+
+        /* Timeline Styles */
+        .timeline-item { padding-bottom: 2rem; border-left: 2px solid #334155; position: relative; padding-left: 2rem; }
+        .timeline-item:last-child { border-left: 2px solid transparent; }
+        .timeline-dot {
+            width: 12px; height: 12px; background-color: #15803d; border-radius: 50%;
+            position: absolute; left: -7px; top: 5px; border: 2px solid #0f172a; transition: all 0.3s;
+        }
+        .timeline-item:hover .timeline-dot { background-color: #22c55e; transform: scale(1.5); }
+    </style>
+</head>
+<body class="smoke-bg min-h-screen flex flex-col">
+
+    <!-- La Mosca (Visual) -->
+    <div class="the-fly"><i class="fas fa-bug"></i></div>
+    
+    <!-- Lluvia de Dinero (Visual) -->
+    <div id="money-rain-container"></div>
+
+    <!-- Navegación Principal -->
+    <nav class="bg-slate-900/95 backdrop-blur-md sticky top-0 z-50 border-b border-green-800 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center cursor-pointer" onclick="app.navigate('home')">
+                    <div class="flex text-2xl font-bold brand-font tracking-wider">
+                        <span class="periodic-element">Br</span>eaking
+                        <span class="ml-2 periodic-element">Ba</span>d
+                        <span class="ml-2 text-green-500 hidden xs:inline">Guide</span>
+                    </div>
+                </div>
+                
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <button onclick="app.navigate('characters')" class="hover:bg-green-800 px-3 py-2 rounded-md text-sm font-medium transition">Personajes</button>
+                        <button onclick="app.navigate('seasons')" class="hover:bg-green-800 px-3 py-2 rounded-md text-sm font-medium transition">Temporadas</button>
+                        <button onclick="app.navigate('scenes')" class="hover:bg-green-800 px-3 py-2 rounded-md text-sm font-medium transition text-yellow-400">Escenas</button>
+                        <button onclick="app.navigate('timeline')" class="hover:bg-green-800 px-3 py-2 rounded-md text-sm font-medium transition">Cronología</button>
+                        <button onclick="app.navigate('map')" class="hover:bg-green-800 px-3 py-2 rounded-md text-sm font-medium transition">Mapa ABQ</button>
+                        <button onclick="app.navigate('lab')" class="hover:bg-green-800 px-3 py-2 rounded-md text-sm font-medium transition text-blue-400 font-bold"><i class="fas fa-flask mr-1"></i> Lab</button>
+                        <button onclick="app.navigate('businesses')" class="hover:bg-green-800 px-3 py-2 rounded-md text-sm font-medium transition">Negocios</button>
+                        <button onclick="app.navigate('chemistry')" class="hover:bg-green-800 px-3 py-2 rounded-md text-sm font-medium transition">Química</button>
+                    </div>
+                </div>
+                
+                <div class="-mr-2 flex md:hidden">
+                    <button onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="bg-green-900 p-3 rounded-md hover:text-white focus:outline-none active:bg-green-800 transition">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="hidden md:hidden bg-slate-800 border-b border-green-800/30" id="mobile-menu">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 shadow-inner">
+                <button onclick="app.navigate('characters')" class="text-gray-300 hover:bg-green-700 hover:text-white block px-3 py-3 rounded-md text-base font-medium w-full text-left active:bg-green-800"><i class="fas fa-user-friends w-6 text-center"></i> Personajes</button>
+                <button onclick="app.navigate('seasons')" class="text-gray-300 hover:bg-green-700 hover:text-white block px-3 py-3 rounded-md text-base font-medium w-full text-left active:bg-green-800"><i class="fas fa-tv w-6 text-center"></i> Temporadas</button>
+                <button onclick="app.navigate('scenes')" class="text-gray-300 hover:bg-green-700 hover:text-white block px-3 py-3 rounded-md text-base font-medium w-full text-left active:bg-green-800"><i class="fas fa-film w-6 text-center"></i> Escenas</button>
+                <button onclick="app.navigate('timeline')" class="text-gray-300 hover:bg-green-700 hover:text-white block px-3 py-3 rounded-md text-base font-medium w-full text-left active:bg-green-800"><i class="fas fa-clock w-6 text-center"></i> Cronología</button>
+                <button onclick="app.navigate('map')" class="text-gray-300 hover:bg-green-700 hover:text-white block px-3 py-3 rounded-md text-base font-medium w-full text-left active:bg-green-800"><i class="fas fa-map-marker-alt w-6 text-center"></i> Mapa ABQ</button>
+                <button onclick="app.navigate('lab')" class="text-blue-400 hover:bg-green-700 hover:text-white block px-3 py-3 rounded-md text-base font-medium w-full text-left active:bg-green-800"><i class="fas fa-flask w-6 text-center"></i> El Laboratorio</button>
+                <button onclick="app.navigate('businesses')" class="text-gray-300 hover:bg-green-700 hover:text-white block px-3 py-3 rounded-md text-base font-medium w-full text-left active:bg-green-800"><i class="fas fa-briefcase w-6 text-center"></i> Negocios</button>
+                <button onclick="app.navigate('chemistry')" class="text-gray-300 hover:bg-green-700 hover:text-white block px-3 py-3 rounded-md text-base font-medium w-full text-left active:bg-green-800"><i class="fas fa-atom w-6 text-center"></i> Química</button>
+                <button onclick="app.navigate('quotes')" class="text-gray-300 hover:bg-green-700 hover:text-white block px-3 py-3 rounded-md text-base font-medium w-full text-left active:bg-green-800"><i class="fas fa-quote-right w-6 text-center"></i> Citas</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- AJUSTES FLOTANTES -->
+    <button onclick="settingsController.toggle()" class="settings-btn" title="Configuración del Laboratorio">
+        <i class="fas fa-cog"></i>
+    </button>
+
+    <!-- BURNER PHONE -->
+    <button onclick="burnerPhoneController.open()" class="burner-phone-btn" title="Teléfono Desechable">
+        <i class="fas fa-mobile-alt"></i>
+        <div id="burner-badge" class="burner-notification hidden">!</div>
+    </button>
+
+    <!-- MODAL BURNER PHONE -->
+    <div id="burner-modal" class="fixed inset-0 z-[95] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="burnerPhoneController.close()"></div>
+        <div class="flex min-h-full items-end sm:items-center justify-center p-4 text-center pointer-events-none">
+            <div class="relative pointer-events-auto transform transition-all w-full max-w-sm">
+                 <div class="bg-gray-800 border-4 border-gray-600 rounded-3xl p-2 shadow-2xl">
+                    <div class="bg-black rounded-xl overflow-hidden h-[500px] relative flex flex-col">
+                        <div class="bg-gray-900 p-2 flex justify-between items-center border-b border-gray-800">
+                            <span class="text-xs text-green-500"><i class="fas fa-signal"></i> 3G</span>
+                            <span class="text-xs text-green-500">10:08 AM</span>
+                            <span class="text-xs text-green-500"><i class="fas fa-battery-three-quarters"></i></span>
+                        </div>
+                        <div id="phone-screen" class="flex-1 p-4 overflow-y-auto space-y-3 font-mono text-green-400 text-sm text-left">
+                            <div class="text-center text-xs text-gray-600 mb-4">--- Hoy ---</div>
+                        </div>
+                        <div class="bg-gray-900 p-2 border-t border-gray-800">
+                             <div class="bg-black border border-green-900 rounded px-2 py-1 text-xs text-gray-500">Escribir mensaje...</div>
+                        </div>
+                    </div>
+                    <div class="h-12 flex items-center justify-center">
+                        <button onclick="burnerPhoneController.close()" class="w-10 h-10 rounded-full border-2 border-gray-600 bg-gray-700 hover:bg-gray-600"></button>
+                    </div>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL DE AJUSTES -->
+    <div id="settings-panel" class="fixed top-0 right-0 h-full w-80 bg-slate-900 border-l border-yellow-600 shadow-2xl z-[100] p-6 overflow-y-auto">
+        <div class="flex justify-between items-center mb-8 border-b border-yellow-600/30 pb-4">
+            <h3 class="text-2xl font-bold text-white brand-font flex items-center">
+                <i class="fas fa-flask text-yellow-500 mr-2"></i> Lab Controls
+            </h3>
+            <button onclick="settingsController.toggle()" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <div class="space-y-6">
+            <div class="pb-4 border-b border-slate-700">
+                <h5 class="text-xs text-green-500 uppercase font-bold mb-3 tracking-widest">Visuales</h5>
+                <div class="flex items-center justify-between mb-4">
+                    <div><h4 class="text-white font-bold text-sm">Filtro "México"</h4><p class="text-xs text-gray-500">Sepia Intenso</p></div>
+                    <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" onchange="settingsController.toggleMexico(this.checked)" class="sr-only peer"><div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-600"></div></label>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div><h4 class="text-white font-bold text-sm">Efecto "Blue Sky"</h4><p class="text-xs text-gray-500">Modo CRT</p></div>
+                    <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" onchange="settingsController.toggleMeth(this.checked)" class="sr-only peer"><div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500"></div></label>
+                </div>
+            </div>
+
+            <div class="pb-4 border-b border-slate-700">
+                <h5 class="text-xs text-green-500 uppercase font-bold mb-3 tracking-widest">Extras</h5>
+                <div class="flex items-center justify-between mb-4">
+                    <div><h4 class="text-white font-bold text-sm">Contaminación</h4><p class="text-xs text-gray-500">Alerta: Mosca</p></div>
+                    <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" onchange="settingsController.toggleFly(this.checked)" class="sr-only peer"><div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-600"></div></label>
+                </div>
+                <div class="flex items-center justify-between mb-4">
+                    <div><h4 class="text-white font-bold text-sm">Lluvia de Dinero</h4><p class="text-xs text-gray-500">Almacén de Huell</p></div>
+                    <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" onchange="settingsController.toggleMoney(this.checked)" class="sr-only peer"><div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div></label>
+                </div>
+                 <div class="flex items-center justify-between mb-4">
+                    <div><h4 class="text-white font-bold text-sm">Cursor de Cristal</h4><p class="text-xs text-gray-500">Puntero 99.1% Puro</p></div>
+                    <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" onchange="settingsController.toggleCursor(this.checked)" class="sr-only peer"><div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div></label>
+                </div>
+            </div>
+            <div class="pt-4 border-t border-slate-700 mt-4">
+                 <button onclick="location.reload()" class="w-full bg-red-900/50 hover:bg-red-700 text-red-200 border border-red-600 font-bold py-3 rounded flex items-center justify-center transition group">
+                     <i class="fas fa-radiation-alt mr-2 group-hover:animate-spin"></i> DEA RAID (Reset)
+                 </button>
+            </div>
+        </div>
+        <div class="absolute bottom-4 left-0 w-full text-center"><p class="text-[10px] text-gray-600 font-mono">PROPERTY OF GALE BOETTICHER</p></div>
+    </div>
+
+    <!-- MODAL DE PERSONAJE (MEJORADO: SCROLL + FOTOS) -->
+    <div id="char-modal" class="fixed inset-0 z-[90] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-black/90 backdrop-blur-md transition-opacity cursor-pointer" onclick="charactersController.closeDetail()"></div>
+        <div class="flex min-h-full items-center justify-center p-2 md:p-4 pointer-events-none">
+            <div class="relative pointer-events-auto transform overflow-hidden rounded-2xl bg-slate-900 text-left shadow-2xl transition-all w-full max-w-5xl border border-green-600/50 flex flex-col md:flex-row h-[90vh]">
+                <button onclick="charactersController.closeDetail()" class="absolute top-4 right-4 z-30 text-white bg-black/60 rounded-full p-3 hover:bg-red-600 transition-colors shadow-lg backdrop-blur-sm">
+                    <i class="fas fa-times text-xl w-6 h-6 flex items-center justify-center"></i>
+                </button>
+                <div id="char-modal-content" class="flex flex-col md:flex-row w-full h-full overflow-hidden">
+                    <!-- Inyectado por JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MODAL DE QUÍMICA -->
+    <div id="chem-modal" class="fixed inset-0 z-[95] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-900/95 backdrop-blur-sm transition-opacity" onclick="chemistryController.closeDetail()"></div>
+        <div class="flex min-h-full items-center justify-center p-4 pointer-events-none">
+            <div class="relative pointer-events-auto w-full max-w-2xl bg-slate-800 border-2 border-blue-500/30 rounded-xl shadow-2xl overflow-hidden transform transition-all">
+                <div class="bg-slate-900 p-6 border-b border-slate-700 flex justify-between items-start relative overflow-hidden">
+                    <div class="absolute top-0 right-0 opacity-10 text-9xl text-white transform translate-x-1/4 -translate-y-1/4 pointer-events-none">
+                        <i id="chem-modal-icon" class="fas fa-flask"></i>
+                    </div>
+                    <div>
+                        <div class="text-blue-400 font-mono text-xs mb-1">CAS: <span id="chem-modal-cas">00-00-0</span></div>
+                        <h3 class="text-3xl font-bold text-white brand-font mb-1" id="chem-modal-title">Sustancia</h3>
+                        <div class="inline-block bg-slate-700 px-2 py-1 rounded text-white font-mono text-sm border border-slate-600" id="chem-modal-formula">H2O</div>
+                    </div>
+                    <button onclick="chemistryController.closeDetail()" class="text-gray-400 hover:text-white z-10 bg-slate-800 rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-500 transition"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="flex flex-col items-center justify-center border-r border-slate-700/50 pr-6">
+                        <div class="text-xs text-gray-400 uppercase tracking-widest mb-4 text-center">Diamante NFPA</div>
+                        <div class="nfpa-diamond mb-4">
+                            <div class="nfpa-quadrant nfpa-blue" id="nfpa-health">0</div>
+                            <div class="nfpa-quadrant nfpa-red" id="nfpa-fire">0</div>
+                            <div class="nfpa-quadrant nfpa-yellow" id="nfpa-instability">0</div>
+                            <div class="nfpa-quadrant nfpa-white" id="nfpa-special"></div>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2 space-y-4">
+                        <div>
+                            <h4 class="text-green-400 text-xs font-bold uppercase mb-1"><i class="fas fa-tv mr-2"></i> Uso en la Serie</h4>
+                            <p class="text-gray-300 text-sm leading-relaxed" id="chem-modal-usage">...</p>
+                        </div>
+                        <div class="bg-blue-900/20 p-3 rounded border-l-2 border-blue-500">
+                            <h4 class="text-blue-400 text-xs font-bold uppercase mb-1"><i class="fas fa-check-circle mr-2"></i> Realidad vs Ficción</h4>
+                            <p class="text-gray-400 text-sm leading-relaxed italic" id="chem-modal-reality">...</p>
+                        </div>
+                        <div>
+                            <h4 class="text-gray-500 text-xs font-bold uppercase mb-1">Descripción Técnica</h4>
+                            <p class="text-gray-400 text-xs font-mono" id="chem-modal-desc">...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <main class="flex-grow container mx-auto px-4 py-6 md:py-8 transition-all duration-300">
+        <!-- VISTA: HOME (REDESIGNED) -->
+        <div id="view-home" class="space-y-12 animate-fade-in">
+            <!-- Hero Section -->
+            <div class="text-center mt-10 md:mt-16 relative">
+                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-green-500/10 blur-[100px] rounded-full -z-10 pointer-events-none"></div>
+                
+                <h1 class="text-5xl md:text-8xl font-bold text-white brand-font mb-6 tracking-tight cursor-pointer hover:scale-105 transition duration-500" onclick="app.heisenbergEgg()">
+                    <span class="periodic-element">Br</span>eaking <span class="periodic-element">Ba</span>d
+                </h1>
+                <p class="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto font-light tracking-wide">
+                    La guía definitiva del Imperio de Heisenberg.
+                </p>
+            </div>
+
+            <!-- Quick Access Grid -->
+            <div class="max-w-6xl mx-auto px-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                    <!-- Card 1 -->
+                    <div onclick="app.navigate('characters')" class="group bg-slate-800/60 backdrop-blur-sm border border-green-900/50 p-6 rounded-2xl cursor-pointer hover:bg-slate-800 hover:border-green-500 transition-all duration-300 hover:-translate-y-2 shadow-lg hover:shadow-green-500/20">
+                        <div class="text-green-500 text-4xl mb-4 group-hover:scale-110 transition-transform"><i class="fas fa-users"></i></div>
+                        <h3 class="text-white font-bold text-lg brand-font mb-1">Personajes</h3>
+                        <p class="text-xs text-gray-400">Expedientes de la DEA.</p>
+                    </div>
+                    <!-- Card 2 -->
+                    <div onclick="app.navigate('map')" class="group bg-slate-800/60 backdrop-blur-sm border border-blue-900/50 p-6 rounded-2xl cursor-pointer hover:bg-slate-800 hover:border-blue-500 transition-all duration-300 hover:-translate-y-2 shadow-lg hover:shadow-blue-500/20">
+                        <div class="text-blue-500 text-4xl mb-4 group-hover:scale-110 transition-transform"><i class="fas fa-map-marked-alt"></i></div>
+                        <h3 class="text-white font-bold text-lg brand-font mb-1">Mapa ABQ</h3>
+                        <p class="text-xs text-gray-400">Localizaciones reales.</p>
+                    </div>
+                    <!-- Card 3 -->
+                    <div onclick="app.navigate('lab')" class="group bg-slate-800/60 backdrop-blur-sm border border-yellow-900/50 p-6 rounded-2xl cursor-pointer hover:bg-slate-800 hover:border-yellow-500 transition-all duration-300 hover:-translate-y-2 shadow-lg hover:shadow-yellow-500/20">
+                        <div class="text-yellow-500 text-4xl mb-4 group-hover:scale-110 transition-transform"><i class="fas fa-flask"></i></div>
+                        <h3 class="text-white font-bold text-lg brand-font mb-1">Laboratorio</h3>
+                        <p class="text-xs text-gray-400">Minijuego de cocina.</p>
+                    </div>
+                    <!-- Card 4 -->
+                    <div onclick="app.navigate('timeline')" class="group bg-slate-800/60 backdrop-blur-sm border border-red-900/50 p-6 rounded-2xl cursor-pointer hover:bg-slate-800 hover:border-red-500 transition-all duration-300 hover:-translate-y-2 shadow-lg hover:shadow-red-500/20">
+                        <div class="text-red-500 text-4xl mb-4 group-hover:scale-110 transition-transform"><i class="fas fa-history"></i></div>
+                        <h3 class="text-white font-bold text-lg brand-font mb-1">Cronología</h3>
+                        <p class="text-xs text-gray-400">Línea temporal clave.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trivia Widget (Centered and Enhanced) -->
+            <div class="max-w-2xl mx-auto px-4 pb-10">
+                <div class="bg-gradient-to-r from-slate-900 to-slate-800 border-l-4 border-green-500 p-6 rounded-r-xl relative shadow-2xl transform hover:scale-[1.02] transition-transform">
+                    <div class="absolute -top-3 -right-3 text-6xl text-green-500/10"><i class="fas fa-atom fa-spin" style="animation-duration: 10s;"></i></div>
+                    <div class="flex items-start gap-4">
+                        <div class="bg-green-900/30 p-3 rounded-full text-green-400 shrink-0">
+                            <i class="fas fa-lightbulb text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-green-400 font-bold text-xs uppercase tracking-[0.2em] mb-2">Sabías que...</h4>
+                            <p id="trivia-text" class="text-gray-200 text-lg font-light italic min-h-[3.5rem] flex items-center transition-opacity duration-500">
+                                Cargando dato curioso...
+                            </p>
+                        </div>
+                    </div>
+                    <!-- Progress bar for trivia timer -->
+                    <div class="absolute bottom-0 left-0 h-1 bg-green-500/20 w-full">
+                        <div id="trivia-progress" class="h-full bg-green-500 w-0 transition-all duration-[6000ms] ease-linear"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: PERSONAJES -->
+        <div id="view-characters" class="hidden animate-fade-in">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                <h2 class="text-3xl font-bold text-white brand-font text-center md:text-left">Expedientes <span class="text-green-500">DEA</span></h2>
+                
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <!-- Toggle de Spoilers para Personajes -->
+                    <div class="flex items-center bg-slate-900 p-2 rounded-lg border border-slate-600">
+                        <span class="mr-2 text-sm font-bold text-gray-300">Ocultar Estado</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="char-spoiler-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                        </label>
+                    </div>
+
+                    <div class="relative w-full md:w-64">
+                        <input type="text" id="search-input" placeholder="Buscar sospechoso..." class="w-full bg-slate-800 text-white border border-slate-600 rounded-full py-3 px-4 pl-10 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fas fa-search text-gray-400"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div id="characters-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+        </div>
+        
+        <!-- VISTA: TEMPORADAS -->
+        <div id="view-seasons" class="hidden animate-fade-in">
+             <div class="max-w-6xl mx-auto py-8 px-4">
+                <h2 class="text-3xl font-bold text-white brand-font mb-8 border-b border-slate-700 pb-4"><i class="fas fa-tv text-yellow-600 mr-2"></i> Resumen de Temporadas</h2>
+                <div class="space-y-8" id="seasons-container"></div>
+             </div>
+        </div>
+
+        <!-- VISTA: QUÍMICA -->
+        <div id="view-chemistry" class="hidden animate-fade-in">
+            <div class="max-w-6xl mx-auto py-10 px-4">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl font-bold text-white brand-font mb-2">
+                        <span class="text-blue-500 text-5xl align-middle mr-2"><i class="fas fa-atom fa-spin" style="animation-duration: 10s;"></i></span>
+                        La Ciencia de Heisenberg
+                    </h2>
+                    <p class="text-gray-400 max-w-2xl mx-auto">"La química es el estudio de la materia, pero yo prefiero verlo como el estudio del cambio."</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="chemistry-grid"></div>
+                <div class="mt-12 p-6 bg-slate-800/50 rounded-xl border border-slate-700 text-center text-xs text-gray-500">
+                    <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i> ADVERTENCIA: El contenido es meramente educativo.
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: CRONOLOGÍA -->
+        <div id="view-timeline" class="hidden animate-fade-in">
+            <div class="max-w-4xl mx-auto py-8 px-4">
+                <h2 class="text-3xl font-bold text-white brand-font mb-12 text-center"><i class="fas fa-clock text-green-500 mr-2"></i> Línea de Tiempo (2008-2010)</h2>
+                <div class="relative border-l-4 border-slate-700 ml-6 space-y-12" id="timeline-container"></div>
+            </div>
+        </div>
+
+        <!-- VISTA: ESCENAS -->
+        <div id="view-scenes" class="hidden animate-fade-in">
+            <div class="bg-slate-800/50 border border-yellow-700/50 p-4 md:p-6 rounded-xl mb-8 backdrop-blur-sm">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="text-center md:text-left">
+                        <h2 class="text-2xl md:text-3xl font-bold text-white brand-font flex items-center justify-center md:justify-start"><i class="fas fa-video text-yellow-500 mr-3"></i> Archivos <span class="text-yellow-500 ml-2">Clasificados</span></h2>
+                        <p class="text-gray-400 text-xs md:text-sm mt-2">Momentos clave. Algunos archivos contienen SPOILERS.</p>
+                    </div>
+                    <div class="flex items-center bg-slate-900 p-3 rounded-lg border border-slate-600 w-full md:w-auto justify-between md:justify-start">
+                        <span class="mr-3 text-sm font-bold text-gray-300">DESCLASIFICAR (Spoilers)</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="spoiler-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- CAMPO PARA URL PERSONALIZADA EN ESCENAS -->
+            <div class="mb-6 bg-slate-800/50 p-4 rounded-xl border border-slate-700 flex flex-col md:flex-row gap-4 items-center">
+                <h3 class="text-white font-bold brand-font whitespace-nowrap text-sm"><i class="fab fa-youtube text-red-500 mr-2"></i> Reproducir Enlace:</h3>
+                <input type="text" id="custom-scene-input" placeholder="Pega aquí una URL de YouTube..." class="w-full bg-slate-900 text-white border border-slate-600 rounded p-2 text-sm focus:border-yellow-500 focus:outline-none">
+                <button onclick="scenesController.openCustom()" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-2 px-6 rounded transition whitespace-nowrap shadow-lg active:scale-95">
+                    <i class="fas fa-play mr-2"></i> VER
+                </button>
+            </div>
+
+            <div id="scenes-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8"></div>
+        </div>
+
+        <!-- VISTA: MAPA -->
+        <div id="view-map" class="hidden space-y-6 animate-fade-in">
+            <div class="bg-slate-800 p-4 md:p-6 rounded-xl shadow-lg border border-slate-700">
+                <h2 class="text-2xl md:text-3xl font-bold text-white brand-font mb-2">Localizaciones <span class="text-yellow-500">ABQ</span></h2>
+                <p class="text-gray-400 mb-4 text-sm md:text-base">Explora los lugares reales. Haz clic en los marcadores.</p>
+                <div id="map" class="map-container border-2 border-slate-600 h-80 md:h-[500px]"></div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4" id="map-buttons"></div>
+        </div>
+        
+        <!-- VISTA: LAB (DRAG & DROP) -->
+        <div id="view-lab" class="hidden animate-fade-in">
+             <div class="max-w-5xl mx-auto text-center py-10 px-4">
+                <h2 class="text-4xl font-bold text-white brand-font mb-2">El <span class="text-blue-400">Laboratorio</span></h2>
+                <p class="text-gray-400 mb-8">Sigue la receta: Arrastra los ingredientes al matraz en orden correcto.</p>
+                
+                <div class="bg-slate-900 border-4 border-slate-700 rounded-xl p-8 relative shadow-2xl flex flex-col md:flex-row gap-8 items-center min-h-[500px]">
+                    
+                    <!-- Estantería -->
+                    <div class="w-full md:w-1/3 bg-slate-800 p-4 rounded-lg border border-slate-600 shadow-inner">
+                        <h3 class="text-gray-400 text-xs uppercase font-bold mb-4 border-b border-slate-600 pb-2">Ingredientes</h3>
+                        <div class="grid grid-cols-2 gap-4" id="lab-shelf">
+                            <!-- Inyectado por JS -->
+                        </div>
+                    </div>
+
+                    <!-- Mesa de Trabajo -->
+                    <div class="flex-1 flex flex-col items-center justify-center relative w-full">
+                        <div id="lab-message" class="mb-4 text-green-400 font-mono text-sm font-bold bg-black/50 px-4 py-2 rounded border border-green-900">ESTADO: ESPERANDO COCINERO...</div>
+                        
+                        <!-- Zona de Drop (Matraz) -->
+                        <div id="lab-beaker" class="drop-zone w-56 h-56 rounded-full border-4 border-white/20 flex items-center justify-center relative bg-slate-800/50 transition-all duration-300 overflow-hidden">
+                            <i class="fas fa-flask text-6xl text-white/20 z-10"></i>
+                            <div id="beaker-liquid" class="absolute bottom-0 left-0 w-full bg-blue-500/60 transition-all duration-1000" style="height: 0%"></div>
+                            <div class="absolute inset-0 bg-blue-400/10 opacity-0 transition-opacity duration-300" id="beaker-glow"></div>
+                        </div>
+                        
+                        <!-- Fuente de Calor -->
+                        <div class="mt-6 text-red-500 text-3xl animate-pulse"><i class="fas fa-fire-alt"></i></div>
+                    </div>
+                </div>
+                
+                <div id="lab-result" class="mt-8 hidden p-6 bg-blue-900/40 border border-blue-500 rounded-xl text-blue-300 font-bold text-xl animate-bounce">
+                    <i class="fas fa-check-circle mr-2"></i> ¡LOTE COMPLETADO: 99.1% PUREZA!
+                </div>
+             </div>
+        </div>
+
+        <!-- VISTA: NEGOCIOS (CORREGIDA) -->
+        <div id="view-businesses" class="hidden animate-fade-in">
+             <div class="max-w-6xl mx-auto py-8 px-4 space-y-8">
+                <h2 class="text-3xl font-bold text-white brand-font text-center mb-8">Negocios <span class="text-green-500">Tapadera</span></h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- A1A Car Wash -->
+                    <div class="bg-slate-800 border-2 border-blue-500/50 rounded-xl p-6 relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition"></div>
+                        <h3 class="text-2xl font-bold text-white mb-4 flex items-center"><i class="fas fa-car-wash mr-2 text-blue-400"></i> A1A Car Wash</h3>
+                        <div class="bg-black/50 p-4 rounded-lg mb-4 font-mono text-green-400">
+                            <p>Dinero Sucio: $<span id="dirty-money">500,000</span></p>
+                            <p>Dinero Limpio: $<span id="clean-money">0</span></p>
+                        </div>
+                        <button onclick="businessesController.launderMoney()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition active:scale-95">
+                            <i class="fas fa-sync-alt fa-spin mr-2" style="animation-duration: 3s;"></i> LAVAR DINERO
+                        </button>
+                    </div>
+                    
+                    <!-- Los Pollos Hermanos -->
+                    <div class="bg-yellow-500 text-red-900 p-6 rounded-xl shadow-xl relative overflow-hidden transform hover:scale-[1.02] transition">
+                        <div class="absolute top-0 left-0 w-full h-2 bg-red-700"></div>
+                        <h3 class="text-3xl font-bold brand-font text-red-800 mb-4 text-center">Los Pollos Hermanos</h3>
+                        <div class="space-y-2 font-bold text-sm mb-4">
+                            <div class="flex justify-between border-b border-red-800/20 pb-1"><span>Pollos Classic (2pcs)</span> <span>$4.99</span></div>
+                            <div class="flex justify-between border-b border-red-800/20 pb-1"><span>Heisenberg Combo</span> <span>$9.99</span></div>
+                            <div class="flex justify-between border-b border-red-800/20 pb-1"><span>Fring Fries</span> <span>$2.50</span></div>
+                        </div>
+                        <button onclick="alert('Su queja ha sido enviada a la gerencia (y a la trituradora).')" class="w-full bg-red-700 hover:bg-red-600 text-yellow-100 font-bold py-2 rounded border-2 border-yellow-200 text-sm">
+                            BUZÓN DE SUGERENCIAS
+                        </button>
+                    </div>
+
+                    <!-- Better Call Saul -->
+                    <div class="bg-orange-100 border-4 border-yellow-400 p-6 rounded-xl shadow-xl text-center relative transform -rotate-1">
+                        <div class="saul-font text-4xl text-red-600 mb-2">BETTER CALL SAUL!</div>
+                        <div class="bg-white p-4 border-2 border-black shadow-md mb-4 min-h-[80px] flex items-center justify-center">
+                            <p id="saul-legal-tip" class="text-lg font-bold text-slate-800 font-serif italic">"¿Problemas legales? ¡Yo soy la solución!"</p>
+                        </div>
+                        <button onclick="businessesController.getLegalAdvice()" class="bg-yellow-400 hover:bg-yellow-300 text-red-700 font-black py-2 px-6 rounded-full border-2 border-red-700 shadow-lg transform active:scale-95 transition">
+                            GENERAR COARTADA
+                        </button>
+                    </div>
+
+                    <!-- Vamonos Pest -->
+                    <div class="bg-green-900/80 border-2 border-yellow-500/50 rounded-xl p-6 relative overflow-hidden group">
+                         <div class="absolute inset-0 bg-stripes opacity-10"></div>
+                         <h3 class="text-2xl font-bold text-yellow-500 mb-4 flex items-center justify-center brand-font"><i class="fas fa-bug mr-2"></i> VAMONOS PEST</h3>
+                         <p class="text-gray-300 text-sm text-center mb-4">"We keep the roaches out."</p>
+                         <button onclick="businessesController.fumigate()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-3 rounded-lg transition active:scale-95 flex items-center justify-center">
+                            <i class="fas fa-spray-can mr-2"></i> FUMIGAR AHORA
+                        </button>
+                    </div>
+                </div>
+             </div>
+        </div>
+
+        <!-- VISTA: CITAS -->
+        <div id="view-quotes" class="hidden animate-fade-in">
+            <div class="min-h-[80vh] flex flex-col items-center justify-center w-full max-w-7xl mx-auto px-4 py-12">
+                <h2 class="text-4xl md:text-6xl font-bold text-white brand-font mb-12 text-center drop-shadow-[0_0_25px_rgba(34,197,94,0.4)]">
+                    <span class="periodic-element text-2xl md:text-4xl align-middle mr-1">Sa</span>biduría de <span class="text-blue-400">Cristal</span>
+                </h2>
+                <div class="flex items-center justify-center w-full">
+                    <div class="relative w-full max-w-2xl">
+                        <div class="absolute -top-16 -right-16 w-48 h-48 bg-blue-500/10 rounded-full blur-[60px]"></div>
+                        <div class="absolute -bottom-16 -left-16 w-48 h-48 bg-green-500/10 rounded-full blur-[60px]"></div>
+                        <div class="crystal-card p-6 md:p-10 relative overflow-hidden transform transition-all hover:scale-[1.01]">
+                            <div class="bubbles opacity-30">
+                                <div class="bubble w-2 h-2" style="left: 10%; animation-delay: 0s;"></div>
+                                <div class="bubble w-4 h-4" style="left: 30%; animation-delay: 1.5s;"></div>
+                            </div>
+                            <div class="relative z-10 flex justify-between items-start mb-8 border-b border-white/10 pb-4">
+                                <div class="flex flex-col">
+                                    <span class="text-blue-400 text-[10px] font-mono uppercase tracking-[0.2em] mb-1">Referencia</span>
+                                    <span class="text-white/90 font-bold text-xs bg-white/5 px-2 py-1 rounded-md border border-white/10 backdrop-blur-sm" id="quote-context">S-- E--</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-blue-400 text-[10px] font-mono uppercase tracking-[0.2em] mb-1 block">Pureza</span>
+                                    <span class="text-3xl font-bold text-white brand-font tracking-tighter drop-shadow-lg" id="quote-purity">99.1%</span>
+                                </div>
+                            </div>
+                            <div class="relative z-10 min-h-[120px] flex flex-col items-center justify-center text-center mb-8 group">
+                                <div id="quote-loader" class="hidden absolute inset-0 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm z-20 rounded-lg">
+                                    <div class="chemical-loader w-12 h-12 border-4"></div>
+                                </div>
+                                <i class="fas fa-quote-left text-3xl text-blue-500/20 mb-3 self-start"></i>
+                                <p id="quote-text" class="text-2xl md:text-4xl text-white font-light italic leading-tight handwritten-font drop-shadow-md transition-all duration-300">
+                                    "Haz clic en cocinar para empezar."
+                                </p>
+                                <i class="fas fa-quote-right text-3xl text-blue-500/20 mt-3 self-end"></i>
+                            </div>
+                            <div class="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6 bg-black/20 p-4 rounded-xl border border-white/5">
+                                <div class="flex items-center w-full sm:w-auto justify-center sm:justify-start">
+                                    <div class="w-14 h-14 rounded-full bg-slate-800 border-2 border-blue-400/50 overflow-hidden mr-4 shadow-lg flex-shrink-0">
+                                        <img id="quote-author-thumb" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Walter_White_House.jpg/640px-Walter_White_House.jpg" class="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" onerror="handleImgError(this)">
+                                    </div>
+                                    <div class="text-left">
+                                        <p id="quote-author" class="text-blue-300 font-bold text-lg brand-font tracking-wide leading-none mb-1">Heisenberg</p>
+                                        <p class="text-[10px] text-gray-400 uppercase tracking-widest">Sujeto</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-3 w-full sm:w-auto">
+                                    <button onclick="quotesController.copyQuote()" class="flex-none bg-slate-700 hover:bg-slate-600 text-white p-3 rounded-lg transition shadow-lg group relative" title="Copiar">
+                                        <i class="far fa-copy text-lg group-hover:scale-110 transition-transform"></i>
+                                    </button>
+                                    <button onclick="quotesController.newQuote()" class="flex-1 sm:flex-none bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white px-6 py-3 rounded-lg shadow-lg shadow-blue-900/20 transition transform hover:-translate-y-1 hover:shadow-blue-500/30 font-bold tracking-wide flex items-center justify-center gap-2 text-base">
+                                        <i class="fas fa-flask animate-pulse"></i> COCINAR
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-12 w-full max-w-2xl border-t border-white/10 pt-6 text-center">
+                     <h3 class="text-xs text-gray-500 uppercase tracking-[0.3em] mb-4">Lotes Recientes</h3>
+                     <div id="quote-history" class="flex justify-center flex-wrap gap-2 opacity-80"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- REPRODUCTOR DE MÚSICA -->
+    <div id="music-player" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg border-t border-green-800 shadow-2xl z-[80] transition-transform duration-500">
+        <div class="h-1 bg-slate-800 w-full">
+            <div id="player-progress-bar" class="h-full bg-green-500 shadow-[0_0_10px_#22c55e] w-0 player-progress"></div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+            <div class="flex items-center flex-1 overflow-hidden min-w-0">
+                <div id="youtube-player-container" class="w-12 h-8 md:w-16 md:h-10 bg-black mr-3 rounded border border-slate-700 flex-shrink-0 overflow-hidden relative group cursor-pointer">
+                    <div id="yt-player"></div>
+                    <div class="absolute inset-0 bg-transparent group-hover:bg-black/20 transition-colors"></div>
+                </div>
+                <div class="flex flex-col truncate mr-2">
+                    <div class="flex items-center">
+                        <span id="player-status-icon" class="mr-2 text-green-500 text-[10px] md:text-xs animate-pulse"><i class="fas fa-circle"></i></span>
+                        <h4 id="song-title" class="text-white font-bold text-xs md:text-sm brand-font truncate">Cargando...</h4>
+                    </div>
+                    <p id="song-artist" class="text-[10px] md:text-xs text-gray-400 truncate">Heisenberg</p>
+                </div>
+            </div>
+            <div class="flex items-center justify-end space-x-2 md:space-x-6 flex-shrink-0">
+
+              <button onclick="musicController.prev()" class="text-gray-400 hover:text-white active:text-white p-2"><i class="fas fa-step-backward"></i></button>
+                <button onclick="musicController.togglePlay()" class="bg-green-600 hover:bg-green-500 active:bg-green-700 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg border border-green-400"><i id="play-icon" class="fas fa-play ml-1 text-sm"></i></button>
+                <button onclick="musicController.next()" class="text-gray-400 hover:text-white active:text-white p-2"><i class="fas fa-step-forward"></i></button>
+            </div>
+            <div class="hidden md:flex items-center justify-end w-1/3 space-x-4">
+                <div class="music-equalizer flex space-x-1 items-end h-4"><span></span><span></span><span></span><span></span></div>
+                <div class="flex items-center space-x-2 group">
+                    <i class="fas fa-volume-up text-gray-400 text-xs"></i>
+                    <input type="range" min="0" max="100" value="50" class="w-20 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-green-500" oninput="musicController.setVolume(this.value)">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        const db = {
+            // BASE DE DATOS DE PERSONAJES MEJORADA Y AMPLIADA
+            characters: [
+                { 
+                    id: 1, 
+                    name: "Walter White", 
+                    actor: "Bryan Cranston", 
+                    nickname: "Heisenberg", 
+                    status: "Deceased", 
+                    occupation: "Profesor de Química / Capo de la Droga", 
+                    img: "https://upload.wikimedia.org/wikipedia/en/0/03/Walter_White_S5B.png", 
+                    first_ep: "1x01 Pilot", 
+                    episodes: 62, 
+                    bio: "Comenzó como un profesor de química sobrecualificado y pasivo, diagnosticado con cáncer de pulmón terminal. Co-fundador original de Gray Matter Technologies, vendió sus acciones prematuramente, perdiendo una fortuna, un resentimiento que alimentó su ego. Su transformación en 'Heisenberg' es el núcleo de la serie: una descenso moral absoluto impulsado por el poder, la manipulación y la necesidad de sentirse 'vivo'. Destruyó su familia para 'protegerla'.", 
+                    quote: "I am the one who knocks.", 
+                    danger: 99, 
+                    kills: "201 (Directos e indirectos)", 
+                    weapon: "Inteligencia Química / Ricino / M60", 
+                    signature: "Sombrero Pork Pie Negro y Gafas de Sol", 
+                    vehicle: { name: "Pontiac Aztek", model: "2004", img: "https://static.wikia.nocookie.net/breakingbad/images/0/06/Aztek_de_Walter.jpg/revision/latest?cb=20120807091337&path-prefix=es", note: "Un coche beige mediocre, símbolo de su vida anterior. Acabó con el parabrisas roto innumerables veces." } 
+                },
+                { 
+                    id: 2, 
+                    name: "Jesse Pinkman", 
+                    actor: "Aaron Paul", 
+                    nickname: "Cap'n Cook", 
+                    status: "Alive", 
+                    occupation: "Cocinero de Meta / Carpintero (Hobby)", 
+                    img: "https://static.wikia.nocookie.net/breakingbad/images/5/52/BB_S5A_Jesse_Pinkman.png/revision/latest/scale-to-width/360?cb=20221026171345&path-prefix=es", 
+                    first_ep: "1x01 Pilot", 
+                    episodes: 62, 
+                    bio: "Antiguo alumno de Walter y pequeño traficante. A diferencia de Walt, Jesse posee una brújula moral que le tortura cada vez que cruza una línea. Sufre inmensamente a lo largo de la serie: pierde a dos novias, es manipulado constantemente por Walt, y es esclavizado por neonazis. Tiene una debilidad por los niños (especialmente Brock) y un talento oculto para la carpintería y el arte.", 
+                    quote: "Yeah, science, bitch!", 
+                    danger: 65, 
+                    kills: "~5 (Gale, Todd, sicarios del cártel)", 
+                    weapon: "Pistola / Lealtad ciega (inicialmente)", 
+                    signature: "Ropa ancha y gorros de lana", 
+                    vehicle: { name: "Chevrolet Monte Carlo", model: "1982 Lowrider", img: "https://www.autofacil.es/wp-content/uploads/2013/12/chevy_montecarlo.jpg", note: "Con suspensión hidráulica y matrícula 'THE CAPN'. Más tarde conduce un Toyota Tercel rojo destartalado." } 
+                },
+                { 
+                    id: 3, 
+                    name: "Skyler White", 
+                    actor: "Anna Gunn", 
+                    nickname: "Sky", 
+                    status: "Alive", 
+                    occupation: "Contable / Dueña Lavadero A1A", 
+                    img: "https://static.wikia.nocookie.net/breakingbad/images/2/28/T5_-_Skyler.jpg/revision/latest/thumbnail/width/360/height/450?cb=20120715073105&path-prefix=es", 
+                    first_ep: "1x01 Pilot", 
+                    episodes: 62, 
+                    bio: "Esposa de Walter. Evoluciona de ama de casa sospechosa a una cómplice renuente pero vital. Usó su ingenio contable para lavar los millones de dólares de Walt a través del lavadero de coches A1A, inventando la historia de la adicción al juego de Walt para justificar el dinero. Vivió aterrorizada por su propio marido al final.", 
+                    quote: "Someone has to protect this family from the man who protects this family.", 
+                    danger: 20, 
+                    kills: "0", 
+                    weapon: "Lavado de Dinero / Silencio", 
+                    signature: "Cigarrillos a escondidas", 
+                    vehicle: { name: "Jeep Grand Wagoneer", model: "1991", img: "https://static0.hotcarsimages.com/wordpress/wp-content/uploads/2020/12/breakingbadwagoneer.jpg", note: "Clásico familiar con paneles de madera, representa la fachada de normalidad doméstica." } 
+                },
+                { 
+                    id: 4, 
+                    name: "Hank Schrader", 
+                    actor: "Dean Norris", 
+                    nickname: "ASAC Schrader", 
+                    status: "Deceased", 
+                    occupation: "Agente Especial de la DEA", 
+                    img: "https://static.wikia.nocookie.net/breakingbad/images/b/b7/HankS5.jpg", 
+                    first_ep: "1x01 Pilot", 
+                    episodes: 53, 
+                    bio: "El ruidoso y machista cuñado de Walt, que esconde una gran astucia policial y vulnerabilidad (sufrió TEPT tras el tiroteo con Tuco). Pasó toda la serie persiguiendo a Heisenberg sin saber que cenaba con él. Su afición por coleccionar 'minerales' (no rocas) fue su terapia durante la recuperación física.", 
+                    quote: "My name is ASAC Schrader, and you can go f*** yourself.", 
+                    danger: 85, 
+                    kills: "4 (Tuco, Marco Salamanca, otros)", 
+                    weapon: "Glock 22 / Placa DEA", 
+                    signature: "Cerveza Schraderbrau / Minerales", 
+                    vehicle: { name: "Jeep Commander", model: "2006", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRGc9DnAZUFsPcpVwaq0QB1Z3dN-5zyGACdrQ&s", note: "Un vehículo robusto y autoritario, perfecto para un agente de la ley." } 
+                },
+                { 
+                    id: 5, 
+                    name: "Gustavo Fring", 
+                    actor: "Giancarlo Esposito", 
+                    nickname: "El hombre de los pollos", 
+                    status: "Deceased", 
+                    occupation: "Dueño de Los Pollos Hermanos / Distribuidor", 
+                    img: "https://static.wikia.nocookie.net/breakingbad/images/1/1f/BCS_S4_Gustavo_Fring.jpg", 
+                    first_ep: "2x11 Mandala", 
+                    episodes: 26, 
+                    bio: "Un filántropo chileno respetado públicamente que dirige en secreto el mayor imperio de metanfetamina al norte de la frontera. Meticuloso, estoico y despiadado. Su odio hacia el Cártel de Juárez (por el asesinato de su socio Max) motivó un plan de venganza de décadas. Es el reflejo profesional de lo que Walt aspiraba a ser.", 
+                    quote: "I will kill your infant daughter.", 
+                    danger: 100, 
+                    kills: "Incalculables (incluyendo el Cartel entero)", 
+                    weapon: "Cutter / Estrategia a largo plazo", 
+                    signature: "Gafas, corbata impecable y sonrisa falsa", 
+                    vehicle: { name: "Volvo V70", model: "1998", img: "https://d1gl66oyi6i593.cloudfront.net/wp-content/uploads/2022/07/subasta-Volvo-V70-9.jpg", note: "Un familiar azul oscuro, deliberadamente discreto y seguro. Refleja su cautela." } 
+                },
+                { 
+                    id: 6, 
+                    name: "Saul Goodman", 
+                    actor: "Bob Odenkirk", 
+                    nickname: "Jimmy McGill", 
+                    status: "Alive (Encarcelado)", 
+                    occupation: "Abogado Criminalista", 
+                    img: "https://static.wikia.nocookie.net/breakingbad/images/4/4e/BB_T5A-Saul_Goodman.png/revision/latest/scale-to-width/360?cb=20221109003605&path-prefix=es", 
+                    first_ep: "2x08 Better Call Saul", 
+                    episodes: 43, 
+                    bio: "Abogado charlatán conocido por sus anuncios de televisión de bajo presupuesto y su falta de ética. Actúa como el 'consigliere' de Walt y Jesse, conectándolos con el submundo criminal (Gus, Mike, Vamonos Pest). Bajo su fachada de payaso, es un operador brillante capaz de solucionar casi cualquier problema legal o ilegal.", 
+                    quote: "It's all good, man.", 
+                    danger: 10, 
+                    kills: "0", 
+                    weapon: "La Ley / Teléfonos Desechables", 
+                    signature: "Trajes de colores chillones y verborrea", 
+                    vehicle: { name: "Cadillac DeVille", model: "1997", img: "https://static.wikia.nocookie.net/breakingbad/images/1/16/1997_Cadillac_DeVille.jpg/revision/latest?cb=20180308220019", note: "Un coche de lujo americano blanco con matrícula personalizada 'LWYRUP'." } 
+                },
+                { 
+                    id: 7, 
+                    name: "Mike Ehrmantraut", 
+                    actor: "Jonathan Banks", 
+                    nickname: "El Abuelo", 
+                    status: "Deceased", 
+                    occupation: "Limpiador / Jefe de Seguridad", 
+                    img: "https://static.wikia.nocookie.net/breakingbad/images/7/77/MikeEnBB.webp/revision/latest?cb=20220820224511&path-prefix=es", 
+                    first_ep: "2x13 ABQ", 
+                    episodes: 25, 
+                    bio: "Ex-policía de Filadelfia, pragmático y eficiente. Trabaja como jefe de seguridad para Gus y como investigador privado para Saul. Su única motivación es dejar dinero para su nieta, Kaylee. Detesta a Walter White por su ego e imprudencia ('Eres una bomba de relojería'). Experto en vigilancia y combate táctico.", 
+                    quote: "No more half measures.", 
+                    danger: 95, 
+                    kills: "Docenas (Ejecutor principal de Gus)", 
+                    weapon: "Silenciador / Pistola H&K Mark 23", 
+                    signature: "Mirada de aburrimiento mortal", 
+                    vehicle: { name: "Chrysler Fifth Avenue", model: "1988", img: "https://preview.redd.it/tz4n8u4ags741.jpg?auto=webp&s=cdd6a6fbcf30c334ec231ad027a54d04763e5abb", note: "Un coche robusto y clásico, nada llamativo, como él." } 
+                },
+                { 
+                    id: 8, 
+                    name: "Tuco Salamanca", 
+                    actor: "Raymond Cruz", 
+                    nickname: "Tuco", 
+                    status: "Deceased", 
+                    occupation: "Distribuidor del Cártel", 
+                    img: "https://static.wikia.nocookie.net/breakingbad/images/a/a7/Tuco_BCS.jpg/revision/latest?cb=20170810082445", 
+                    first_ep: "1x06 Crazy Handful of Nothin'", 
+                    episodes: 4, 
+                    bio: "Un distribuidor de drogas psicótico e impredecible, adicto a su propia metanfetamina. Sobrino de Héctor Salamanca. Su extrema violencia y cambios de humor aterrorizaban incluso a sus socios. Respetaba enormemente a sus mayores (su Tío), pero mataba a sus subordinados por hablar fuera de turno.", 
+                    quote: "Tight! Tight! Tight!", 
+                    danger: 90, 
+                    kills: "Varios (No-Doze, Gonzo - indirecto)", 
+                    weapon: "Puños / Rifle de asalto M4", 
+                    signature: "Esnifar meta con un cuchillo Bowie", 
+                    vehicle: { name: "Chevrolet Monte Carlo", model: "1970", img: "https://static.wikia.nocookie.net/breakingbad/images/1/10/1987_Chevrolet_Monte_Carlo.jpg/revision/latest?cb=20180309203524", note: "Lowrider equipado con sistema hidráulico para saltar." }
+                },
+                { 
+                    id: 9, 
+                    name: "Hector Salamanca", 
+                    actor: "Mark Margolis",
+                    nickname: "Tío", 
+                    status: "Deceased", 
+                    occupation: "Ex-Don del Cártel", 
+                    img: "https://static.wikia.nocookie.net/breakingbad/images/b/b4/Hector_BCS.jpg", 
+                    first_ep: "2x02 Grilled", 
+                    episodes: 8,
+                    bio: "Antiguo ejecutor temido del cártel, ahora confinado a una silla de ruedas y sin poder hablar tras un derrame provocado. Se comunica solo con una campana de servicio. Su odio puro hacia Gus Fring es legendario. A pesar de su discapacidad, logra orquestar la muerte de su mayor enemigo en un acto final de sacrificio suicida.", 
+                    quote: "*DING* *DING* *DING*", 
+                    danger: 60, 
+                    kills: "Incontables en su juventud / Gus Fring", 
+                    weapon: "Campana de Latón / Bomba casera", 
+                    signature: "La mueca de odio",
+                    vehicle: { name: "Silla de Ruedas", model: "Hospital Standard", img: "https://www.ortoplanet.com/wp-content/uploads/2019/05/silla-de-ruedas-plegable-ortopedica-ligera-negro-alcazaba-mobiclinic-660x660.jpg", note: "Equipada con una bomba de tubo detonada por timbre en su última escena." }
+                },
+                { 
+                    id: 10, 
+                    name: "Todd Alquist", 
+                    actor: "Jesse Plemons", 
+                    nickname: "Meth Damon", 
+                    status: "Deceased", 
+                    occupation: "Exterminador / Cocinero", 
+                    img: "https://static.wikia.nocookie.net/breakingbad/images/e/e8/T5B_-_Todd.jpg/revision/latest?cb=20130812131451&path-prefix=es", 
+                    first_ep: "5x03 Hazard Pay", 
+                    episodes: 11, 
+                    bio: "Sobrino de Jack Welker. Parece educado y servicial, pero es un sociópata sin empatía. Mata a un niño sin dudarlo solo porque fue testigo de un robo. Se convierte en el aprendiz de cocina de Walt y desarrolla una obsesión extraña con Lydia. Mantuvo a Jesse prisionero y torturado durante meses.", 
+                    quote: "Nothing personal.", 
+                    danger: 80, 
+                    kills: "Drew Sharp, Andrea Cantillo, Declan", 
+                    weapon: "Pistola / Indiferencia total", 
+                    signature: "Guardar la tarántula de sus víctimas", 
+                    vehicle: { name: "El Camino", model: "1978", img: "https://www.coches.com/fotos_historicas/chevrolet/El-Camino-1978-1981/chevrolet_el-camino-1978-81_r3.jpg", note: "El coche que Jesse usa para huir hacia la libertad rompiendo las rejas." } 
+                },
+                { 
+                    id: 11, 
+                    name: "Marie Schrader", 
+                    actor: "Betsy Brandt", 
+                    nickname: "Marie", 
+                    status: "Alive", 
+                    occupation: "Técnico de Radiología", 
+                    img: "https://static.wikia.nocookie.net/breakingbad/images/3/33/T5B_-_Marie.jpg/revision/latest?cb=20130812131405&path-prefix=es", 
+                    first_ep: "1x01 Pilot", 
+                    episodes: 62, 
+                    bio: "Hermana de Skyler. Una mujer intensa y a veces egocéntrica que ama profundamente a su marido Hank. Tiene tendencias cleptómanas cuando está bajo estrés (roba cucharas, zapatos, tiaras). Su casa y su vestuario están obsesivamente decorados en tonos de púrpura, lo que simboliza su necesidad de sentirse protegida o realeza.", 
+                    quote: "Purple is the color of royalty.", 
+                    danger: 5, 
+                    kills: "0", 
+                    weapon: "Cleptomanía / Culpa pasiva", 
+                    signature: "Obsesión con el color Púrpura", 
+                    vehicle: { name: "Volkswagen Beetle", model: "2006", img: "https://i.ebayimg.com/images/g/AXoAAOSwN5pm5tb4/s-l1200.jpg", note: "Azul oscuro. Curiosamente, el único objeto no morado que posee." } 
+                },
+                { 
+                    id: 12, 
+                    name: "Lydia Rodarte-Quayle", 
+                    actor: "Laura Fraser", 
+                    nickname: "Lydia", 
+                    status: "Deceased", 
+                    occupation: "Ejecutiva de Madrigal Electromotive", 
+                    img: "https://static.wikia.nocookie.net/breakingbad/images/7/78/Lydia_S5b.jpg", 
+                    first_ep: "5x02 Madrigal", 
+                    episodes: 9, 
+                    bio: "Ejecutiva de alto nivel, nerviosa y paranoica, encargada de suministrar metilamina a la operación de Gus y luego a la de Walt. Prefiere ordenar asesinatos desde la seguridad de una cafetería. Es madre soltera y extremadamente cautelosa, pero su hábito de pedir té de manzanilla con leche de soja y Stevia fue aprovechado por Walt para envenenarla.", 
+                    quote: "We're going to make a lot of money together.", 
+                    danger: 40, 
+                    kills: "Ordenó la muerte de los hombres de Mike", 
+                    weapon: "Sicarios / Burocracia", 
+                    signature: "Sobres de Stevia y tacones Louboutin", 
+                    vehicle: null 
+                },
+                { 
+                    id: 13, 
+                    name: "Skinny Pete", 
+                    actor: "Charles Baker",
+                    nickname: "Skinny", 
+                    status: "Alive", 
+                    occupation: "Traficante / Músico", 
+                    img: "https://assets.podomatic.net/ts/d0/f2/93/revealuncut/600x600_7758815.jpg", 
+                    appearance: [1, 2, 3, 4, 5], 
+                    bio: "Uno de los mejores amigos de Jesse. Aunque parece un drogadicto callejero, demuestra ser un amigo leal y sorprendentemente tiene un gran talento para tocar el piano (música clásica). Junto con Badger, ayudó a difundir la leyenda de la 'Metanfetamina Azul' y protegió a Walt con punteros láser falsos.", 
+                    quote: "I'm like... a superhero, yo.", 
+                    danger: 15, 
+                    kills: "0", 
+                    weapon: "Piano / Gorro de lana", 
+                    signature: "Tocar a Bach en tiendas de música",
+                    vehicle: { name: "Ford Thunderbird", model: "1983", img: "https://static.wikia.nocookie.net/breakingbad/images/d/da/1972_Ford_Thunderbird.jpg/revision/latest?cb=20180316134414", note: "Viejo y desgastado, como su dueño." }
+                },
+                { 
+                    id: 14, 
+                    name: "Gale Boetticher", 
+                    actor: "David Costabile",
+                    nickname: "El Otro Cocinero", 
+                    status: "Deceased", 
+                    occupation: "Químico / Libertario", 
+                    img: "https://static.wikia.nocookie.net/breakingbad/images/5/5c/Gale_2009.png/revision/latest?cb=20200611141859", 
+                    appearance: [3, 4], 
+                    bio: "Un químico brillante, excéntrico y vegano contratado por Gus para montar el Superlaboratorio. Adora a Walt Whitman y la recitación de poesía. Su inocencia y adoración por la pureza química lo convirtieron en un peón trágico; su asesinato a manos de Jesse fue el punto de no retorno para Pinkman. Preparaba el mejor café del mundo.", 
+                    quote: "You don't have to do this.", 
+                    danger: 5, 
+                    kills: "0", 
+                    weapon: "Cafetera de Laboratorio / Karaoke", 
+                    signature: "Cantar 'Major Tom' en tailandés",
+                    vehicle: { name: "Subaru Legacy", model: "Reciclado", img: "https://www.automocionpere.com/storage/app/uploads/public/58a/c50/5c9/58ac505c93456483168536.jpg", note: "Con pegatinas de Ron Paul 2008." }
+                },
+                { 
+                    id: 15, 
+                    name: "Jane Margolis", 
+                    actor: "Krysten Ritter",
+                    nickname: "Apology Girl", 
+                    status: "Deceased", 
+                    occupation: "Tatuadora", 
+                    img: "https://static.wikia.nocookie.net/breakingbad/images/b/b4/Jane.jpg", 
+                    appearance: [2], 
+                    bio: "Casera y novia de Jesse, una ex-adicta en recuperación con talento artístico. Introdujo a Jesse a la heroína. Cuando intentó chantajear a Walt para conseguir el dinero de Jesse y huir a Nueva Zelanda, Walt la dejó morir ahogada en su propio vómito mientras dormía, un acto que desencadenó el accidente aéreo sobre ABQ.", 
+                    quote: "I think I threw up in my mouth a little.", 
+                    danger: 30, 
+                    kills: "0 (Causa indirecta de choque aéreo)", 
+                    weapon: "Chantaje emocional", 
+                    signature: "Dibujos de Superhéroes",
+                    vehicle: { name: "Acura Integra", model: "1991", img: "https://www.auto-data.net/images/f38/Acura-Integra-II-Hatchback.jpg", note: "Coche compacto típico de los 90." }
+                },
+                { 
+                    id: 16, 
+                    name: "Badger", 
+                    actor: "Matt Jones",
+                    nickname: "Brandon Mayhew", 
+                    status: "Alive", 
+                    occupation: "Traficante", 
+                    img: "https://static.wikia.nocookie.net/breakingbad/images/f/ff/Badger.png/revision/latest?cb=20131005104123&path-prefix=es", 
+                    appearance: [1, 2, 3, 4, 5], 
+                    bio: "El primo de Skinny Pete, cómico y poco brillante. Famoso por ser arrestado en un banco público por un policía encubierto. Tiene una imaginación vívida, creando guiones completos de 'Star Trek' (la competición de comer pasteles). Su voz rasgada y su lealtad a Jesse son sus marcas registradas.", 
+                    quote: "Helicopter, bitch!", 
+                    danger: 10, 
+                    kills: "0", 
+                    weapon: "Ballesta", 
+                    signature: "Voz inconfundible",
+                    vehicle: { name: "Pontiac Fiero", model: "1984", img: "https://cdn.dealeraccelerate.com/cam/34/6933/481480/1920x1440/1984-pontiac-fiero-sport-coupe", note: "Pequeño, deportivo y probablemente averiado." }
+                }
+            ],
+            chemistry_info: [
+                { id: 'meth', name: "Metanfetamina Azul", formula: "C10H15N", desc: "Psicoestimulante sintético de pureza excepcional (99.1%). Cristal enantioméricamente puro.", icon: "fas fa-gem", cas: "537-46-2", usage: "El producto estrella del imperio de Heisenberg. Su color azul es una firma de marca, no una propiedad química real de la pureza.", reality: "La metanfetamina pura es incolora/blanca. El color azul indicaría impurezas, no pureza. Vince Gilligan admitió esta licencia artística.", danger: { health: 3, fire: 1, instability: 0, special: '' } },
+                { id: 'ricin', name: "Ricino", formula: "Lectina", desc: "Toxina biológica extremadamente potente extraída de semillas de Ricinus communis.", icon: "fas fa-skull-crossbones", cas: "9009-86-3", usage: "El arma silenciosa definitiva. Walt la prepara varias veces para matar a Tuco y Gus, pero finalmente la usa con Lydia.", reality: "Es mortal en dosis muy pequeñas (0.2 mg). Causa fallo orgánico múltiple en 3-5 días. No tiene antídoto conocido.", danger: { health: 4, fire: 1, instability: 0, special: 'BIO' } },
+                { id: 'hf', name: "Ácido Fluorhídrico", formula: "HF", desc: "Ácido altamente corrosivo capaz de disolver materia orgánica, vidrio y cerámica.", icon: "fas fa-vial", cas: "7664-39-3", usage: "Utilizado infamemente para deshacerse de cadáveres. Jesse aprende por las malas que corroe las bañeras de cerámica.", reality: "Aunque es peligroso y penetra la piel atacando el calcio de los huesos, no disuelve cuerpos tan rápido como en la serie.", danger: { health: 4, fire: 0, instability: 1, special: 'COR' } },
+                { id: 'mercury', name: "Mercurio Fulminante", formula: "Hg(ONC)2", desc: "Explosivo primario muy sensible al impacto, fricción y calor.", icon: "fas fa-bomb", cas: "628-86-4", usage: "Walt lo hace pasar por meta ('This is not meth') y lo usa para volar el despacho de Tuco Salamanca.", reality: "Es muy inestable. La cantidad que Walt llevaba habría detonado por el movimiento al caminar, matándolos a todos.", danger: { health: 2, fire: 0, instability: 4, special: 'EXP' } },
+                { id: 'phosphine', name: "Gas Fosfina", formula: "PH3", desc: "Gas incoloro, inflamable y extremadamente tóxico con olor a ajo o pescado podrido.", icon: "fas fa-cloud", cas: "7803-51-2", usage: "Walt improvisa una reacción química en la RV (fósforo rojo + agua caliente) para matar a Emilio y Krazy-8.", reality: "La reacción es real y el gas es letal. Ataca los sistemas respiratorio y nervioso central rápidamente.", danger: { health: 4, fire: 4, instability: 2, special: 'GAS' } },
+                { id: 'thermite', name: "Termita", formula: "Fe2O3 + Al", desc: "Mezcla pirotécnica de polvo de metal y óxido metálico que genera calor extremo.", icon: "fas fa-fire-alt", cas: "N/A", usage: "Usada por Walt y Jesse para fundir la cerradura de la puerta del almacén y robar metilamina.", reality: "Arde a más de 2500°C. Puede fundir acero y hierro fácilmente. No explota, pero es imparable una vez encendida.", danger: { health: 1, fire: 3, instability: 1, special: 'W' } }
+            ],
+            seasons: [
+                { id: 1, title: "Temporada 1", desc: "El diagnóstico de cáncer lleva a Walter White a cocinar metanfetamina con un ex-alumno para asegurar el futuro de su familia. El caos comienza.", villain: "Tuco Salamanca", keyEpisodes: "Pilot, Crazy Handful of Nothin'", deaths: "3", icon: "fas fa-lungs-virus" },
+                { id: 2, title: "Temporada 2", desc: "Walt y Jesse intentan expandir su territorio. La tensión con Skyler aumenta. Aparece Saul Goodman y el misterioso Gus Fring.", villain: "Jane's Addiction", keyEpisodes: "Grilled, Phoenix, ABQ", deaths: "175 (Inc. accidente aéreo)", icon: "fas fa-plane-slash" },
+                { id: 3, title: "Temporada 3", desc: "La sociedad con Gus Fring se consolida en el Superlab. Los primos Salamanca buscan venganza. Hank está cada vez más cerca.", villain: "Los Primos / Gus", keyEpisodes: "One Minute, Fly, Full Measure", deaths: "35", icon: "fas fa-handshake" },
+                { id: 4, title: "Temporada 4", desc: "Una guerra fría y luego caliente entre Walt y Gus. Jesse se debate entre lealtades. El enfrentamiento final es inevitable.", villain: "Gustavo Fring", keyEpisodes: "Box Cutter, Crawl Space, Face Off", deaths: "27", icon: "fas fa-bomb" },
+                { id: 5, title: "Temporada 5", desc: "El ascenso al poder absoluto de Heisenberg y su estrepitosa caída. Ozymandias. El fin del imperio.", villain: "Jack Welker / Hank", keyEpisodes: "Say My Name, Ozymandias, Felina", deaths: "31", icon: "fas fa-crown" }
+            ],
+            timeline: [
+                { year: "2008 (Sept)", event: "Cumpleaños 50 de Walt. Diagnóstico de Cáncer. Primera cocinada." },
+                { year: "2008 (Oct)", event: "Krazy-8 muere en el sótano. Tuco Salamanca entra en escena." },
+                { year: "2008 (Nov)", event: "Muerte de Tuco. Walt y Jesse son secuestrados por él." },
+                { year: "2009 (Feb)", event: "Nacimiento de Holly. Accidente aéreo del Wayfarer 515." },
+                { year: "2009 (Abr)", event: "Los primos atacan a Hank. Walt empieza a trabajar para Gus." },
+                { year: "2009 (Jun)", event: "Muerte de Gale Boetticher." },
+                { year: "2009 (Jul)", event: "Muerte de Gus Fring (Casa de Reposo). Incendio del Superlab." },
+                { year: "2009 (Ago-Oct)", event: "El imperio de Vamonos Pest. Robo del tren." },
+                { year: "2010 (Mar)", event: "Hank descubre la verdad (Leaves of Grass)." },
+                { year: "2010 (Mar)", event: "Ozymandias. Muerte de Hank. Walt huye a New Hampshire." },
+                { year: "2010 (Sep)", event: "Cumpleaños 52. Walt regresa. Muerte de Jack y su banda. Muerte de Walter White." }
+            ],
+            locations: [
+                { id: 'white', name: "Casa de Walter White", coords: [35.1261, -106.5365], desc: "La infame casa donde cayeron las pizzas en el tejado.", fact: "Los dueños reales tuvieron que poner una valla por los fans." },
+                { id: 'pollos', name: "Los Pollos Hermanos", coords: [35.0146, -106.6863], desc: "La tapadera perfecta de Gus. El mejor pollo frito de Albuquerque.", fact: "En realidad es una cadena de burritos llamada 'Twisters'." },
+                { id: 'wash', name: "A1A Car Wash", coords: [35.1148, -106.5397], desc: "Have an A1 day! Centro de lavado de dinero y coches de los White.", fact: "Donde Walt trabajó y fue humillado por Bogdan antes de comprarlo." },
+                { id: 'office', name: "Oficina de Saul Goodman", coords: [35.1185, -106.5185], desc: "Better Call Saul! La constitución dice que tienes derechos.", fact: "Decorada con columnas falsas y la constitución de fondo." },
+                { id: 'tohaj', name: "Reserva To'hajiilee", coords: [35.1098, -107.1358], desc: "Lugar de la primera cocinada y del trágico enfrentamiento final (Ozymandias).", fact: "Aquí es donde Walt enterró los 80 millones de dólares." },
+                { id: 'lab', name: "Lavandería Brillante", coords: [35.1253, -106.6399], desc: "La fachada del Superlab subterráneo de alta tecnología de Gus Fring.", fact: "El laboratorio estaba escondido debajo de maquinaria industrial masiva." },
+                { id: 'doghouse', name: "The Dog House", coords: [35.0885, -106.6605], desc: "Lugar clásico de comida rápida donde Jesse vendía meta al principio.", fact: "Un verdadero icono de la Ruta 66 en Albuquerque." },
+                { id: 'crossroads', name: "Crossroads Motel", coords: [35.0863, -106.5866], desc: "Conocido como 'The Crystal Palace'. Hogar de Wendy.", fact: "Hank se refería a él como el lugar donde se hospedan las cucarachas." },
+                { id: 'java', name: "Tuco's HQ (Java Joe's)", coords: [35.0844, -106.6491], desc: "El escondite de Tuco Salamanca donde ocurrió la explosión de mercurio fulminante.", fact: "Antes era una cafetería real." }
+            ],
+            quotes: [
+                { text: "I am not in danger, Skyler. I am the danger.", author: "Walter White", context: "S4 E6 - Cornered" },
+                { text: "Say my name.", author: "Walter White", context: "S5 E7 - Say My Name" },
+                { text: "Yeah, science!", author: "Jesse Pinkman", context: "S1 E7 - A No-Rough-Stuff-Type Deal" },
+                { text: "Tread lightly.", author: "Walter White", context: "S5 E9 - Blood Money" },
+                { text: "No more half measures.", author: "Mike Ehrmantraut", context: "S3 E12 - Half Measures" },
+                { text: "I will kill your wife. I will kill your son. I will kill your infant daughter.", author: "Gustavo Fring", context: "S4 E11 - Crawl Space" },
+                { text: "Better Call Saul!", author: "Saul Goodman", context: "S2 E8 - Better Call Saul" },
+                { text: "Tight! Tight! Tight!", author: "Tuco Salamanca", context: "S1 E6 - Crazy Handful of Nothin'" },
+                { text: "Yo, Gatorade me, bitch!", author: "Jesse Pinkman", context: "S2 E1 - Seven Thirty-Seven" }
+            ],
+            scenes: [
+                { id: 1, title: "La Pizza en el Tejado", season: "T3:E2", desc: "Walter, frustrado, lanza una pizza familiar gigante que aterriza perfectamente en el tejado.", img: "https://static.wikia.nocookie.net/breakingbad/images/1/1c/3x02_-_Caballo_sin_nombre_11.png/revision/latest?cb=20120724193216&path-prefix=es", youtube: "https://youtu.be/RKAzfd8oTWs?si=r-WvEgvduSKzkb-R", spoiler: false, tension: 15 },
+                { id: 2, title: "La Cara de Gus", season: "T4:E13", desc: "El final explosivo de Gustavo Fring. Se ajusta la corbata por última vez.", img: "https://fwmedia.fandomwire.com/wp-content/uploads/2024/05/09035558/breaking-bad.jpg", youtube: "https://www.youtube.com/watch?v=WbIVV9bDTAo", spoiler: true, tension: 95 },
+                { id: 3, title: "I Am The One Who Knocks", season: "T4:E6", desc: "El monólogo definitivo donde Walter revela a Skyler quién es realmente.", img: "https://industrialscripts.com/wp-content/uploads/2021/04/I-am-the-one-who-knocksI-am-the-danger-scene.jpg", youtube: "https://youtu.be/Ca3kPemW2CE?si=3TN0XaWN5Uja7GBJ", spoiler: false, tension: 70 },
+                { id: 4, title: "La Muerte de Jane", season: "T2:E12", desc: "El momento moral más oscuro de Walt, dejando morir a Jane.", img: "https://www.indiewire.com/wp-content/uploads/2018/09/Breaking_Bad_EP212_565.jpg?w=780", youtube: "https://youtu.be/RGEmFpitjYw?si=r4BYwGK3SBFbXS4b", spoiler: true, tension: 85 },
+                { id: 5, title: "El Descubrimiento de Hank", season: "T5:E8", desc: "Hank encuentra el libro 'Leaves of Grass' y conecta los puntos.", img: "https://i.redd.it/bthkwp0czbc91.jpg", youtube: "https://youtu.be/HW3m2vVdYVY?si=lV_CZfKU2-7oiMxT", spoiler: true, tension: 90 },
+                { id: 6, title: "Ozymandias", season: "T5:E14", desc: "El imperio de Walt se derrumba en el desierto. La llamada telefónica final.", img: "https://img.asmedia.epimg.net/resizer/v2/47CSAGX3JNGLBCXJUUMYXFPB7Y.jpg?auth=d974a8b9df6778f3f412dc2d85cba860aee0d9cdf353c1e8125be86de79de103&width=1472&height=828&smart=true", youtube: "https://youtu.be/YCrngJCkI8I?si=OWmK6e6n-2I4DgWR", spoiler: true, tension: 100 },
+                { id: 7, title: "Say My Name", season: "T5:E7", desc: "Heisenberg en la cima de su arrogancia.", img: "https://upload.wikimedia.org/wikipedia/en/4/44/Breaking_Bad_Say_My_Name.png", youtube: "https://youtu.be/MPYlxeG-8_w?si=TPxgD34N7s3Jc_tM", spoiler: false, tension: 60 },
+                { id: 8, title: "Felina (El Final)", season: "T5:E16", desc: "Baby Blue suena de fondo. El final del viaje.", img: "https://static.wikia.nocookie.net/breakingbad/images/7/7d/5x16_-_Felina_PROMO_2.jpg/revision/latest?cb=20130923143105&path-prefix=es", youtube: "https://youtu.be/yiGmbKlFHao?si=xcub6KA2FzwgfTZu", spoiler: true, tension: 80 },
+                { id: 9, title: "This is not Meth", season: "T1:E6", desc: "Walt hace explotar el cuartel de Tuco con mercurio fulminante.", img: "https://i.ytimg.com/vi/T3x1tzOuXbQ/maxresdefault.jpg", youtube: "https://youtu.be/T3x1tzOuXbQ?si=plqCQr8sWgVCOeO4", spoiler: false, tension: 88 },
+                { id: 10, title: "Box Cutter", season: "T4:E1", desc: "Gus envía un mensaje silencioso y sangriento a Walt y Jesse.", img: "https://m.media-amazon.com/images/M/MV5BMjI2Mjg2MjEzNl5BMl5BanBnXkFtZTcwMTg2NTY3NQ@@._V1_.jpg", youtube: "https://youtu.be/LaVf7PPujzk?si=bDqw2yAU4VA6NCkz", spoiler: true, tension: 98 },
+                { id: 11, title: "Magnets!", season: "T5:E1", desc: "Jesse tiene una idea brillante para destruir la evidencia en el portátil.", img: "https://static01.nyt.com/images/2012/07/16/arts/jpbreaking/jpbreaking-superJumbo.jpg", youtube: "https://youtu.be/JDQOvzFetxs?si=Jmm8aBCnqFfCwIGZ", spoiler: false, tension: 65 },
+                { id: 12, title: "Run", season: "T3:E12", desc: "Walt atropella a los traficantes para salvar a Jesse y pronuncia una sola palabra.", img: "https://pbs.twimg.com/media/Bo5-JLNIcAEjyN9.png", youtube: "https://youtu.be/hH2-UGOhfWw?si=fwKB3nYKYH2sBnnB", spoiler: true, tension: 92 }
+            ],
+            trivia: [
+                "La metanfetamina azul es químicamente imposible. La pura es blanca.",
+                "Bryan Cranston tiene un tatuaje de Br Ba en el dedo.",
+                "La escena de la pizza en el tejado se logró en la primera toma.",
+                "Aaron Paul (Jesse) nunca tomó clases de actuación.",
+                "El personaje de Jesse iba a morir en la primera temporada.",
+                "El sitio web 'SaveWalterWhite.com' existe de verdad.",
+                "El actor de Walter Jr. tiene parálisis cerebral en la vida real.",
+                "La serie tiene 62 episodios, que es el elemento Samario (Sm) en la tabla, usado para tratar cáncer."
+            ],
+            // Lab Ingredients for Drag & Drop
+            ingredients: [
+                { id: 'methylamine', name: "Metilamina", icon: "fas fa-barrel", color: "text-yellow-400" },
+                { id: 'aluminum', name: "Aluminio", icon: "fas fa-layer-group", color: "text-gray-300" },
+                { id: 'blue', name: "Fórmula Azul", icon: "fas fa-tint", color: "text-blue-500" },
+                { id: 'pseudo', name: "Pseudoefedrina", icon: "fas fa-capsules", color: "text-pink-400" }
+            ]
+        };
+
+        // --- APP CONTROLLER ---
+        const app = {
+            clickCount: 0,
+            init: () => {
+                app.navigate('home');
+                
+                const searchInput = document.getElementById('search-input');
+                if (searchInput) {
+                    searchInput.addEventListener('input', (e) => charactersController.filter(e.target.value));
+                }
+
+                const spoilerToggle = document.getElementById('spoiler-toggle');
+                if (spoilerToggle) {
+                    spoilerToggle.addEventListener('change', (e) => scenesController.render(e.target.checked));
+                }
+
+                const charSpoilerToggle = document.getElementById('char-spoiler-toggle');
+                if (charSpoilerToggle) {
+                    charSpoilerToggle.addEventListener('change', () => {
+                        charactersController.render();
+                        // If modal is open, refresh it too
+                        const modalContent = document.getElementById('char-modal-content');
+                        if(document.getElementById('char-modal').classList.contains('hidden') === false) {
+                             // We need to re-open the current character if we could track ID, 
+                             // but for simplicity we'll just re-render grid.
+                        }
+                    });
+                }
+                
+                musicController.init();
+                homeController.initTrivia();
+
+                setTimeout(() => {
+                    const screen = document.getElementById('phone-screen');
+                    if (screen) {
+                        screen.innerHTML = `<div class="bg-green-900/30 p-2 rounded mb-2"><span class="text-xs font-bold text-green-400">SAUL:</span><br>¡No contestes al timbre!</div>`;
+                    }
+                }, 1000);
+            },
+            navigate: (pageId) => {
+                const mobMenu = document.getElementById('mobile-menu');
+                if(mobMenu) mobMenu.classList.add('hidden');
+
+                document.querySelectorAll('main > div').forEach(div => div.classList.add('hidden'));
+                
+                const target = document.getElementById(`view-${pageId}`);
+                if (target) {
+                    target.classList.remove('hidden');
+                    target.classList.add('opacity-0');
+                    setTimeout(() => target.classList.remove('opacity-0'), 50);
+                }
+
+                if (pageId === 'characters') charactersController.render();
+                if (pageId === 'scenes') {
+                    const toggle = document.getElementById('spoiler-toggle');
+                    scenesController.render(toggle ? toggle.checked : false);
+                }
+                if (pageId === 'map') setTimeout(() => mapController.init(), 200);
+                if (pageId === 'quotes') quotesController.newQuote();
+                if (pageId === 'lab') labController.init();
+                if (pageId === 'seasons') seasonsController.render();
+                if (pageId === 'chemistry') chemistryController.render();
+                if (pageId === 'timeline') timelineController.render();
+
+                window.scrollTo(0, 0);
+            },
+            heisenbergEgg: () => {
+                app.clickCount++;
+                if (app.clickCount === 5) {
+                    document.body.classList.add('heisenberg-mode');
+                    alert("SAY MY NAME. (Modo Heisenberg Activado)");
+                    app.clickCount = 0;
+                    setTimeout(() => document.body.classList.remove('heisenberg-mode'), 5000);
+                }
+            }
+        };
+
+        const homeController = {
+            timer: null,
+            initTrivia: () => {
+                const el = document.getElementById('trivia-text');
+                const bar = document.getElementById('trivia-progress');
+                if(!el) return;
+                
+                let i = 0;
+                
+                const nextFact = () => {
+                    // Reset bar
+                    if(bar) {
+                        bar.style.transition = 'none';
+                        bar.style.width = '0%';
+                    }
+                    
+                    el.style.opacity = 0;
+                    
+                    setTimeout(() => {
+                        el.innerText = `"${db.trivia[i]}"`;
+                        el.style.opacity = 1;
+                        
+                        // Animate bar
+                        if(bar) {
+                            setTimeout(() => {
+                                bar.style.transition = 'width 6s linear';
+                                bar.style.width = '100%';
+                            }, 50);
+                        }
+                        
+                        i = (i + 1) % db.trivia.length;
+                    }, 500);
+                };
+                
+                nextFact();
+                if(homeController.timer) clearInterval(homeController.timer);
+                homeController.timer = setInterval(nextFact, 6500);
+            }
+        };
+
+        const charactersController = {
+            render: (data = db.characters) => {
+                const grid = document.getElementById('characters-grid');
+                grid.innerHTML = '';
+                const hideSpoilers = document.getElementById('char-spoiler-toggle')?.checked;
+
+                data.forEach(char => {
+                    let statusText = char.status;
+                    let statusColor = char.status === 'Deceased' ? 'text-red-500' : 'text-green-400';
+                    let bgClass = char.status === 'Deceased' ? 'grayscale border-red-900' : 'border-green-700';
+                    
+                    if (hideSpoilers) {
+                        statusText = "CLASIFICADO";
+                        statusColor = "text-gray-500";
+                        bgClass = "border-green-900"; // Reset grayscale visual hint too if wanted, but keeping grayscale might be a spoiler itself, so let's remove grayscale if hiding spoilers to be safe? Or keep it?
+                        // To truly hide spoiler, we should remove grayscale hint too
+                        bgClass = 'border-gray-700';
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = `bg-slate-800 rounded-xl overflow-hidden shadow-lg border ${bgClass} border-opacity-50 card-hover transition-all duration-300 flex flex-col active:scale-[0.98] cursor-pointer`;
+                    card.onclick = () => charactersController.openDetail(char.id);
+                    
+                    // If hiding spoilers, don't grayscale the image in grid
+                    const imgClass = (char.status === 'Deceased' && !hideSpoilers) ? 'grayscale' : '';
+
+                    card.innerHTML = `
+                        <div class="h-64 w-full overflow-hidden relative group">
+                            <img src="${char.img}" alt="${char.name}" class="w-full h-full object-cover transition transform group-hover:scale-110 ${imgClass}" onerror="handleImgError(this)">
+                            <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black to-transparent p-4">
+                                <h3 class="text-xl font-bold text-white brand-font">${char.name}</h3>
+                                <p class="text-sm text-yellow-400">"${char.nickname}"</p>
+                            </div>
+                        </div>
+                        <div class="p-4 flex-grow flex flex-col justify-between">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs uppercase tracking-wider text-gray-500">Estado</span>
+                                <span class="text-sm font-bold ${statusColor}"><i class="fas fa-heartbeat mr-1"></i> ${statusText}</span>
+                            </div>
+                            <div class="mb-2">
+                                <span class="text-xs uppercase tracking-wider text-gray-500 block">Ocupación</span>
+                                <span class="text-sm text-gray-300 line-clamp-1">${char.occupation}</span>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            },
+            filter: (query) => {
+                const lowerQ = query.toLowerCase();
+                const filtered = db.characters.filter(c => c.name.toLowerCase().includes(lowerQ) || c.nickname.toLowerCase().includes(lowerQ));
+                charactersController.render(filtered);
+            },
+            openDetail: (id) => {
+                const char = db.characters.find(c => c.id === id);
+                if(!char) return;
+                const modal = document.getElementById('char-modal');
+                const content = document.getElementById('char-modal-content');
+                
+                const hideSpoilers = document.getElementById('char-spoiler-toggle')?.checked;
+                let statusText = char.status;
+                let statusColor = char.status === 'Deceased' ? 'text-red-500' : 'text-green-400';
+                let imgClass = char.status === 'Deceased' ? 'grayscale' : '';
+
+                if (hideSpoilers) {
+                    statusText = "CLASIFICADO";
+                    statusColor = "text-gray-500";
+                    imgClass = "";
+                }
+                
+                const vehicleHtml = char.vehicle ? `
+                    <div class="mt-6 bg-slate-800/50 border border-orange-500/30 rounded-xl overflow-hidden flex-shrink-0">
+                         <div class="bg-orange-900/20 px-4 py-2 border-b border-orange-500/20 flex items-center">
+                             <i class="fas fa-car text-orange-500 mr-2"></i> 
+                             <span class="text-xs font-bold text-orange-300 uppercase tracking-wider">Vehículo Registrado</span>
+                         </div>
+                         <div class="flex flex-col sm:flex-row">
+                             <div class="w-full sm:w-1/3 h-40 relative">
+                                 <img src="${char.vehicle.img}" class="w-full h-full object-cover" onerror="handleImgError(this)">
+                             </div>
+                             <div class="p-4 sm:w-2/3 flex flex-col justify-center">
+                                 <h4 class="text-white font-bold brand-font text-lg">${char.vehicle.name}</h4>
+                                 <p class="text-gray-400 text-xs font-mono mb-2">${char.vehicle.model}</p>
+                                 <p class="text-gray-300 text-sm italic">"${char.vehicle.note}"</p>
+                             </div>
+                         </div>
+                    </div>
+                ` : '';
+
+                content.innerHTML = `
+                    <div class="w-full md:w-5/12 relative h-64 md:h-auto flex-shrink-0">
+                        <img src="${char.img}" class="absolute inset-0 w-full h-full object-cover ${imgClass}" onerror="handleImgError(this)">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent md:bg-gradient-to-r"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <h2 class="text-3xl md:text-4xl font-bold text-white brand-font drop-shadow-lg">${char.name}</h2>
+                            <p class="text-lg md:text-xl text-yellow-400 font-mono">"${char.nickname}"</p>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-7/12 p-6 md:p-8 bg-slate-900 text-gray-300 overflow-y-auto h-full custom-scrollbar">
+                        <div class="flex justify-between items-start mb-6 border-b border-slate-700 pb-4">
+                            <div><p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Ocupación</p><p class="font-bold text-white text-sm md:text-base">${char.occupation}</p></div>
+                            <div class="text-right"><p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Estado Actual</p><p class="font-bold ${statusColor} text-base md:text-lg">${statusText}</p></div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-6 bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                            <div>
+                                <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Actor</p>
+                                <p class="text-white font-bold text-sm">${char.actor || 'Desconocido'}</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Primera Aparición</p>
+                                <p class="text-white font-bold text-sm">${char.first_ep || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Episodios</p>
+                                <p class="text-white font-bold text-sm">${char.episodes || 'Varios'}</p>
+                            </div>
+                             <div>
+                                <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Arma</p>
+                                <p class="text-white font-bold text-sm">${char.weapon}</p>
+                            </div>
+                        </div>
+
+                        <div class="mb-6"><h3 class="text-green-500 font-bold uppercase tracking-wider mb-2 text-sm flex items-center"><i class="fas fa-file-alt mr-2"></i> Biografía</h3><p class="leading-relaxed text-sm text-gray-400">${char.bio}</p></div>
+                        
+                        <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 mb-6">
+                             <h4 class="text-xs text-gray-500 uppercase mb-2">Nivel de Peligro</h4>
+                             <div class="flex items-center"><div class="w-full bg-gray-700 rounded-full h-2.5 mr-2"><div class="bg-red-600 h-2.5 rounded-full" style="width: ${char.danger}%"></div></div><span class="text-xs font-bold text-red-500">${char.danger}%</span></div>
+                        </div>
+                        
+                        <div class="relative bg-slate-800/50 p-6 rounded-xl border-l-4 border-yellow-500 italic text-gray-400 mb-6"><i class="fas fa-quote-left text-slate-600 absolute top-2 left-2 text-2xl opacity-50"></i><p class="text-center text-base md:text-lg">"${char.quote}"</p></div>
+                        
+                        ${vehicleHtml}
+                        <div class="h-4"></div>
+                    </div>
+                `;
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            },
+            closeDetail: () => {
+                const modal = document.getElementById('char-modal');
+                if (modal) modal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
+        };
+
+        const scenesController = {
+            render: (showSpoilers) => {
+                const grid = document.getElementById('scenes-grid');
+                grid.innerHTML = '';
+                db.scenes.forEach(scene => {
+                    const isHidden = scene.spoiler && !showSpoilers;
+                    const imgClass = isHidden ? 'filter blur-xl scale-110' : '';
+                    const overlayClass = isHidden ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none';
+                    const textClass = isHidden ? 'censored-text' : 'text-gray-300';
+                    const card = document.createElement('a');
+                    card.href = scene.youtube;
+                    card.target = "_blank";
+                    card.rel = "noopener noreferrer";
+                    card.className = 'group block bg-slate-800 rounded-xl overflow-hidden border border-slate-700 shadow-xl flex flex-col md:flex-row h-auto md:h-64 transition-all hover:border-yellow-600 hover:scale-[1.01] active:scale-95 cursor-pointer decoration-none';
+                    card.innerHTML = `
+                        <div class="w-full md:w-2/5 relative overflow-hidden bg-black h-48 md:h-auto">
+                            <img src="${scene.img}" class="w-full h-full object-cover transition-all duration-500 ${imgClass}" onerror="handleImgError(this)">
+                            <div class="absolute inset-0 flex items-center justify-center flex-col z-10 transition-opacity duration-500 bg-black/60 ${overlayClass}">
+                                <div class="stamp mb-2">TOP SECRET</div>
+                            </div>
+                            <div class="absolute inset-0 flex items-center justify-center z-20 play-overlay bg-black/40 ${isHidden ? 'hidden' : ''}">
+                                <i class="fas fa-play-circle text-5xl md:text-6xl text-white opacity-80 drop-shadow-lg transform scale-95 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                        </div>
+                        <div class="p-4 md:p-6 w-full md:w-3/5 flex flex-col justify-between relative">
+                            <div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="text-lg md:text-xl font-bold text-white brand-font tracking-wide group-hover:text-yellow-500 transition-colors">${scene.title}</h3>
+                                    ${scene.spoiler ? '<span class="text-[10px] md:text-xs text-red-500 border border-red-500 px-2 py-1 rounded font-mono ml-2 whitespace-nowrap">SPOILER</span>' : ''}
+                                </div>
+                                <p class="text-yellow-600 text-xs md:text-sm font-bold mb-2 md:mb-3 uppercase tracking-wider">${scene.season}</p>
+                                <p class="${textClass} text-sm leading-relaxed transition-all duration-300 group-hover:text-gray-200 line-clamp-3 md:line-clamp-none">${scene.desc}</p>
+                            </div>
+                            ${isHidden ? `<div class="mt-3 pointer-events-none"><p class="text-xs text-gray-500 italic"><i class="fas fa-exclamation-triangle text-yellow-500"></i> Toca para ver (Spoilers)</p></div>` : `<div class="mt-3 flex items-center text-green-500 text-sm font-bold opacity-100 transition-opacity"><i class="fab fa-youtube mr-2"></i> Ver escena</div>`}
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            },
+            openCustom: () => {
+                const url = document.getElementById('custom-scene-input').value;
+                if(url) window.open(url, '_blank');
+                else alert("Por favor pega una URL válida.");
+            }
+        };
+
+        const mapController = {
+            mapInstance: null,
+            markers: {},
+            init: () => {
+                if (mapController.mapInstance) {
+                    mapController.mapInstance.invalidateSize();
+                    return;
+                }
+                mapController.mapInstance = L.map('map').setView([35.10, -106.60], 11);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap' }).addTo(mapController.mapInstance);
+                const flaskIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#15803d; width: 15px; height: 15px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #22c55e;'></div>", iconSize: [15, 15] });
+                
+                const btnContainer = document.getElementById('map-buttons');
+                btnContainer.innerHTML = '';
+
+                db.locations.forEach(loc => {
+                    const marker = L.marker(loc.coords, { icon: flaskIcon }).addTo(mapController.mapInstance);
+                    const popupContent = `<div class="min-w-[200px]"><h3 class="text-lg font-bold brand-font mb-1">${loc.name}</h3><p class="text-sm mb-2">${loc.desc}</p><div class="bg-yellow-100 p-2 rounded text-xs text-yellow-800 border-l-4 border-yellow-500 mb-2"><b>Dato:</b> ${loc.fact}</div><a href="https://www.google.com/maps/search/?api=1&query=${loc.coords[0]},${loc.coords[1]}" target="_blank" class="block w-full bg-blue-600 text-white text-center text-xs py-2 rounded hover:bg-blue-700 font-bold">Ver en Google Maps</a></div>`;
+                    marker.bindPopup(popupContent);
+                    mapController.markers[loc.id] = marker;
+
+                    const btn = document.createElement('button');
+                    btn.className = "bg-slate-700 hover:bg-slate-600 p-3 rounded-lg text-left border-l-4 border-green-500 transition active:bg-slate-600 flex flex-col justify-center";
+                    btn.innerHTML = `<h4 class="font-bold text-sm text-white truncate">${loc.name}</h4>`;
+                    btn.onclick = () => mapController.flyTo(loc.id);
+                    btnContainer.appendChild(btn);
+                });
+            },
+            flyTo: (id) => {
+                const loc = db.locations.find(l => l.id === id);
+                if (loc && mapController.mapInstance) {
+                    mapController.mapInstance.flyTo(loc.coords, 15, { animate: true, duration: 1.5 });
+                    setTimeout(() => mapController.markers[id].openPopup(), 1500);
+                    document.getElementById('map').scrollIntoView({behavior: 'smooth', block: 'center'});
+                }
+            }
+        };
+
+        const labController = {
+            target: ['methylamine', 'aluminum', 'blue'], 
+            currentStep: 0,
+            init: () => {
+                labController.currentStep = 0;
+                const shelf = document.getElementById('lab-shelf');
+                shelf.innerHTML = db.ingredients.map(ing => `
+                    <div draggable="true" ondragstart="labController.drag(event)" id="${ing.id}" class="draggable-item bg-slate-700 p-4 rounded-lg flex flex-col items-center gap-3 border border-slate-600 hover:border-white hover:bg-slate-600 cursor-grab active:cursor-grabbing transition-all shadow-md">
+                        <i class="${ing.icon} ${ing.color} text-3xl"></i>
+                        <span class="text-xs font-bold text-white uppercase tracking-wide">${ing.name}</span>
+                    </div>
+                `).join('');
+                
+                const zone = document.getElementById('lab-beaker');
+                zone.ondrop = labController.drop;
+                zone.ondragover = labController.allowDrop;
+                zone.ondragleave = labController.leave;
+                
+                document.getElementById('beaker-liquid').style.height = '0%';
+                document.getElementById('lab-message').innerText = "PASO 1: Arrastra la Metilamina";
+                document.getElementById('lab-message').className = "mb-4 text-yellow-400 font-mono text-sm font-bold bg-black/50 px-4 py-2 rounded border border-yellow-600";
+                document.getElementById('lab-result').classList.add('hidden');
+            },
+            drag: (e) => { e.dataTransfer.setData("text", e.target.id); },
+            allowDrop: (e) => { e.preventDefault(); document.getElementById('lab-beaker').classList.add('drag-over'); },
+            leave: (e) => { document.getElementById('lab-beaker').classList.remove('drag-over'); },
+            drop: (e) => {
+                e.preventDefault();
+                const id = e.dataTransfer.getData("text");
+                const zone = document.getElementById('lab-beaker');
+                zone.classList.remove('drag-over');
+                
+                if (id === labController.target[labController.currentStep]) {
+                    labController.currentStep++;
+                    const pct = (labController.currentStep / 3) * 100;
+                    document.getElementById('beaker-liquid').style.height = `${pct}%`;
+                    zone.classList.add('shake'); setTimeout(() => zone.classList.remove('shake'), 500);
+
+                    if (labController.currentStep === 1) document.getElementById('lab-message').innerText = "PASO 2: Añade Aluminio";
+                    if (labController.currentStep === 2) document.getElementById('lab-message').innerText = "PASO 3: Fórmula Azul";
+                    
+                    if (labController.currentStep === 3) {
+                        document.getElementById('lab-message').innerText = "¡PROCESO COMPLETADO!";
+                        document.getElementById('lab-message').className = "mb-4 text-blue-400 font-mono text-sm font-bold bg-black/50 px-4 py-2 rounded border border-blue-500";
+                        document.getElementById('lab-result').classList.remove('hidden');
+                    }
+                } else {
+                    document.getElementById('lab-message').innerText = "¡ERROR! ¡MEZCLA INESTABLE!";
+                    document.getElementById('lab-message').className = "mb-4 text-red-500 font-mono text-sm font-bold bg-black/50 px-4 py-2 rounded border border-red-600 animate-pulse";
+                    labController.currentStep = 0;
+                    document.getElementById('beaker-liquid').style.height = '0%';
+                }
+            }
+        };
+
+        const quotesController = {
+            history: [],
+            newQuote: () => {
+                const container = document.getElementById('quote-display');
+                const textEl = document.getElementById('quote-text');
+                const authEl = document.getElementById('quote-author');
+                const contextEl = document.getElementById('quote-context');
+                const purityEl = document.getElementById('quote-purity');
+                const thumbEl = document.getElementById('quote-author-thumb');
+                const loader = document.getElementById('quote-loader');
+                
+                if (loader) loader.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    const random = db.quotes[Math.floor(Math.random() * db.quotes.length)];
+                    const purity = (Math.random() * (99.9 - 96.0) + 96.0).toFixed(1);
+                    const char = db.characters.find(c => c.name === random.author || c.nickname === random.author) || db.characters[0];
+                    
+                    if (textEl) textEl.innerText = `"${random.text}"`;
+                    if (authEl) authEl.innerText = random.author;
+                    if (contextEl) contextEl.innerText = `REF: ${random.context || 'Unknown'}`;
+                    if (purityEl) purityEl.innerText = `${purity}%`;
+                    if (thumbEl) thumbEl.src = char.img;
+                    
+                    quotesController.addToHistory(random);
+                    if (loader) loader.classList.add('hidden');
+                }, 800);
+            },
+            addToHistory: (quote) => {
+                if (quotesController.history.length >= 5) quotesController.history.shift();
+                quotesController.history.push(quote);
+                const histContainer = document.getElementById('quote-history');
+                if (histContainer) histContainer.innerHTML = quotesController.history.map(q => `<span class="text-[10px] bg-slate-800 border border-slate-700 px-2 py-1 rounded-full text-gray-400 truncate max-w-[100px] cursor-help" title="${q.text}">"${q.text.substring(0, 10)}..."</span>`).join('');
+            },
+            copyQuote: () => {
+                const text = document.getElementById('quote-text').innerText;
+                navigator.clipboard.writeText(text);
+                alert("Cita copiada al portapapeles.");
+            }
+        };
+
+        const seasonsController = {
+            render: () => {
+                const box = document.getElementById('seasons-container');
+                if(!box) return;
+                box.innerHTML = db.seasons.map(s => `
+                    <div class="bg-slate-800 p-6 rounded-xl border-l-4 border-green-500 flex flex-col md:flex-row items-start gap-6 hover:bg-slate-700 transition group">
+                        <div class="text-green-500 text-5xl mt-2 group-hover:scale-110 transition-transform"><i class="${s.icon}"></i></div>
+                        <div class="flex-1 w-full">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="text-2xl font-bold text-white brand-font">${s.title}</h3>
+                                <span class="bg-red-900/30 text-red-400 border border-red-900 text-[10px] px-2 py-1 rounded font-mono flex items-center"><i class="fas fa-skull mr-1"></i> ${s.deaths} Bajas</span>
+                            </div>
+                            <p class="text-gray-300 leading-relaxed mb-4">${s.desc}</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm border-t border-slate-600 pt-4 w-full">
+                                <div><span class="text-yellow-500 font-bold uppercase text-xs block mb-1">Villano Principal</span> <span class="text-gray-200">${s.villain}</span></div>
+                                <div><span class="text-blue-400 font-bold uppercase text-xs block mb-1">Episodios Clave</span> <span class="text-gray-200">${s.keyEpisodes}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        };
+
+        const chemistryController = {
+            render: () => {
+                const grid = document.getElementById('chemistry-grid');
+                if(!grid) return;
+                grid.innerHTML = db.chemistry_info.map(chem => `
+                    <div onclick="chemistryController.openDetail('${chem.id}')" class="bg-slate-800 p-6 rounded-xl border border-slate-700 relative overflow-hidden cursor-pointer chem-card-hover group">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><i class="${chem.icon} text-6xl text-white"></i></div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="border-2 border-white w-16 h-16 flex flex-col items-center justify-center bg-slate-700 shadow-[0_0_15px_rgba(255,255,255,0.1)] group-hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] group-hover:border-blue-400 transition-all">
+                                <span class="text-xs font-bold self-start ml-1 -mb-1 opacity-70">Top</span>
+                                <span class="text-2xl font-bold brand-font">${chem.formula.split('')[0]}</span>
+                            </div>
+                            <span class="text-xs font-mono text-gray-500 border border-gray-600 px-2 py-1 rounded">CAS: ${chem.cas}</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-1 group-hover:text-blue-400 transition">${chem.name}</h3>
+                        <p class="text-gray-400 text-sm line-clamp-2">${chem.desc}</p>
+                    </div>
+                `).join('');
+            },
+            openDetail: (id) => {
+                const chem = db.chemistry_info.find(c => c.id === id);
+                if(!chem) return;
+                document.getElementById('chem-modal-title').innerText = chem.name;
+                document.getElementById('chem-modal-formula').innerText = chem.formula;
+                document.getElementById('chem-modal-cas').innerText = `CAS: ${chem.cas}`;
+                document.getElementById('chem-modal-icon').className = chem.icon;
+                document.getElementById('chem-modal-usage').innerText = chem.usage;
+                document.getElementById('chem-modal-reality').innerText = chem.reality;
+                document.getElementById('chem-modal-desc').innerText = chem.desc;
+                const health = document.getElementById('nfpa-health'); const fire = document.getElementById('nfpa-fire'); const inst = document.getElementById('nfpa-instability'); const spec = document.getElementById('nfpa-special');
+                if (health) health.innerText = chem.danger.health; if (fire) fire.innerText = chem.danger.fire; if (inst) inst.innerText = chem.danger.instability; if (spec) spec.innerText = chem.danger.special;
+                document.getElementById('chem-modal').classList.remove('hidden');
+            },
+            closeDetail: () => document.getElementById('chem-modal').classList.add('hidden')
+        };
+
+        const timelineController = {
+            render: () => {
+                const box = document.getElementById('timeline-container');
+                if(!box) return;
+                box.innerHTML = db.timeline.map(t => `
+                    <div class="timeline-item relative pl-8 group">
+                        <div class="timeline-dot"></div>
+                        <span class="text-green-500 font-mono text-sm mb-1 block border-b border-slate-700 inline-block">${t.year}</span>
+                        <h4 class="text-lg md:text-xl text-white font-bold group-hover:text-green-400 transition files-font mt-1">${t.event}</h4>
+                    </div>
+                `).join('');
+            }
+        };
+        
+        const businessesController = {
+            dirtyMoney: 500000, cleanMoney: 0,
+            launderMoney: () => {
+                if (businessesController.dirtyMoney <= 0) return alert("¡Ya has lavado todo!");
+                businessesController.dirtyMoney -= 50000; businessesController.cleanMoney += 42500;
+                document.getElementById('dirty-money').innerText = businessesController.dirtyMoney.toLocaleString();
+                document.getElementById('clean-money').innerText = businessesController.cleanMoney.toLocaleString();
+            },
+            getLegalAdvice: () => {
+                const advice = [
+                    "¡No hables con la policía!",
+                    "¿Un accidente? ¡Mejor llama a Saul!",
+                    "El dinero es el punto, abogado.",
+                    "¡Tienes derechos! La constitución lo dice.",
+                    "Conozco a un tipo que conoce a un tipo."
+                ];
+                document.getElementById('saul-legal-tip').innerText = `"${advice[Math.floor(Math.random() * advice.length)]}"`;
+            },
+            fumigate: () => {
+                const body = document.body;
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed inset-0 bg-green-500/50 z-[100] pointer-events-none transition duration-1000';
+                body.appendChild(overlay);
+                setTimeout(() => {
+                    overlay.classList.add('opacity-0');
+                    setTimeout(() => overlay.remove(), 1000);
+                }, 500);
+                alert('¡Casa despejada! Hora de cocinar.');
+            }
+        };
+
+        const burnerPhoneController = {
+            messages: [ { from: "Saul", text: "¡No respondas al timbre!" }, { from: "Mike", text: "Lugar de reunión cambiado." }, { from: "Jesse", text: "¡Ciencia, perra!" }, { from: "Gus", text: "No es aceptable." } ],
+            open: () => {
+                document.getElementById('burner-modal').classList.remove('hidden');
+                document.getElementById('burner-badge').classList.add('hidden');
+                const screen = document.getElementById('phone-screen');
+                screen.innerHTML = '<div class="text-center text-xs text-gray-600 mb-4">--- Hoy ---</div>';
+                for(let i=0; i<3; i++) {
+                    const msg = burnerPhoneController.messages[Math.floor(Math.random() * burnerPhoneController.messages.length)];
+                    screen.innerHTML += `<div class="mb-2 p-2 bg-gray-900 rounded border border-green-900/50"><strong class="text-green-500 text-xs block">${msg.from}:</strong> ${msg.text}</div>`;
+                }
+            },
+            close: () => document.getElementById('burner-modal').classList.add('hidden')
+        };
+
+        var musicController = {
+    player: new Audio(), 
+    playlist: [], 
+    currentTrackIndex: 0,
+
+    init: () => {
+        console.log("Iniciando modo sigiloso...");
+        
+        // Input oculto (técnica estándar)
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.id = 'local-file-input';
+        fileInput.multiple = true;
+        fileInput.accept = 'audio/*';
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+
+        // BOTÓN CAMUFLADO
+        if (!document.getElementById('btn-import-music')) {
+            const btn = document.createElement('button');
+            btn.id = 'btn-import-music';
+            btn.innerHTML = '&nbsp;'; // Sin texto
+            
+            // Estilos de camuflaje total
+            btn.style.position = 'fixed';
+            btn.style.bottom = '0px';
+            btn.style.right = '0px';
+            btn.style.width = '40px';  // Zona de clic generosa
+            btn.style.height = '40px';
+            btn.style.zIndex = '9999';
+            btn.style.background = 'transparent'; 
+            btn.style.border = 'none';
+            btn.style.outline = 'none';
+            btn.style.cursor = 'default'; // El cursor NO cambia a manita para no delatarte
+            
+            // Truco: Al pasar el ratón por encima, se ilumina MUY poco (solo para ti)
+            btn.onmouseover = () => btn.style.background = 'rgba(0,0,0,0.05)';
+            btn.onmouseout = () => btn.style.background = 'transparent';
+
+            btn.onclick = () => fileInput.click();
+            document.body.appendChild(btn);
+        }
+
+        // Lógica de carga de archivos (Igual que antes)
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) {
+                const newTracks = files.map(file => ({
+                    title: file.name.replace(/\.[^/.]+$/, ""), 
+                    artist: "Música Local",
+                    src: URL.createObjectURL(file), 
+                    originalFile: file
+                }));
+                
+                musicController.playlist = musicController.playlist.concat(newTracks);
+                
+                if (musicController.playlist.length === newTracks.length) {
+                    musicController.loadSong(0);
+                }
+            }
+        });
+
+        // Eventos del reproductor
+        musicController.player.addEventListener('ended', () => {
+            musicController.next();
+        });
+        
+        musicController.player.addEventListener('error', (e) => {
+            console.error("Error archivo", e);
+            musicController.next();
+        });
+    },
+
+    togglePlay: () => {
+        if (musicController.playlist.length === 0) {
+            // Discreto: solo log en consola en vez de alert ruidoso
+            console.log("Haz clic en la esquina inferior derecha para cargar música");
+            return;
+        }
+        
+        if (musicController.player.paused) {
+            musicController.player.play().catch(e => console.error(e));
+        } else {
+            musicController.player.pause();
+        }
+    },
+
+    next: () => {
+        if (musicController.playlist.length === 0) return;
+        musicController.currentTrackIndex = (musicController.currentTrackIndex + 1) % musicController.playlist.length;
+        musicController.loadSong(musicController.currentTrackIndex);
+    },
+
+    prev: () => {
+        if (musicController.playlist.length === 0) return;
+        musicController.currentTrackIndex = (musicController.currentTrackIndex - 1 + musicController.playlist.length) % musicController.playlist.length;
+        musicController.loadSong(musicController.currentTrackIndex);
+    },
+
+    loadSong: (index) => {
+        if (index < 0 || index >= musicController.playlist.length) return;
+        
+        musicController.currentTrackIndex = index;
+        const song = musicController.playlist[index];
+        
+        musicController.player.src = song.src;
+        musicController.player.load();
+        
+        const titleEl = document.getElementById('song-title');
+        const artistEl = document.getElementById('song-artist');
+        if (titleEl) titleEl.innerText = song.title;
+        if (artistEl) artistEl.innerText = song.artist;
+
+        musicController.player.play().catch(e => console.log("Esperando play..."));
+    },
+
+    setVolume: (val) => {
+        musicController.player.volume = val / 100;
+    }
+};
+
+document.addEventListener('DOMContentLoaded', musicController.init);
+
+        const settingsController = {
+            toggle: () => document.getElementById('settings-panel').classList.toggle('open'),
+            toggleMexico: (e) => e ? (document.body.classList.add('mexico-mode'), document.body.classList.remove('meth-mode')) : document.body.classList.remove('mexico-mode'),
+            toggleFly: (e) => e ? document.body.classList.add('fly-mode') : document.body.classList.remove('fly-mode'),
+            toggleMeth: (e) => e ? (document.body.classList.add('meth-mode'), document.body.classList.remove('mexico-mode')) : document.body.classList.remove('meth-mode'),
+            toggleCursor: (e) => e ? document.body.classList.add('crystal-cursor') : document.body.classList.remove('crystal-cursor'),
+            toggleMoney: (e) => {
+                const c = document.getElementById('money-rain-container');
+                if (e) {
+                    settingsController.moneyInterval = setInterval(() => {
+                        const b = document.createElement('div'); b.className = 'money-bill';
+                        b.innerHTML = '<i class=\"fas fa-money-bill-wave\"></i>';
+                        b.style.left = Math.random()*100+'vw'; b.style.animationDuration = Math.random()*2+3+'s';
+                        c.appendChild(b); setTimeout(() => b.remove(), 5000);
+                    }, 300);
+                } else { clearInterval(settingsController.moneyInterval); c.innerHTML = ''; }
+            },
+            toggleDing: (e) => { settingsController.dingEnabled = e; }
+        };
+
+        window.addEventListener('DOMContentLoaded', app.init);
+    </script>
+</body>
+</html>
