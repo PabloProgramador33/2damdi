@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ticketmaster Experience | Eventos en Vivo</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- QRious for QR Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7', 
+                            700: '#026cdf', // TM Blue
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        dark: {
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155'
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'fade-in': 'fadeIn 0.4s ease-out forwards',
+                        'pulse-slow': 'pulse 3s infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'glow': '0 0 20px rgba(14, 165, 233, 0.3)',
+                    },
+                    backgroundImage: {
+                        'ticket-pattern': "radial-gradient(#e2e8f0 15%, transparent 16%), radial-gradient(#e2e8f0 15%, transparent 16%)"
+                    },
+                    transitionProperty: {
+                        'height': 'height, max-height',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .glass-dark {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Perspective Container */
+        .seat-map-container {
+            perspective: 1000px;
+            overflow: hidden;
+            touch-action: pan-x pan-y;
+            transition: all 0.5s ease;
+        }
+        .stage-3d {
+            transform: rotateX(20deg) scale(0.9);
+            transform-style: preserve-3d;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Smooth scrolling */
+        html { scroll-behavior: smooth; }
+        
+        /* Mobile Optimizations */
+        @media (max-width: 640px) {
+            .stage-3d {
+                transform: rotateX(10deg) scale(0.65); /* Escala ligeramente mayor para móviles */
+            }
+        }
+
+        .tab-active { 
+            border-bottom: 3px solid #026cdf; 
+            color: #026cdf; 
+        }
+
+        /* TICKET NOTCHES LOGIC */
+        .ticket-notch-y {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #f8fafc;
+            border-radius: 50%;
+            z-index: 10;
+        }
+        .notch-top { top: -15px; right: -15px; }
+        .notch-bottom { bottom: -15px; right: -15px; }
+
+        .ticket-notch-x {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #f8fafc; 
+            border-radius: 50%;
+            z-index: 10;
+        }
+        .notch-left { bottom: -15px; left: -15px; }
+        .notch-right { bottom: -15px; right: -15px; }
+        
+        /* Custom inputs for better mobile UX */
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased selection:bg-brand-700 selection:text-white">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef, useContext, createContext } = React;
+
+        // --- ICONS (Lucide) ---
+        const Icon = ({ children, className, size, ...props }) => {
+            const style = size ? { width: size, height: size } : {};
+            return (
+                <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className={`w-5 h-5 ${className || ''}`} 
+                    style={style}
+                    {...props}
+                >
+                    {children}
+                </svg>
+            );
+        };
+
+        const Search = (p) => <Icon {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Icon>;
+        const MapPin = (p) => <Icon {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></Icon>;
+        const Calendar = (p) => <Icon {...p}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></Icon>;
+        const CreditCard = (p) => <Icon {...p}><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></Icon>;
+        const User = (p) => <Icon {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>;
+        const Ticket = (p) => <Icon {...p}><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></Icon>;
+        const ChevronLeft = (p) => <Icon {...p}><path d="m15 18-6-6 6-6"/></Icon>;
+        const Info = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></Icon>;
+        const Clock = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></Icon>;
+        const CheckCircle = (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>;
+        const AlertCircle = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></Icon>;
+        const ChevronRight = (p) => <Icon {...p}><path d="m9 18 6-6-6-6"/></Icon>;
+        const HelpCircle = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></Icon>;
+        const Mail = (p) => <Icon {...p}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></Icon>;
+        const Lock = (p) => <Icon {...p}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Icon>;
+        const LogOut = (p) => <Icon {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></Icon>;
+        const ChevronDown = (p) => <Icon {...p}><path d="m6 9 6 6 6-6"/></Icon>;
+        const MessageCircle = (p) => <Icon {...p}><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></Icon>;
+        const Star = (p) => <Icon {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Icon>;
+        const Loader = (p) => <Icon {...p}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></Icon>;
+        const Send = (p) => <Icon {...p}><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Icon>;
+        const Shield = (p) => <Icon {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></Icon>;
+        const X = (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 18 12"/></Icon>;
+        const QrCode = (p) => <Icon {...p}><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></Icon>;
+        const Download = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></Icon>;
+        const Minimize = (p) => <Icon {...p}><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></Icon>;
+        const Maximize = (p) => <Icon {...p}><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></Icon>;
+        const TrendingUp = (p) => <Icon {...p}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></Icon>;
+        const Zap = (p) => <Icon {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Icon>;
+
+        // --- DATA ---
+        // Added eventId mapping to link slides to specific events
+        const HERO_SLIDES = [
+            { id: 'h1', title: "TAYLOR SWIFT | THE ERAS TOUR", subtitle: "La gira más grande de la historia llega a Europa.", image: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=2000&auto=format&fit=crop", color: "from-purple-900", eventId: 'm2' },
+            { id: 'h2', title: "FINAL CHAMPIONS LEAGUE", subtitle: "Vive la emoción del mejor fútbol del mundo.", image: "https://img.freepik.com/foto-gratis/concepto-hacer-deporte_23-2151937746.jpg", color: "from-blue-900", eventId: 's1' },
+            { id: 'h3', title: "KAROL G | MAÑANA SERÁ BONITO", subtitle: "La Bichota llega al Estadio Santiago Bernabéu.", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/PalaciodelosDeportes_Concierto.jpg/1024px-PalaciodelosDeportes_Concierto.jpg", color: "from-pink-600", eventId: 'm5' },
+            { id: 'h4', title: "CIRQUE DU SOLEIL: ALEGRÍA", subtitle: "Una reinvención de un clásico atemporal.", image: "https://images.unsplash.com/photo-1435034568314-8303dbda4b8c?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Y2lyY298ZW58MHx8MHx8fDA%3D", color: "from-yellow-900", eventId: 'fam2' },
+            { id: 'h5', title: "FORMULA 1 GP ESPAÑA", subtitle: "Siente la velocidad en el Circuit de Barcelona-Catalunya.", image: "https://upload.wikimedia.org/wikipedia/commons/c/cb/Formula_1%2C_GP_San_Marino_1989%2C_Imola%2C_Prost_e_Senna.jpg", color: "from-red-800", eventId: 's2' }
+        ];
+
+        const NEWS_ITEMS = [
+            { 
+                id: 1, 
+                title: "Nuevas fechas para Coldplay", 
+                category: "Anuncio", 
+                time: "Hace 2 horas", 
+                image: "https://upload.wikimedia.org/wikipedia/commons/2/2e/ColdplayBBC071221_%28cropped%29.jpg",
+                content: "Coldplay ha anunciado nuevas fechas para su gira mundial 'Music of the Spheres'. Tras el éxito rotundo en sus primeras paradas, la banda británica ha decidido añadir tres noches más en Barcelona y dos en Madrid. Las entradas saldrán a la venta el próximo viernes a las 10:00h. Se espera una demanda masiva, así que recomendamos estar preparados en la sala de espera virtual al menos 30 minutos antes. La banda también ha confirmado que contará con artistas invitados especiales para estas nuevas fechas, prometiendo un espectáculo aún más inolvidable."
+            },
+            { 
+                id: 2, 
+                title: "Guía para el Mad Cool 2024", 
+                category: "Festival", 
+                time: "Hace 5 horas", 
+                image: "https://upload.wikimedia.org/wikipedia/commons/c/c4/Noria_del_Mad_Cool_2016.jpg",
+                content: "El festival Mad Cool 2024 ya está aquí y te traemos la guía definitiva para que no te pierdas nada. Este año, el recinto cuenta con mejoras significativas en accesibilidad y zonas de descanso. Recomendamos llegar temprano para evitar colas en los accesos. No olvides recargar tu pulsera cashless antes de llegar para ahorrar tiempo. Además, hemos preparado una lista de los 'hidden gems', esos artistas menos conocidos que tocan en los escenarios pequeños y que seguro te sorprenderán. ¡Prepárate para tres días de música non-stop!"
+            },
+            { 
+                id: 3, 
+                title: "Entradas VIP: ¿Valen la pena?", 
+                category: "Blog", 
+                time: "Ayer", 
+                image: "https://img.freepik.com/vector-gratis/fondo-diseno-vip_1115-629.jpg?semt=ais_hybrid&w=740&q=80",
+                content: "¿Estás pensando en comprar entradas VIP pero no sabes si merece la pena el desembolso extra? En este artículo analizamos al detalle qué incluyen los paquetes VIP de los principales eventos de este año. Desde acceso prioritario (Early Entry) que te garantiza primera fila, hasta zonas exclusivas con barra libre y catering antes del concierto. También evaluamos el valor de los regalos de merchandising exclusivos. Según nuestra experiencia, para los superfans que quieren vivir el concierto sin agobios y con la máxima comodidad, la experiencia VIP transforma completamente el evento."
+            }
+        ];
+
+        const MOCK_EVENTS = [
+            { id: 'm1', artist: 'Coldplay', tour: 'Music of the Spheres', date: '2024-07-12', time: '21:00', venue: 'Estadi Olímpic', city: 'Barcelona', image: 'https://upload.wikimedia.org/wikipedia/commons/c/cc/ColdplayWembley120925_%28cropped%29.jpg', category: 'Música', priceRange: '60€ - 250€' },
+            { id: 'm2', artist: 'Taylor Swift', tour: 'The Eras Tour', date: '2024-05-30', time: '20:00', venue: 'Santiago Bernabéu', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Taylor_Swift_The_Eras_Tour_Lover_Set_%2853109596949%29.jpg/1550px-Taylor_Swift_The_Eras_Tour_Lover_Set_%2853109596949%29.jpg', category: 'Música', priceRange: '85€ - 400€' },
+            { id: 'm3', artist: 'Bad Bunny', tour: 'Most Wanted Tour', date: '2024-08-15', time: '22:00', venue: 'Estadio Metropolitano', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/en/2/25/Deb%C3%AD_Tirar_M%C3%A1s_Fotos_World_Tour.png', category: 'Música', priceRange: '75€ - 300€' },
+            { id: 'm4', artist: 'Metallica', tour: 'M72 World Tour', date: '2024-09-20', time: '19:30', venue: 'Civitas Metropolitano', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Metallica_1983_press_photo.jpg/250px-Metallica_1983_press_photo.jpg', category: 'Música', priceRange: '90€ - 280€' },
+            { id: 'm5', artist: 'Karol G', tour: 'Mañana Será Bonito Tour', date: '2024-07-20', time: '21:00', venue: 'Santiago Bernabéu', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/commons/c/c2/Karol_G_en_El_Salvador.jpg', category: 'Música', priceRange: '65€ - 220€' },
+            { id: 'm6', artist: 'Aitana', tour: 'Alpha Tour Final', date: '2024-12-28', time: '21:00', venue: 'Santiago Bernabéu', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Concierto_de_Aitana.jpg/1200px-Concierto_de_Aitana.jpg', category: 'Música', priceRange: '45€ - 120€' },
+            { id: 'm7', artist: 'Bruce Springsteen', tour: 'World Tour 2024', date: '2024-06-12', time: '21:00', venue: 'Estadio Metropolitano', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Bruce_Springsteen_performing_at_Climate_Pledge_Arena_in_Seattle%2C_Washington_27_February_2023.jpg/250px-Bruce_Springsteen_performing_at_Climate_Pledge_Arena_in_Seattle%2C_Washington_27_February_2023.jpg', category: 'Música', priceRange: '90€ - 300€' },
+            { id: 'm8', artist: 'Duki', tour: 'A.D.A Tour', date: '2024-06-08', time: '21:30', venue: 'Santiago Bernabéu', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/commons/1/1a/Duko_Freestyle.jpg', category: 'Música', priceRange: '50€ - 150€' },
+            { id: 'm9', artist: 'Luis Miguel', tour: 'Tour 2024', date: '2024-07-06', time: '21:30', venue: 'Estadio Santiago Bernabéu', city: 'Madrid', image: 'https://images.unsplash.com/photo-1598387993441-a364f854c3e1?q=80&w=800', category: 'Música', priceRange: '80€ - 350€' },
+            { id: 'm10', artist: 'Olivia Rodrigo', tour: 'GUTS World Tour', date: '2024-06-20', time: '20:30', venue: 'WiZink Center', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/commons/6/6d/Olivia_Rodrigo_in_concert_in_Portugal_03.jpg', category: 'Música', priceRange: '60€ - 180€' },
+            { id: 'm11', artist: 'Quevedo', tour: 'DQE Tour', date: '2024-05-05', time: '21:00', venue: 'Recinto Ferial', city: 'Tenerife', image: 'https://upload.wikimedia.org/wikipedia/commons/a/af/Quevedo2023hh.jpg', category: 'Música', priceRange: '40€ - 100€' },
+            { id: 'm12', artist: 'Estopa', tour: 'Gira 25 Aniversario', date: '2024-07-10', time: '22:00', venue: 'Estadi Olímpic', city: 'Barcelona', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Estopa_2008.06.13_007.jpg/1200px-Estopa_2008.06.13_007.jpg', category: 'Música', priceRange: '45€ - 90€' },
+            { id: 'm13', artist: 'Pearl Jam', tour: 'Dark Matter Tour', date: '2024-07-06', time: '21:00', venue: 'Palau Sant Jordi', city: 'Barcelona', image: 'https://upload.wikimedia.org/wikipedia/commons/8/85/PearlJam-Oakland-2013.JPG', category: 'Música', priceRange: '95€ - 150€' },
+            { id: 'm14', artist: 'Hans Zimmer', tour: 'Live in Concert', date: '2024-04-29', time: '20:00', venue: 'WiZink Center', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Hans_Zimmer_in_2022.jpg/1280px-Hans_Zimmer_in_2022.jpg', category: 'Música', priceRange: '80€ - 200€' },
+            { id: 's1', artist: 'Real Madrid vs FC Barcelona', tour: 'La Liga', date: '2024-04-21', time: '21:00', venue: 'Santiago Bernabéu', city: 'Madrid', image: 'https://www.fcbarcelona.com/photo-resources/2023/03/02/d9bae6a8-2ee2-44fe-ba96-fc90d6278efe/IMG_4921.PNG?width=1200&height=750', category: 'Deportes', priceRange: '120€ - 800€' },
+            { id: 's2', artist: 'Formula 1 GP España', tour: 'Gran Premio 2024', date: '2024-06-23', time: '15:00', venue: 'Circuit de Barcelona-Catalunya', city: 'Barcelona', image: 'https://upload.wikimedia.org/wikipedia/commons/c/cb/Formula_1%2C_GP_San_Marino_1989%2C_Imola%2C_Prost_e_Senna.jpg', category: 'Deportes', priceRange: '150€ - 600€' },
+            { id: 's3', artist: 'MotoGP Gran Premio de Jerez', tour: 'Mundial de Motociclismo', date: '2024-04-28', time: '14:00', venue: 'Circuito de Jerez', city: 'Jerez', image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=800', category: 'Deportes', priceRange: '80€ - 250€' },
+            { id: 's4', artist: 'Final Copa del Rey Baloncesto', tour: 'ACB', date: '2024-02-18', time: '19:00', venue: 'Palacio de Deportes', city: 'Málaga', image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=800', category: 'Deportes', priceRange: '50€ - 180€' },
+            { id: 's5', artist: 'Rafa Nadal Exhibition', tour: 'The Last Dance', date: '2024-03-03', time: '18:00', venue: 'Caja Mágica', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Rafael_Nadal_2011_Roland_Garros_2011.jpg/960px-Rafael_Nadal_2011_Roland_Garros_2011.jpg', category: 'Deportes', priceRange: '100€ - 500€' },
+            { id: 's6', artist: 'Atlético de Madrid vs Sevilla', tour: 'La Liga', date: '2024-05-12', time: '18:30', venue: 'Civitas Metropolitano', city: 'Madrid', image: 'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?q=80&w=800', category: 'Deportes', priceRange: '40€ - 150€' },
+            { id: 's7', artist: 'Harlem Globetrotters', tour: 'World Tour', date: '2024-05-10', time: '19:00', venue: 'WiZink Center', city: 'Madrid', image: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=800', category: 'Deportes', priceRange: '30€ - 80€' },
+            { id: 't1', artist: 'El Rey León', tour: 'El Musical', date: '2024-05-15', time: '18:00', venue: 'Teatro Lope de Vega', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/commons/d/da/Michelle_Obama_joins_the_cast_of_Disney%27s_%22The_Lion_King%22_onstage_%2815176076171%29.jpg', category: 'Teatro', priceRange: '45€ - 150€' },
+            { id: 't2', artist: 'Aladdin', tour: 'El Musical', date: '2024-05-20', time: '19:00', venue: 'Teatro Coliseum', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/en/7/71/Aladdin-Bposter.png', category: 'Teatro', priceRange: '50€ - 140€' },
+            { id: 't3', artist: 'Mago Pop', tour: 'Nada es Imposible', date: '2024-06-01', time: '17:00', venue: 'Teatro Nuevo Apolo', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Andrea_Levy_descubre_una_placa_que_homenajea_a_Antonio_D%C3%ADaz%2C_El_Mago_Pop%2C_como_el_mago_europeo_m%C3%A1s_taquillero_del_mundo_02.jpg/330px-Andrea_Levy_descubre_una_placa_que_homenajea_a_Antonio_D%C3%ADaz%2C_El_Mago_Pop%2C_como_el_mago_europeo_m%C3%A1s_taquillero_del_mundo_02.jpg', category: 'Teatro', priceRange: '40€ - 110€' },
+            { id: 't4', artist: 'El Fantasma de la Ópera', tour: 'Musical', date: '2024-05-25', time: '20:00', venue: 'UMusic Hotel Teatro', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Lon_Chaney_as_The_Phantom.jpg/250px-Lon_Chaney_as_The_Phantom.jpg', category: 'Teatro', priceRange: '55€ - 160€' },
+            { id: 't5', artist: 'Mamma Mia!', tour: 'Musical', date: '2024-07-02', time: '20:30', venue: 'Teatro Rialto', city: 'Madrid', image: 'https://images.unsplash.com/photo-1478147427282-58a87a120781?q=80&w=800', category: 'Teatro', priceRange: '35€ - 95€' },
+            { id: 't6', artist: 'Chicago', tour: 'El Musical', date: '2024-10-10', time: '19:30', venue: 'Teatro Apolo', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/ChicagoCollage2-1000.jpg/330px-ChicagoCollage2-1000.jpg', category: 'Teatro', priceRange: '40€ - 120€' },
+            { id: 'f1', artist: 'Mad Cool Festival', tour: 'Abono 3 Días', date: '2024-07-10', time: '16:00', venue: 'Villaverde', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/commons/c/c4/Noria_del_Mad_Cool_2016.jpg', category: 'Festivales', priceRange: '190€' },
+            { id: 'f2', artist: 'Primavera Sound', tour: 'Full Festival Ticket', date: '2024-05-29', time: '15:00', venue: 'Parc del Fòrum', city: 'Barcelona', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Beak%2C_Primavera_stage_3.jpg/330px-Beak%2C_Primavera_stage_3.jpg', category: 'Festivales', priceRange: '220€' },
+            { id: 'f3', artist: 'Viña Rock', tour: 'Abono General', date: '2024-04-28', time: '12:00', venue: 'Villarrobledo', city: 'Albacete', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/S.A._Vi%C3%B1arock_2008.JPG/1200px-S.A._Vi%C3%B1arock_2008.JPG', category: 'Festivales', priceRange: '60€' },
+            { id: 'f4', artist: 'Resurrection Fest', tour: 'Metal & Hardcore', date: '2024-06-26', time: '13:00', venue: 'Viveiro', city: 'Lugo', image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?q=80&w=800', category: 'Festivales', priceRange: '140€' },
+            { id: 'f5', artist: 'Sonar Festival', tour: 'Electronic Music', date: '2024-06-13', time: '14:00', venue: 'Fira Gran Via', city: 'Barcelona', image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=800', category: 'Festivales', priceRange: '180€' },
+            { id: 'c1', artist: 'David Guapo', tour: '#QUENONOSFRUNTANLAFIESTA1', date: '2024-03-15', time: '22:00', venue: 'Gran Teatro CaixaBank', city: 'Madrid', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTCDQr0XrZEa2Fo0TewFTdeUjeF0fOOZAmKYg&s', category: 'Comedia', priceRange: '25€ - 40€' },
+            { id: 'c2', artist: 'Juan Dávila', tour: 'La Capital del Pecado', date: '2024-04-20', time: '21:00', venue: 'Teatro Capitol', city: 'Madrid', image: 'https://images.unsplash.com/photo-1585699324551-f6c309eedeca?q=80&w=800', category: 'Comedia', priceRange: '30€ - 50€' },
+            { id: 'c3', artist: 'Ángel Martín', tour: 'Punto para los locos', date: '2024-05-18', time: '20:30', venue: 'Palacio de Congresos', city: 'Valencia', image: 'https://images.unsplash.com/photo-1527224857830-43a7acc85260?q=80&w=800', category: 'Comedia', priceRange: '28€ - 45€' },
+            { id: 'c4', artist: 'La Resistencia', tour: 'Show en Vivo', date: '2024-06-10', time: '18:00', venue: 'Teatro Arlequín', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Premios_Goya_2019_-_David_Broncano.jpg/960px-Premios_Goya_2019_-_David_Broncano.jpg', category: 'Comedia', priceRange: '20€' },
+            { id: 'fam1', artist: 'Disney On Ice', tour: '100 Años de Emoción', date: '2024-02-15', time: '19:00', venue: 'WiZink Center', city: 'Madrid', image: 'https://upload.wikimedia.org/wikipedia/en/6/65/Disney_on_Ice_Logo.png', category: 'Familiar', priceRange: '20€ - 60€' },
+            { id: 'fam2', artist: 'Cirque du Soleil: Messi10', tour: 'Circo y Fútbol', date: '2024-09-05', time: '20:00', venue: 'Parc del Fòrum', city: 'Barcelona', image: 'https://upload.wikimedia.org/wikipedia/commons/1/10/Cirque_du_Soleil2.jpg', category: 'Familiar', priceRange: '45€ - 120€' },
+            { id: 'fam3', artist: 'Harry Potter Exhibition', tour: 'Magic World', date: '2024-11-01', time: '10:00', venue: 'Port Vell', city: 'Barcelona', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Cabane_de_Hagrid%2C_Harry_Potter_Exhibition%2C_Cit%C3%A9_du_Cin%C3%A9ma%2C_Saint_Denis_%28Paris%29_avril_2015.jpg/2560px-Cabane_de_Hagrid%2C_Harry_Potter_Exhibition%2C_Cit%C3%A9_du_Cin%C3%A9ma%2C_Saint_Denis_%28Paris%29_avril_2015.jpg', category: 'Familiar', priceRange: '25€ - 50€' },
+            { id: 'fam4', artist: 'Cantajuego', tour: 'Burbujas', date: '2024-05-12', time: '12:00', venue: 'Palacio de Congresos', city: 'Granada', image: 'https://upload.wikimedia.org/wikipedia/commons/8/80/Cantajuego.jpg', category: 'Familiar', priceRange: '20€ - 40€' }
+        ];
+
+        const SEATING_ZONES = [
+            { 
+                id: 'vip', 
+                name: 'VIP Front Stage', 
+                price: 300, 
+                desc: 'Experiencia premium frente al escenario.',
+                color: 'bg-yellow-400', 
+                class: 'bg-yellow-400',
+                details: [
+                    "Acceso prioritario 30 min antes de la apertura de puertas.",
+                    "Barra libre de bebidas y snacks antes del show.",
+                    "Acreditación conmemorativa y regalo exclusivo del tour.",
+                    "Zona reservada de pie justo frente al escenario."
+                ]
+            },
+            { 
+                id: 'floor', 
+                name: 'Pista General', 
+                price: 150, 
+                desc: 'De pie, vive la energía del concierto.',
+                color: 'bg-blue-500', 
+                class: 'bg-blue-500',
+                details: [
+                    "Acceso a la zona general de pista de pie.",
+                    "Bares y puestos de merchandising disponibles en pista.",
+                    "Excelente visibilidad y ambiente inmersivo."
+                ]
+            },
+            { 
+                id: 'lower', 
+                name: 'Grada Baja', 
+                price: 120, 
+                desc: 'Asiento numerado, visión centrada.',
+                color: 'bg-purple-500', 
+                class: 'bg-purple-500',
+                details: [
+                    "Asiento numerado en el primer anillo de grada.",
+                    "Visión frontal directa al escenario.",
+                    "Asientos acolchados para mayor comodidad.",
+                    "Servicio de bar móvil disponible en pasillos."
+                ]
+            },
+            { 
+                id: 'upper', 
+                name: 'Grada Alta', 
+                price: 60, 
+                desc: 'Asiento numerado, vista panorámica.',
+                color: 'bg-green-500', 
+                class: 'bg-green-500',
+                details: [
+                    "Asiento numerado en el anillo superior.",
+                    "Vista panorámica completa de todo el estadio.",
+                    "Opción más económica sin perder detalle del show.",
+                    "Acceso mediante escaleras mecánicas y ascensores."
+                ]
+            }
+        ];
+
+        const CATEGORIES = ['Todos', 'Música', 'Deportes', 'Teatro', 'Festivales', 'Comedia', 'Familiar'];
+
+        const HELP_TOPICS = [
+            { 
+                id: 'tickets', title: "Mis Entradas", icon: Ticket, desc: "Acceso, descarga, transferencia y problemas con entradas.",
+                faqs: [
+                    { q: "¿Dónde están mis entradas?", a: "Tus entradas se encuentran en la sección 'Mi Cuenta' > 'Próximos Eventos'. Si has elegido eTicket, el código QR se activará 48 horas antes del evento." },
+                    { q: "¿Puedo transferir mis entradas?", a: "Sí, puedes transferir entradas a amigos y familiares directamente desde tu cuenta utilizando la opción 'Transferir' en el detalle de la entrada." },
+                    { q: "¿Es necesario imprimir el eTicket?", a: "No, el eTicket está diseñado para ser escaneado directamente desde la pantalla de tu móvil." },
+                    { q: "No he recibido el email de confirmación", a: "Comprueba tu carpeta de Spam. Si no está, verifica en 'Mi Cuenta' que la compra aparece confirmada." }
+                ]
+            },
+            { 
+                id: 'payments', title: "Pagos y Facturación", icon: CreditCard, desc: "Métodos de pago, reembolsos, facturas y cargos.",
+                faqs: [
+                    { q: "¿Es seguro pagar con tarjeta?", a: "Totalmente. Usamos encriptación SSL de última generación y cumplimos con PCI-DSS." },
+                    { q: "¿Cuándo recibiré mi reembolso?", a: "Si el evento se cancela, el reembolso es automático en 7-10 días laborables." },
+                    { q: "¿Puedo pagar con PayPal?", a: "Sí, aceptamos PayPal y las principales tarjetas de crédito/débito." },
+                    { q: "Me han cobrado dos veces", a: "A veces ves una retención temporal. Si persiste más de 48h, contacta con soporte." }
+                ]
+            },
+            { 
+                id: 'account', title: "Mi Cuenta", icon: User, desc: "Inicio de sesión, contraseña, datos personales.",
+                faqs: [
+                    { q: "He olvidado mi contraseña", a: "Ve a la página de inicio de sesión y pulsa en '¿Has olvidado tu contraseña?'. Te enviaremos un enlace." },
+                    { q: "¿Cómo cambio mi email?", a: "Puedes editar tus datos personales desde la sección 'Mi Perfil' estando logueado." },
+                    { q: "Quiero eliminar mi cuenta", a: "Debes contactar directamente con nuestro equipo de soporte para procesar la baja." }
+                ]
+            }
+        ];
+
+        // --- TOAST CONTEXT ---
+        const ToastContext = createContext();
+        const ToastProvider = ({ children }) => {
+            const [toasts, setToasts] = useState([]);
+            const addToast = (message, type = 'success') => {
+                const id = Date.now();
+                setToasts(prev => [...prev, { id, message, type }]);
+                setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+            };
+            return (
+                <ToastContext.Provider value={{ addToast }}>
+                    {children}
+                    <div className="fixed top-20 right-4 left-4 md:left-auto md:w-auto z-[999] flex flex-col gap-2 pointer-events-none">
+                        {toasts.map(toast => (
+                            <div key={toast.id} className={`animate-slide-up px-4 py-3 rounded-lg shadow-xl shadow-slate-200 border-l-4 flex items-center gap-3 w-full md:min-w-[300px] pointer-events-auto bg-white text-slate-800 ${toast.type === 'error' ? 'border-red-500' : 'border-green-500'}`}>
+                                {toast.type === 'success' ? <CheckCircle className="text-green-500 w-5 h-5 flex-shrink-0"/> : <AlertCircle className="text-red-500 w-5 h-5 flex-shrink-0"/>}
+                                <span className="text-sm font-medium">{toast.message}</span>
+                            </div>
+                        ))}
+                    </div>
+                </ToastContext.Provider>
+            );
+        };
+        const useToast = () => useContext(ToastContext);
+
+        // --- CHAT COMPONENT ---
+        const ChatOverlay = ({ onClose }) => {
+            const [messages, setMessages] = useState([{text: "¡Hola! Soy tu asistente virtual de Ticketmaster. ¿En qué puedo ayudarte hoy?", isBot: true}]);
+            const [input, setInput] = useState("");
+            const messagesEndRef = useRef(null);
+
+            useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+            const handleSend = (e) => {
+                e.preventDefault();
+                if (!input.trim()) return;
+                const userMsg = input;
+                setMessages(prev => [...prev, { text: userMsg, isBot: false }]);
+                setInput("");
+
+                setTimeout(() => {
+                    let botReply = "Entiendo. Un agente especializado revisará tu consulta.";
+                    if (userMsg.toLowerCase().includes("entrada")) botReply = "Puedes descargar tus entradas desde la sección 'Mi Cuenta'.";
+                    if (userMsg.toLowerCase().includes("reembolso")) botReply = "Los reembolsos se procesan automáticamente si el evento se cancela.";
+                    if (userMsg.toLowerCase().includes("hola")) botReply = "¡Hola! ¿Buscas entradas para algún concierto en específico?";
+                    setMessages(prev => [...prev, { text: botReply, isBot: true }]);
+                }, 1000);
+            };
+
+            return (
+                <div className="fixed inset-0 z-[1000] flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm p-0 md:p-4">
+                    <div className="bg-white w-full h-[90vh] md:h-[600px] md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-slide-up">
+                        <div className="bg-brand-700 p-4 text-white flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"><MessageCircle size={20}/></div>
+                                <div><h3 className="font-bold">Soporte Ticketmaster</h3><div className="flex items-center gap-1 text-xs opacity-80"><span className="w-2 h-2 bg-green-400 rounded-full"></span> En línea</div></div>
+                            </div>
+                            <button onClick={onClose} className="hover:bg-white/10 p-2 rounded-full transition-colors"><X size={20}/></button>
+                        </div>
+                        <div className="flex-1 bg-slate-50 p-4 overflow-y-auto space-y-4">
+                            {messages.map((msg, i) => (
+                                <div key={i} className={`flex ${msg.isBot ? 'justify-start' : 'justify-end'}`}>
+                                    <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${msg.isBot ? 'bg-white text-slate-800 rounded-tl-none shadow-soft border border-slate-100' : 'bg-brand-600 text-white rounded-tr-none shadow-md'}`}>
+                                        {msg.text}
+                                    </div>
+                                </div>
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </div>
+                        <form onSubmit={handleSend} className="p-4 bg-white border-t border-slate-100 flex gap-2 pb-8 md:pb-4">
+                            <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="Escribe tu mensaje..." className="flex-1 bg-slate-100 border-0 rounded-full px-4 py-3 focus:ring-2 focus:ring-brand-500 outline-none" />
+                            <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white p-3 rounded-full transition-colors shadow-lg shadow-brand-500/30"><Send size={18}/></button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- COMPONENTS ---
+
+        const Navbar = ({ setPage, userProfile, isAuthenticated, handleLogout, searchTerm, setSearchTerm }) => {
+            const [scrolled, setScrolled] = useState(false);
+            const [profileOpen, setProfileOpen] = useState(false);
+
+            useEffect(() => {
+                const handleScroll = () => setScrolled(window.scrollY > 20);
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            return (
+                <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'glass shadow-sm py-2' : 'bg-gradient-to-b from-black/50 to-transparent py-4 text-white'}`}>
+                    <div className="container mx-auto px-4 md:px-6 flex justify-between items-center">
+                        <div className="flex items-center gap-2 md:gap-8 flex-1 md:flex-none">
+                            <div onClick={() => setPage('home')} className={`font-black text-lg md:text-2xl tracking-tighter italic cursor-pointer flex items-center gap-1 ${scrolled ? 'text-brand-700' : 'text-white drop-shadow-md'}`}>
+                                ticketmaster <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold not-italic ${scrolled ? 'bg-brand-100 text-brand-700' : 'bg-white/20 text-white backdrop-blur-md'}`}>ES</span>
+                            </div>
+                            
+                            {/* SEARCH BAR MODIFIED FOR MOBILE VISIBILITY */}
+                            <div className="flex relative group ml-2 md:ml-0">
+                                <input 
+                                    type="text" 
+                                    placeholder="Buscar..." 
+                                    value={searchTerm} 
+                                    onChange={(e) => setSearchTerm(e.target.value)} 
+                                    className={`pl-9 pr-4 py-2 rounded-full w-28 sm:w-40 md:w-64 focus:w-full md:focus:w-80 transition-all outline-none text-xs md:text-sm ${scrolled ? 'bg-slate-100 text-slate-800 focus:bg-white focus:ring-2 focus:ring-brand-500' : 'bg-white/10 backdrop-blur-md text-white placeholder-white/70 border border-white/20 focus:bg-white/20'}`} 
+                                />
+                                <Search className={`absolute left-2.5 top-2.5 w-3.5 h-3.5 ${scrolled ? 'text-slate-400' : 'text-white/70'}`} />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 md:gap-6">
+                            <button onClick={() => setPage('help')} className={`text-sm font-medium hover:opacity-80 transition-opacity hidden sm:block ${scrolled ? 'text-slate-600' : 'text-white'}`}>Ayuda</button>
+                            {isAuthenticated ? (
+                                <div className="relative">
+                                    <button onClick={() => setProfileOpen(!profileOpen)} className={`flex items-center gap-2 px-2 py-1 md:px-3 md:py-1.5 rounded-full transition-all ${scrolled ? 'hover:bg-slate-100' : 'hover:bg-white/10'}`}>
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-md border-2 border-white/20">{userProfile.name.charAt(0)}</div>
+                                        <span className={`text-sm font-semibold hidden md:block ${scrolled ? 'text-slate-700' : 'text-white'}`}>{userProfile.name.split(' ')[0]}</span>
+                                        <ChevronDown className={`w-3 h-3 ${scrolled ? 'text-slate-400' : 'text-white/70'}`} />
+                                    </button>
+                                    {profileOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)}></div>
+                                            <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl shadow-slate-200/50 border border-slate-100 py-2 animate-slide-up text-slate-700 overflow-hidden z-50">
+                                                <div className="px-5 py-4 border-b border-slate-50 bg-slate-50/50">
+                                                    <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Conectado como</p>
+                                                    <p className="text-sm font-bold truncate text-slate-800">{userProfile.email}</p>
+                                                </div>
+                                                <button onClick={() => {setPage('profile'); setProfileOpen(false)}} className="w-full text-left px-5 py-3 hover:bg-slate-50 flex items-center gap-3 text-sm font-medium transition-colors"><User size={18} className="text-slate-400"/> Mi Cuenta</button>
+                                                <div className="border-t border-slate-50 my-1"></div>
+                                                <button onClick={() => {handleLogout(); setProfileOpen(false)}} className="w-full text-left px-5 py-3 hover:bg-red-50 text-red-600 flex items-center gap-3 text-sm font-bold transition-colors"><LogOut size={18} /> Cerrar Sesión</button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            ) : (
+                                <button onClick={() => setPage('login')} className={`px-4 py-2 md:px-5 md:py-2.5 rounded-full text-xs md:text-sm font-bold transition-all transform hover:scale-105 active:scale-95 shadow-lg ${scrolled ? 'bg-brand-700 text-white hover:bg-brand-800' : 'bg-white text-brand-900 hover:bg-brand-50'}`}>Acceder</button>
+                            )}
+                        </div>
+                    </div>
+                </nav>
+            );
+        };
+
+        const Hero = ({ onSelectEvent }) => {
+            const [active, setActive] = useState(0);
+            useEffect(() => { const interval = setInterval(() => setActive(c => (c + 1) % HERO_SLIDES.length), 6000); return () => clearInterval(interval); }, []);
+
+            const handleHeroClick = () => {
+                const currentSlide = HERO_SLIDES[active];
+                const event = MOCK_EVENTS.find(e => e.id === currentSlide.eventId);
+                if (event) {
+                    onSelectEvent(event);
+                }
+            };
+
+            return (
+                <div className="relative h-[65vh] min-h-[500px] w-full overflow-hidden bg-slate-900">
+                    {HERO_SLIDES.map((slide, i) => (
+                        <div key={slide.id} className={`absolute inset-0 transition-opacity duration-1000 ${i === active ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}>
+                            <img src={slide.image} className="w-full h-full object-cover transition-transform duration-[10000ms] ease-linear scale-105" alt={slide.title} />
+                            <div className={`absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-black/20 mix-blend-multiply opacity-90`}></div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/20 to-transparent"></div>
+                            <div className="absolute inset-0 flex flex-col justify-end md:justify-center pb-20 md:pb-0">
+                                <div className="container mx-auto px-6 pt-20">
+                                    <div className="max-w-3xl space-y-4 md:space-y-6 animate-slide-up">
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white/90 text-[10px] md:text-xs font-bold uppercase tracking-widest shadow-lg"><Star className="w-3 h-3 text-yellow-400 fill-yellow-400" /> Evento Destacado</div>
+                                        <h1 className="text-4xl md:text-7xl font-black text-white leading-tight tracking-tighter drop-shadow-2xl">{slide.title}</h1>
+                                        <p className="text-base md:text-xl text-white/80 font-medium max-w-xl leading-relaxed drop-shadow-lg line-clamp-2 md:line-clamp-none">{slide.subtitle}</p>
+                                        <div className="flex gap-4 pt-2 md:pt-4">
+                                            <button onClick={handleHeroClick} className="bg-brand-600 hover:bg-brand-500 text-white px-6 md:px-8 py-3 md:py-4 rounded-full font-bold text-base md:text-lg shadow-glow transition-all transform hover:translate-y-[-2px] flex items-center gap-2 w-full md:w-auto justify-center"><Ticket className="w-5 h-5" /> Ver Entradas</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    <div className="absolute bottom-6 md:bottom-10 left-0 right-0 z-20 flex justify-center gap-2 md:gap-3 px-4">
+                        {HERO_SLIDES.map((_, i) => (<button key={i} onClick={() => setActive(i)} className={`h-1.5 rounded-full transition-all duration-300 shadow-sm ${active === i ? 'w-8 md:w-12 bg-white' : 'w-2 bg-white/30 hover:bg-white/50'}`} />))}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- IMPROVED FUNCTIONAL NEWS SECTION ---
+        const NewsSection = () => {
+            const [filter, setFilter] = useState('Todos');
+            const [selectedNews, setSelectedNews] = useState(null);
+            
+            // Extract unique categories from items plus 'Todos'
+            const categories = ['Todos', 'Anuncio', 'Festival', 'Blog'];
+
+            const filteredNews = filter === 'Todos' 
+                ? NEWS_ITEMS 
+                : NEWS_ITEMS.filter(item => item.category === filter);
+
+            return (
+                <section className="container mx-auto px-4 md:px-6 mt-8 md:mt-12">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                            <Zap className="text-yellow-500 fill-yellow-500" size={24}/> Ticketmaster News
+                        </h2>
+                        
+                        {/* Functional Category Filters */}
+                        <div className="flex gap-2 overflow-x-auto hide-scroll pb-2 md:pb-0">
+                            {categories.map(cat => (
+                                <button 
+                                    key={cat}
+                                    onClick={() => setFilter(cat)}
+                                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
+                                        filter === cat 
+                                        ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
+                                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400 hover:text-slate-900'
+                                    }`}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {filteredNews.map(item => (
+                            <div key={item.id} className="group bg-white rounded-xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-slate-100 overflow-hidden cursor-pointer h-full flex flex-col" onClick={() => setSelectedNews(item)}>
+                                <div className="h-48 overflow-hidden relative">
+                                    <img src={item.image} alt={item.title} className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"/>
+                                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-slate-800 shadow-sm">
+                                        {item.category}
+                                    </div>
+                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <span className="bg-white/90 text-slate-900 px-4 py-2 rounded-full font-bold text-xs transform scale-90 group-hover:scale-100 transition-transform">Leer Artículo</span>
+                                    </div>
+                                </div>
+                                <div className="p-5 flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <h3 className="font-bold text-slate-900 text-lg leading-tight mb-3 group-hover:text-brand-700 transition-colors">{item.title}</h3>
+                                        <p className="text-slate-500 text-sm line-clamp-2 mb-4">Descubre todos los detalles y novedades exclusivas sobre este evento. No te pierdas nada.</p>
+                                    </div>
+                                    <div className="flex items-center justify-between border-t border-slate-50 pt-4 mt-2">
+                                        <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                                            <Clock size={12}/> {item.time}
+                                        </div>
+                                        <button onClick={(e) => { e.stopPropagation(); setSelectedNews(item); }} className="text-brand-600 text-xs font-bold hover:underline">Leer más</button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* MODAL DE NOTICIAS */}
+                    {selectedNews && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedNews(null)}>
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-slide-up max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                                <div className="relative h-64 flex-shrink-0">
+                                    <img src={selectedNews.image} className="w-full h-full object-cover" />
+                                    <button onClick={() => setSelectedNews(null)} className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"><X size={20}/></button>
+                                    <div className="absolute bottom-4 left-4 bg-brand-600 text-white px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider shadow-lg">
+                                        {selectedNews.category}
+                                    </div>
+                                </div>
+                                <div className="p-8 overflow-y-auto">
+                                    <div className="flex items-center gap-2 text-slate-400 text-sm font-medium mb-3">
+                                        <Clock size={16}/> {selectedNews.time}
+                                    </div>
+                                    <h2 className="text-3xl font-black text-slate-900 mb-6 leading-tight">{selectedNews.title}</h2>
+                                    <div className="prose prose-slate text-slate-600 leading-relaxed">
+                                        {selectedNews.content}
+                                    </div>
+                                    <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
+                                        <button onClick={() => setSelectedNews(null)} className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-6 py-3 rounded-xl transition-colors">
+                                            Cerrar Artículo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </section>
+            );
+        };
+
+        const EventCard = ({ event, onClick }) => (
+            <div 
+                onClick={() => onClick(event)}
+                className="group bg-white rounded-2xl overflow-hidden shadow-soft hover:shadow-xl transition-all duration-300 cursor-pointer border border-slate-100 relative top-0 hover:-top-2 h-full flex flex-col"
+            >
+                <div className="relative aspect-[16/10] overflow-hidden">
+                    <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-transparent transition-colors z-10"></div>
+                    <img src={event.image} alt={event.artist} className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" />
+                    <div className="absolute top-3 right-3 z-20 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-extrabold shadow-sm uppercase tracking-wide flex items-center gap-1.5">
+                        {event.category === 'Música' && <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>}
+                        {event.category === 'Deportes' && <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>}
+                        {event.category === 'Teatro' && <span className="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>}
+                        {event.category}
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent z-20 md:hidden">
+                        <div className="text-white font-bold text-lg leading-tight truncate">{event.city}</div>
+                    </div>
+                    <div className="absolute bottom-3 left-4 z-20 text-white hidden md:block">
+                        <div className="text-xl font-black drop-shadow-md">{event.city}</div>
+                    </div>
+                </div>
+                <div className="p-5 flex-1 flex flex-col">
+                    <div className="flex justify-between items-start mb-1">
+                        <h3 className="text-lg font-bold text-slate-900 leading-tight group-hover:text-brand-700 transition-colors line-clamp-1">{event.artist}</h3>
+                    </div>
+                    <p className="text-sm text-slate-500 mb-4 font-medium line-clamp-1">{event.venue}</p>
+                    <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 px-2 py-1 rounded-md">
+                            <Calendar className="w-3.5 h-3.5 text-brand-500" />
+                            {new Date(event.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                        </div>
+                        <div className="text-sm font-bold text-slate-900 bg-brand-50 text-brand-700 px-2 py-1 rounded-md">{event.time}</div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const AuthScreen = ({ onLogin, setPage }) => {
+            const [isRegister, setIsRegister] = useState(false);
+            const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+            const { addToast } = useToast();
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                const users = JSON.parse(localStorage.getItem('tm_users') || '[]');
+                
+                if (isRegister) {
+                    if (users.find(u => u.email === formData.email)) {
+                        addToast('Este correo ya está registrado', 'error');
+                        return;
+                    }
+                    const newUser = { ...formData, memberId: `TM-${Math.floor(Math.random()*1000000)}` };
+                    users.push(newUser);
+                    localStorage.setItem('tm_users', JSON.stringify(users));
+                    localStorage.setItem('tm_session', JSON.stringify(newUser));
+                    addToast(`¡Cuenta creada! Bienvenido, ${formData.name}`, 'success');
+                    onLogin(newUser);
+                } else {
+                    const user = users.find(u => u.email === formData.email && u.password === formData.password);
+                    if (user) {
+                        localStorage.setItem('tm_session', JSON.stringify(user));
+                        addToast('Sesión iniciada correctamente', 'success');
+                        onLogin(user);
+                    } else {
+                        addToast('Credenciales incorrectas. Regístrate si no tienes cuenta.', 'error');
+                    }
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-white md:bg-slate-50 flex flex-col md:flex-row">
+                    <div className="hidden md:flex w-1/2 bg-slate-900 relative overflow-hidden items-center justify-center">
+                        <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2000" className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-brand-900/80 to-slate-900/90"></div>
+                        <div className="relative z-10 p-12 text-white max-w-xl">
+                            <div className="mb-6"><Ticket size={48} className="text-brand-400" /></div>
+                            <h2 className="text-5xl font-black mb-6 tracking-tight">Tu acceso al <br/><span className="text-brand-400">espectáculo</span>.</h2>
+                            <p className="text-xl text-slate-300 leading-relaxed font-light">Únete a la comunidad líder en eventos en vivo. Accede a preventas exclusivas y gestiona tus entradas de forma segura.</p>
+                        </div>
+                    </div>
+                    <div className="w-full md:w-1/2 flex items-center justify-center p-6 md:p-16 bg-white">
+                        <div className="w-full max-w-md space-y-8 animate-slide-up">
+                            <div className="text-center md:text-left">
+                                <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">{isRegister ? 'Crear Cuenta' : 'Bienvenido'}</h1>
+                                <p className="text-slate-500">Introduce tus datos para {isRegister ? 'empezar' : 'continuar'}.</p>
+                            </div>
+                            <form onSubmit={handleSubmit} className="space-y-5">
+                                {isRegister && (
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 ml-1">Nombre Completo</label>
+                                        <input required type="text" className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all bg-slate-50 focus:bg-white" placeholder="Ej. Juan Pérez" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} />
+                                    </div>
+                                )}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 ml-1">Correo Electrónico</label>
+                                    <input required type="email" className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all bg-slate-50 focus:bg-white" placeholder="juan@ejemplo.com" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 ml-1">Contraseña</label>
+                                    <input required type="password" className="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all bg-slate-50 focus:bg-white" placeholder="••••••••" value={formData.password} onChange={e=>setFormData({...formData, password: e.target.value})} />
+                                </div>
+                                <button type="submit" className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-500/20 transition-all transform hover:-translate-y-0.5 active:scale-[0.98]">{isRegister ? 'Registrarse' : 'Iniciar Sesión'}</button>
+                            </form>
+                            <div className="text-center pt-4 border-t border-slate-50">
+                                <button onClick={()=>setIsRegister(!isRegister)} className="text-brand-600 font-bold hover:text-brand-800 text-sm transition-colors">{isRegister ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate gratis'}</button>
+                            </div>
+                            <button onClick={() => setPage('home')} className="w-full text-center text-xs text-slate-400 hover:text-slate-600 mt-4 transition-colors">Volver al inicio sin autenticar</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const TicketCard = ({ ticket }) => {
+            // Using API primarily, but generation for PDF will use JS to be robust
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${ticket.id}-${ticket.seat}`;
+            
+            const generateQR = async (text) => {
+                // Ensure QRious is loaded
+                if (typeof QRious === 'undefined') {
+                    console.error("QRious library not loaded");
+                    return null;
+                }
+                var qr = new QRious({
+                  value: text,
+                  size: 200
+                });
+                return qr.toDataURL(); // Returns base64 image data
+            };
+
+            const downloadTicket = async () => {
+                if (!window.jspdf) {
+                    alert("Error: Librería PDF no cargada. Por favor recarga la página.");
+                    return;
+                }
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Add logo/header background
+                doc.setFillColor(14, 165, 233); // TM Blue
+                doc.rect(0, 0, 210, 40, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(22);
+                doc.setFont('helvetica', 'bold');
+                doc.text("TICKETMASTER", 105, 25, null, null, "center");
+                
+                // Ticket Information
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(16);
+                doc.text(ticket.event.artist, 20, 60);
+                
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`${ticket.event.venue}, ${ticket.event.city}`, 20, 70);
+                doc.text(new Date(ticket.event.date).toLocaleDateString() + ' - ' + ticket.event.time, 20, 78);
+                
+                // Seat Info Box
+                doc.setDrawColor(200, 200, 200);
+                doc.rect(20, 90, 170, 30);
+                
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text("ZONA", 30, 100);
+                doc.text("ASIENTO", 100, 100);
+                
+                doc.setFontSize(14);
+                doc.setTextColor(0, 0, 0);
+                doc.setFont('helvetica', 'bold');
+                doc.text(ticket.zone.name, 30, 110);
+                doc.text(ticket.seat, 100, 110);
+                
+                // Generate QR Code for PDF
+                try {
+                    const qrDataUrl = await generateQR(`${ticket.id}-${ticket.seat}`);
+                    if (qrDataUrl) {
+                        doc.addImage(qrDataUrl, 'JPEG', 80, 150, 50, 50); // Add QR centered below
+                    }
+                } catch (e) {
+                    console.error("Error generating QR for PDF", e);
+                }
+
+                // Footer / ID
+                doc.setFontSize(10);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`ID de Entrada: ${ticket.id}`, 105, 210, null, null, "center");
+                doc.text("Presenta este documento en el acceso al evento.", 105, 215, null, null, "center");
+                
+                doc.save(`entrada-${ticket.id}.pdf`);
+            };
+            
+            return (
+                <div className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden flex flex-col md:flex-row w-full relative">
+                    {/* Image Section */}
+                    <div className="w-full md:w-1/3 h-48 md:h-auto relative overflow-hidden">
+                         <img src={ticket.event.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"/>
+                         <div className="absolute inset-0 bg-brand-900/40 group-hover:bg-transparent transition-colors duration-500"/>
+                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-6 text-white">
+                             <div className="text-xs font-bold uppercase tracking-widest opacity-90 mb-1 flex items-center gap-2">
+                                 <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span> {ticket.event.category}
+                             </div>
+                             <h3 className="text-2xl font-black leading-none mb-1 shadow-black/50 drop-shadow-md">{ticket.event.artist}</h3>
+                             <p className="text-sm opacity-90 font-medium">{new Date(ticket.event.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} • {ticket.event.time}</p>
+                         </div>
+                    </div>
+
+                    {/* Content Section - Ticket Body */}
+                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-center relative bg-white border-b-2 md:border-b-0 md:border-r-2 border-dashed border-slate-200">
+                        {/* Punch Holes for separator feel - Using CSS classes from style tag */}
+                        <div className="ticket-notch-x notch-left md:hidden"></div>
+                        <div className="ticket-notch-x notch-right md:hidden"></div>
+                        <div className="ticket-notch-y notch-top hidden md:block"></div>
+                        <div className="ticket-notch-y notch-bottom hidden md:block"></div>
+                        
+                        <div className="grid grid-cols-2 gap-y-6 gap-x-4 mb-2">
+                            <div>
+                                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Recinto</div>
+                                <div className="font-bold text-slate-800 text-sm md:text-base leading-tight">{ticket.event.venue}</div>
+                                <div className="text-xs text-slate-500 mt-0.5">{ticket.event.city}</div>
+                            </div>
+                            <div>
+                                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Asiento</div>
+                                <div className="font-bold text-slate-800 text-sm md:text-base leading-tight">{ticket.seat}</div>
+                                <div className="text-xs text-brand-600 font-bold mt-0.5">{ticket.zone.name}</div>
+                            </div>
+                            <div className="col-span-2 pt-4 border-t border-slate-50 flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-xs font-mono text-slate-400 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                                    ID: <span className="text-slate-600 font-bold">{ticket.id}</span>
+                                </div>
+                                <button onClick={downloadTicket} className="text-brand-600 hover:text-brand-700 text-xs font-bold flex items-center gap-1 hover:underline">
+                                    <Download size={14}/> Descargar PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* QR Stub */}
+                    <div className="w-full md:w-64 bg-slate-50 p-6 flex flex-col items-center justify-center relative bg-ticket-pattern">
+                         <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 mb-3 transform transition-transform group-hover:scale-105 duration-300">
+                            {/* Fixed container size for QR to prevent layout shifts */}
+                            <div className="w-32 h-32 md:w-36 md:h-36 overflow-hidden">
+                                <img src={qrUrl} alt="QR Code" className="w-full h-full object-contain mix-blend-multiply" />
+                            </div>
+                        </div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] text-center">Escanear entrada</div>
+                    </div>
+                </div>
+            );
+        };
+
+        const QueueScreen = ({ event, onFinish }) => {
+            const [progress, setProgress] = useState(0);
+            const [peopleAhead, setPeopleAhead] = useState(2438);
+            const sessionID = useMemo(() => Math.random().toString(36).substr(2, 9).toUpperCase(), []);
+            
+            const TIPS = [
+                "No actualices esta página, perderás tu lugar.",
+                "Ten tu tarjeta a mano para agilizar.",
+                "Las entradas no están reservadas aún.",
+                "Alto tráfico detectado para este evento."
+            ];
+            const [tipIndex, setTipIndex] = useState(0);
+
+            useEffect(() => {
+                const totalTime = 8000;
+                const intervalTime = 100;
+                const steps = totalTime / intervalTime;
+                
+                const interval = setInterval(() => {
+                    setProgress(prev => {
+                        if (prev >= 100) {
+                            clearInterval(interval);
+                            return 100;
+                        }
+                        const increment = 100 / steps;
+                        setPeopleAhead(current => Math.max(0, Math.floor(current - (2438 / steps))));
+                        return prev + increment;
+                    });
+                }, intervalTime);
+
+                const tipInterval = setInterval(() => setTipIndex(i => (i + 1) % TIPS.length), 3000);
+                
+                return () => { clearInterval(interval); clearInterval(tipInterval); };
+            }, []);
+
+            useEffect(() => { if (progress >= 100) setTimeout(onFinish, 1500); }, [progress]);
+
+            return (
+                <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+                    <div className="bg-white max-w-lg w-full rounded-3xl shadow-2xl overflow-hidden border border-slate-100 animate-slide-up">
+                        <div className="bg-brand-700 p-8 md:p-10 text-white text-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-brand-800/50 opacity-50"></div>
+                            <div className="relative z-10">
+                                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm border border-white/20">
+                                    <Loader className="w-8 h-8 animate-spin text-white" />
+                                </div>
+                                <h2 className="text-2xl font-black mb-2 tracking-tight">Sala de Espera</h2>
+                                <p className="text-brand-100 font-medium text-sm">Estás en cola para <span className="font-bold text-white">{event.artist}</span></p>
+                            </div>
+                        </div>
+                        <div className="p-8 md:p-12">
+                            <div className="text-center mb-10">
+                                <div className="text-6xl font-black text-slate-800 tabular-nums mb-2 tracking-tighter">{peopleAhead}</div>
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Personas delante de ti</div>
+                            </div>
+                            <div className="mb-10 relative">
+                                <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-gradient-to-r from-brand-400 to-brand-600 transition-all duration-100 ease-linear relative shadow-[0_0_10px_rgba(14,165,233,0.5)]" style={{width: `${progress}%`}}>
+                                        <div className="absolute inset-0 bg-white/30 w-full animate-pulse"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-5 flex items-start gap-4">
+                                <Info className="text-brand-600 w-5 h-5 flex-shrink-0 mt-0.5" />
+                                <div className="text-sm text-slate-600">
+                                    <span className="font-bold text-brand-700 block mb-1">Consejo:</span>
+                                    <span key={tipIndex} className="animate-fade-in block leading-relaxed">{TIPS[tipIndex]}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-slate-50 p-4 text-center text-[10px] text-slate-400 font-mono border-t border-slate-100 uppercase tracking-wider">
+                            ID de Sesión: {sessionID}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const CheckoutCard = ({ form, setForm }) => (
+            <div className="w-full max-w-md mx-auto perspective-1000">
+                <div className="relative h-56 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl text-white p-6 mb-8 transform transition-transform hover:scale-105 duration-300 border border-slate-700/50 overflow-hidden">
+                    <div className="absolute top-0 right-0 p-6 opacity-10">
+                         <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><circle cx="12" cy="12" r="10"/><path d="m2 12 20 0"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    </div>
+                    <div className="absolute inset-0 bg-white/5 backdrop-blur-[1px]"></div>
+                    <div className="flex flex-col justify-between h-full relative z-10">
+                        <div className="flex justify-between items-start">
+                            <div className="w-14 h-9 bg-gradient-to-r from-yellow-200 to-yellow-500 rounded-md shadow-sm border border-yellow-600/30"></div>
+                            <span className="font-mono text-xl tracking-widest opacity-80 font-bold">DEBIT</span>
+                        </div>
+                        <div className="font-mono text-2xl md:text-3xl tracking-[0.1em] drop-shadow-md text-center mt-2">
+                            {form.cardNumber || '•••• •••• •••• ••••'}
+                        </div>
+                        <div className="flex justify-between items-end">
+                            <div><div className="text-[9px] uppercase tracking-wider opacity-60 mb-0.5">Titular</div><div className="font-bold uppercase tracking-wide text-sm truncate max-w-[150px]">{form.cardName || 'NOMBRE APELLIDO'}</div></div>
+                            <div className="text-right"><div className="text-[9px] uppercase tracking-wider opacity-60 mb-0.5">Expira</div><div className="font-mono text-sm font-bold">{form.expiry || 'MM/AA'}</div></div>
+                        </div>
+                    </div>
+                </div>
+                <div className="space-y-5">
+                     <div>
+                        <label className="text-xs font-bold uppercase text-slate-500 ml-1 tracking-wider mb-1.5 block">Número de Tarjeta</label>
+                        <input type="tel" maxLength="19" placeholder="0000 0000 0000 0000" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 font-mono focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all placeholder:text-slate-300" value={form.cardNumber} onChange={e=>setForm({...form, cardNumber: e.target.value})} />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold uppercase text-slate-500 ml-1 tracking-wider mb-1.5 block">Nombre del Titular</label>
+                        <input type="text" placeholder="COMO APARECE EN LA TARJETA" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 uppercase focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all placeholder:text-slate-300" value={form.cardName} onChange={e=>setForm({...form, cardName: e.target.value})} />
+                    </div>
+                    <div className="flex gap-4">
+                        <div className="flex-1">
+                            <label className="text-xs font-bold uppercase text-slate-500 ml-1 tracking-wider mb-1.5 block">Expiración</label>
+                            <input type="tel" placeholder="MM/AA" maxLength="5" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 font-mono focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all placeholder:text-slate-300" value={form.expiry} onChange={e=>setForm({...form, expiry: e.target.value})} />
+                        </div>
+                        <div className="flex-1">
+                            <label className="text-xs font-bold uppercase text-slate-500 ml-1 tracking-wider mb-1.5 block">CVV</label>
+                            <input type="tel" placeholder="123" maxLength="3" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 font-mono focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all placeholder:text-slate-300" value={form.cvv} onChange={e=>setForm({...form, cvv: e.target.value})} />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- MAIN APP ---
+        const App = () => {
+            const [page, setPage] = useState('home');
+            const [userProfile, setUserProfile] = useState(null);
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
+            const [selectedEvent, setSelectedEvent] = useState(null);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [selectedCategory, setSelectedCategory] = useState('Todos');
+            const [selectedZone, setSelectedZone] = useState(null);
+            const [cart, setCart] = useState(null);
+            const [userTickets, setUserTickets] = useState([]);
+            const [checkoutForm, setCheckoutForm] = useState({ cardNumber: '', cardName: '', expiry: '', cvv: '' });
+            const [activeTab, setActiveTab] = useState('info');
+            const [showChat, setShowChat] = useState(false);
+            
+            // New states for tickets logic
+            const [ticketQuantity, setTicketQuantity] = useState(2);
+            const [showMap, setShowMap] = useState(true);
+
+            useEffect(() => {
+                const session = localStorage.getItem('tm_session');
+                const tickets = JSON.parse(localStorage.getItem('tm_tickets') || '[]');
+                if (session) {
+                    setUserProfile(JSON.parse(session));
+                    setIsAuthenticated(true);
+                }
+                if (tickets.length) {
+                    setUserTickets(tickets);
+                }
+            }, []);
+
+            // Scroll to top on page change
+            useEffect(() => {
+                window.scrollTo(0,0);
+            }, [page]);
+
+            const filteredEvents = useMemo(() => {
+                return MOCK_EVENTS.filter(ev => {
+                    const matchSearch = ev.artist.toLowerCase().includes(searchTerm.toLowerCase()) || ev.venue.toLowerCase().includes(searchTerm.toLowerCase());
+                    const matchCat = selectedCategory === 'Todos' || ev.category === selectedCategory;
+                    return matchSearch && matchCat;
+                });
+            }, [searchTerm, selectedCategory]);
+
+            const handleLogin = (user) => { setUserProfile(user); setIsAuthenticated(true); setPage('home'); };
+            const handleLogout = () => { localStorage.removeItem('tm_session'); setIsAuthenticated(false); setUserProfile(null); setPage('home'); };
+            const handleSelectEvent = (ev) => { setSelectedEvent(ev); setPage('event'); setActiveTab('info'); };
+            const startBuyProcess = () => { isAuthenticated ? setPage('queue') : setPage('login'); };
+            
+            const addToCart = () => {
+                if(!selectedZone) return;
+                setCart({ 
+                    event: selectedEvent, 
+                    zone: selectedZone, 
+                    quantity: ticketQuantity, 
+                    total: (selectedZone.price * ticketQuantity) + (12 * ticketQuantity) 
+                });
+                setPage('checkout');
+            };
+
+            const completePurchase = () => {
+                const newTickets = Array(cart.quantity).fill(0).map((_, i) => ({
+                    id: Math.random().toString(36).substr(2, 9).toUpperCase(), 
+                    event: cart.event, 
+                    zone: cart.zone,
+                    seat: `${cart.zone.name} - Fila ${Math.floor(Math.random()*20)+1} Asiento ${Math.floor(Math.random()*50)+1}`,
+                    qr: `QR-${Math.random()}`
+                }));
+                const updatedTickets = [...userTickets, ...newTickets];
+                setUserTickets(updatedTickets);
+                localStorage.setItem('tm_tickets', JSON.stringify(updatedTickets));
+                setPage('success');
+            };
+
+            return (
+                <ToastProvider>
+                    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+                        {page !== 'login' && page !== 'queue' && page !== 'seats' && page !== 'success' && (
+                            <Navbar {...{ setPage, userProfile, isAuthenticated, handleLogout, searchTerm, setSearchTerm }} />
+                        )}
+
+                        {/* HOME */}
+                        {page === 'home' && (
+                            <main className="flex-1 pb-24 md:pb-20">
+                                <Hero onSelectEvent={handleSelectEvent} />
+                                
+                                {/* News Section Added */}
+                                <NewsSection />
+
+                                <div className="container mx-auto px-4 md:px-6 mt-12 relative z-20">
+                                    <div className="flex gap-3 overflow-x-auto pb-6 hide-scroll -mx-4 px-4 md:mx-0 md:px-0">
+                                        {CATEGORIES.map(cat => (
+                                            <button key={cat} onClick={() => setSelectedCategory(cat)} className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold shadow-sm transition-all active:scale-95 ${selectedCategory === cat ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/30' : 'bg-white text-slate-600 hover:text-brand-600 border border-slate-100'}`}>{cat}</button>
+                                        ))}
+                                    </div>
+                                    <div className="mb-8 flex items-end justify-between border-b border-slate-200 pb-4">
+                                        <div>
+                                            <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2"><TrendingUp className="text-brand-600"/> Eventos en Tendencia</h2>
+                                            <p className="text-slate-500 text-sm mt-1">No te pierdas los espectáculos más demandados.</p>
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest hidden sm:block">{filteredEvents.length} Resultados</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+                                        {filteredEvents.map(ev => (<EventCard key={ev.id} event={ev} onClick={handleSelectEvent} />))}
+                                    </div>
+                                </div>
+                            </main>
+                        )}
+
+                        {/* EVENT DETAIL */}
+                        {page === 'event' && selectedEvent && (
+                            <main className="flex-1 bg-white animate-fade-in">
+                                <div className="h-[50vh] md:h-[60vh] relative overflow-hidden">
+                                    <img src={selectedEvent.image} className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent"></div>
+                                    <div className="absolute bottom-0 left-0 w-full p-6 md:p-12 pb-10">
+                                        <div className="container mx-auto">
+                                            <div className="max-w-4xl animate-slide-up">
+                                                <div className="flex flex-wrap items-center gap-3 mb-4">
+                                                    <span className="bg-brand-600 text-white px-3 py-1 rounded-md text-xs font-bold uppercase tracking-widest shadow-lg shadow-brand-500/20">{selectedEvent.category}</span>
+                                                    <span className="text-white/80 font-mono text-xs md:text-sm uppercase tracking-widest border border-white/20 px-2 py-1 rounded">{selectedEvent.tour}</span>
+                                                </div>
+                                                <h1 className="text-4xl md:text-7xl font-black text-white mb-4 md:mb-6 leading-none tracking-tight">{selectedEvent.artist}</h1>
+                                                <div className="flex flex-col md:flex-row gap-3 md:gap-6 text-white/90 text-base md:text-lg font-medium">
+                                                    <div className="flex items-center gap-2.5"><MapPin className="text-brand-400 w-5 h-5" /> {selectedEvent.venue}, {selectedEvent.city}</div>
+                                                    <div className="flex items-center gap-2.5"><Calendar className="text-brand-400 w-5 h-5" /> {new Date(selectedEvent.date).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+                                                    <div className="flex items-center gap-2.5"><Clock className="text-brand-400 w-5 h-5" /> {selectedEvent.time}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button onClick={()=>setPage('home')} className="absolute top-4 left-4 p-3 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition-colors z-30 md:hidden"><ChevronLeft size={24}/></button>
+                                </div>
+
+                                <div className="container mx-auto px-4 md:px-6 py-8 md:py-12 grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
+                                    <div className="lg:col-span-2 space-y-8 order-2 lg:order-1">
+                                        {/* Tabs */}
+                                        <div className="flex border-b border-slate-200 overflow-x-auto hide-scroll">
+                                            <button onClick={() => setActiveTab('info')} className={`px-4 md:px-6 py-4 font-bold text-xs md:text-sm uppercase tracking-wider transition-colors whitespace-nowrap ${activeTab === 'info' ? 'tab-active' : 'text-slate-500 hover:text-slate-800'}`}>Información</button>
+                                            <button onClick={() => setActiveTab('bio')} className={`px-4 md:px-6 py-4 font-bold text-xs md:text-sm uppercase tracking-wider transition-colors whitespace-nowrap ${activeTab === 'bio' ? 'tab-active' : 'text-slate-500 hover:text-slate-800'}`}>Biografía</button>
+                                            <button onClick={() => setActiveTab('venue')} className={`px-4 md:px-6 py-4 font-bold text-xs md:text-sm uppercase tracking-wider transition-colors whitespace-nowrap ${activeTab === 'venue' ? 'tab-active' : 'text-slate-500 hover:text-slate-800'}`}>Recinto & Normas</button>
+                                        </div>
+
+                                        <div className="bg-white p-0 md:p-6 rounded-xl md:border border-slate-100 md:shadow-soft min-h-[300px]">
+                                            {activeTab === 'info' && (
+                                                <div className="space-y-8 animate-fade-in">
+                                                    <div>
+                                                        <h3 className="text-xl md:text-2xl font-black text-slate-900 mb-4 tracking-tight">Acerca del Evento</h3>
+                                                        <p className="text-slate-600 leading-relaxed text-base md:text-lg mb-6">
+                                                            Prepárate para vivir una noche inolvidable con <strong>{selectedEvent.artist}</strong>. La gira "{selectedEvent.tour}" ha roto récords en todo el mundo y promete un espectáculo visual y sonoro sin precedentes.
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                                                        <h4 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                                                            <div className="p-2 bg-white rounded-lg shadow-sm text-brand-600"><Ticket size={18}/></div> 
+                                                            Tipos de Entrada
+                                                        </h4>
+                                                        <div className="space-y-6">
+                                                            {SEATING_ZONES.map(zone => (
+                                                                <div key={zone.id} className="border-b border-slate-200/50 pb-5 last:border-0 last:pb-0">
+                                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <span className={`w-3 h-3 rounded-full shadow-sm ${zone.class}`}></span>
+                                                                            <h5 className="font-bold text-base md:text-lg text-slate-800">{zone.name}</h5>
+                                                                        </div>
+                                                                        <span className="bg-white border border-slate-200 text-slate-700 px-3 py-1 rounded-full text-xs font-bold w-fit shadow-sm">{zone.price}€</span>
+                                                                    </div>
+                                                                    <p className="text-sm text-slate-500 mb-3 italic">{zone.desc}</p>
+                                                                    <ul className="grid grid-cols-1 gap-2">
+                                                                        {zone.details.slice(0,2).map((detail, i) => (
+                                                                            <li key={i} className="flex items-start gap-2.5 text-sm text-slate-600">
+                                                                                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0"/>
+                                                                                <span>{detail}</span>
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {activeTab === 'bio' && (
+                                                <div className="space-y-4 animate-fade-in">
+                                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Sobre {selectedEvent.artist}</h3>
+                                                    <p className="text-slate-600 leading-relaxed">
+                                                        Con millones de discos vendidos en todo el mundo y múltiples premios Grammy, {selectedEvent.artist} se ha consolidado como una de las figuras más influyentes de la música contemporánea.
+                                                    </p>
+                                                </div>
+                                            )}
+                                            {activeTab === 'venue' && (
+                                                <div className="space-y-6 animate-fade-in">
+                                                    <div>
+                                                        <h3 className="text-xl font-bold text-slate-900 mb-4">Normativa del Recinto</h3>
+                                                        <ul className="space-y-3 text-slate-600">
+                                                            <li className="flex gap-3"><span className="w-1.5 h-1.5 bg-slate-400 rounded-full mt-2 flex-shrink-0"></span> No se permite la entrada de comida ni bebida.</li>
+                                                            <li className="flex gap-3"><span className="w-1.5 h-1.5 bg-slate-400 rounded-full mt-2 flex-shrink-0"></span> Menores de 16 años acompañados.</li>
+                                                            <li className="flex gap-3"><span className="w-1.5 h-1.5 bg-slate-400 rounded-full mt-2 flex-shrink-0"></span> Accesible para movilidad reducida.</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Sidebar */}
+                                    <div className="relative order-1 lg:order-2">
+                                        <div className="sticky top-24 bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-6 md:p-8 border border-slate-100">
+                                            <div className="flex justify-between items-center mb-6">
+                                                <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Precio Desde</span>
+                                                <span className="text-3xl font-black text-slate-900 tracking-tight">{selectedEvent.priceRange.split(' - ')[0]}</span>
+                                            </div>
+                                            <div className="mb-8 space-y-3">
+                                                <div className="flex justify-between items-center text-sm p-4 bg-green-50 rounded-xl border border-green-100">
+                                                    <span className="text-green-800 font-bold">Disponibilidad</span>
+                                                    <span className="text-green-600 font-bold flex items-center gap-1.5 text-xs uppercase tracking-wide"><div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div> Alta</span>
+                                                </div>
+                                            </div>
+                                            <button onClick={startBuyProcess} className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-500/30 transition-all transform active:scale-95 flex justify-center items-center gap-3 text-lg">
+                                                <Ticket className="w-5 h-5"/> Buscar Entradas
+                                            </button>
+                                            <p className="text-center text-[10px] text-slate-400 mt-6 flex justify-center gap-1.5 items-center uppercase tracking-wide font-bold"><Shield size={12}/> Transacción 100% segura</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </main>
+                        )}
+
+                        {/* QUEUE */}
+                        {page === 'queue' && <QueueScreen event={selectedEvent} onFinish={() => setPage('seats')} />}
+
+                        {/* SEATS */}
+                        {page === 'seats' && (
+                            <div className="h-screen flex flex-col bg-slate-100 overflow-hidden">
+                                <div className="bg-white px-4 md:px-6 py-4 shadow-sm flex justify-between items-center z-20 border-b border-slate-200 relative">
+                                    <div className="flex items-center gap-4 w-full md:w-auto">
+                                        <button onClick={()=>setPage('event')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ChevronLeft/></button>
+                                        <div className="truncate pr-4 md:pr-0">
+                                            <h2 className="font-bold text-lg leading-tight truncate">{selectedEvent.artist}</h2>
+                                            <p className="text-xs text-slate-500 truncate">{selectedEvent.venue}</p>
+                                        </div>
+                                    </div>
+                                    <div className="hidden md:flex gap-4">
+                                        {SEATING_ZONES.map(z => <div key={z.id} className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-600"><div className={`w-3 h-3 rounded-full ${z.class}`}></div> {z.name}</div>)}
+                                    </div>
+                                </div>
+                                <div className="flex-1 flex flex-col md:flex-row relative overflow-hidden">
+                                    <div className={`relative overflow-hidden flex items-center justify-center seat-map-container bg-slate-900 transition-all duration-500 ${showMap ? 'flex-1 opacity-100' : 'flex-[0.001] opacity-0 md:flex-1 md:opacity-100'}`}>
+                                        <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '30px 30px'}}></div>
+                                        <div className="absolute top-4 left-4 z-10 bg-black/50 backdrop-blur text-white text-xs px-3 py-1 rounded-full pointer-events-none md:hidden">Pellizca para zoom</div>
+                                        
+                                        <div className="stage-3d w-full max-w-[800px] aspect-square relative p-4 md:p-0">
+                                            <div className="absolute -top-12 md:-top-16 left-1/2 -translate-x-1/2 w-3/4 md:w-2/3 h-24 bg-slate-800 rounded-b-3xl shadow-2xl flex items-center justify-center text-slate-600 font-black tracking-[0.5em] md:tracking-[1em] border-b-4 border-brand-500 z-10 text-lg md:text-2xl pt-2">ESCENARIO</div>
+                                            {/* Adjusted Grid and added touch handlers explicitly */}
+                                            <div className="absolute inset-0 grid grid-cols-12 grid-rows-7 gap-2 md:gap-3 p-4 pt-16 h-full">
+                                                <button onClick={() => setSelectedZone(SEATING_ZONES[3])} className={`col-start-3 row-start-1 col-span-8 row-span-2 rounded-xl shadow-lg transition-all active:scale-95 border border-white/10 flex items-center justify-center font-black text-[10px] md:text-sm tracking-widest ${selectedZone?.id === 'vip' ? 'bg-yellow-500 text-black shadow-[0_0_30px_rgba(234,179,8,0.6)] scale-[1.02]' : 'bg-yellow-900/40 text-yellow-500 hover:bg-yellow-900/60'}`}>VIP</button>
+                                                <button onClick={() => setSelectedZone(SEATING_ZONES[0])} className={`col-start-3 row-start-3 col-span-8 row-span-3 rounded-xl shadow-lg transition-all active:scale-95 border border-white/10 flex items-center justify-center font-black text-lg md:text-2xl tracking-wider ${selectedZone?.id === 'floor' ? 'bg-blue-600 text-white ring-4 ring-white shadow-[0_0_30px_rgba(37,99,235,0.6)] scale-[1.02]' : 'bg-blue-900/40 text-blue-200 hover:bg-blue-800/60'}`}>PISTA</button>
+                                                <button onClick={() => setSelectedZone(SEATING_ZONES[2])} className={`col-start-1 row-start-1 col-span-2 row-span-5 rounded-l-2xl md:rounded-l-3xl border border-white/10 writing-vertical-lr flex items-center justify-center font-bold text-[10px] md:text-base ${selectedZone?.id === 'upper' ? 'bg-green-600 text-white shadow-[0_0_30px_rgba(22,163,74,0.6)] scale-[1.02]' : 'bg-green-900/40 text-green-400 hover:bg-green-900/60'}`}>GRADA</button>
+                                                <button onClick={() => setSelectedZone(SEATING_ZONES[2])} className={`col-start-11 row-start-1 col-span-2 row-span-5 rounded-r-2xl md:rounded-r-3xl border border-white/10 writing-vertical-rl flex items-center justify-center font-bold text-[10px] md:text-base ${selectedZone?.id === 'upper' ? 'bg-green-600 text-white shadow-[0_0_30px_rgba(22,163,74,0.6)] scale-[1.02]' : 'bg-green-900/40 text-green-400 hover:bg-green-900/60'}`}>GRADA</button>
+                                                <button onClick={() => setSelectedZone(SEATING_ZONES[1])} className={`col-start-1 row-start-6 col-span-12 row-span-2 rounded-b-2xl md:rounded-b-3xl border border-white/10 font-bold text-sm md:text-lg flex items-center justify-center ${selectedZone?.id === 'lower' ? 'bg-purple-600 text-white shadow-[0_0_30px_rgba(147,51,234,0.6)] scale-[1.02]' : 'bg-purple-900/40 text-purple-400 hover:bg-purple-900/60'}`}>FONDO</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Map Toggle Button (Mobile Only) */}
+                                    <button 
+                                        onClick={() => setShowMap(!showMap)} 
+                                        className="absolute top-4 right-4 z-40 bg-white/90 backdrop-blur shadow-lg p-3 rounded-full md:hidden text-slate-700 hover:bg-white transition-all active:scale-95"
+                                    >
+                                        {showMap ? <Minimize size={20}/> : <Maximize size={20}/>}
+                                    </button>
+
+                                    <div className={`h-auto md:w-96 bg-white shadow-2xl z-30 flex flex-col border-t md:border-l border-slate-200 rounded-t-3xl md:rounded-none transition-all duration-500 ${showMap ? 'h-[45vh]' : 'h-[90vh]'}`}>
+                                        <div className="p-5 md:p-6 border-b border-slate-100 flex-shrink-0"><h3 className="font-black text-xl text-slate-800">Selecciona Entradas</h3><p className="text-sm text-slate-500 mt-1">Elige una zona en el mapa.</p></div>
+                                        <div className="flex-1 overflow-y-auto p-5 md:p-6 space-y-3">
+                                            {SEATING_ZONES.map(z => (
+                                                <div key={z.id} onClick={() => setSelectedZone(z)} className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex justify-between items-center ${selectedZone?.id === z.id ? `border-brand-500 bg-brand-50 ring-1 ring-brand-200` : 'border-slate-100 hover:border-slate-300'}`}>
+                                                    <div><div className="font-bold text-slate-800">{z.name}</div><div className="text-xs text-slate-500 font-medium">{z.price} € + gastos</div></div>
+                                                    {selectedZone?.id === z.id && <div className="w-3 h-3 bg-brand-500 rounded-full animate-pulse"></div>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="p-5 md:p-6 bg-slate-50 border-t border-slate-200 pb-8 md:pb-6 flex-shrink-0 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-20">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <span className="font-bold text-slate-700">{selectedZone ? selectedZone.name : 'Zona no seleccionada'}</span>
+                                                <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                                                    <button onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))} className="text-xl font-bold text-brand-600 px-2 hover:bg-slate-50 rounded transition-colors">-</button>
+                                                    <span className="font-mono font-bold w-6 text-center">{ticketQuantity}</span>
+                                                    <button onClick={() => setTicketQuantity(Math.min(10, ticketQuantity + 1))} className="text-xl font-bold text-brand-600 px-2 hover:bg-slate-50 rounded transition-colors">+</button>
+                                                </div>
+                                            </div>
+                                            <button disabled={!selectedZone} onClick={addToCart} className="w-full bg-brand-600 disabled:bg-slate-300 disabled:cursor-not-allowed hover:bg-brand-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all">{selectedZone ? `Pagar ${(selectedZone.price * ticketQuantity) + (12 * ticketQuantity)}€` : 'Selecciona en el mapa'}</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* CHECKOUT */}
+                        {page === 'checkout' && cart && (
+                            <div className="min-h-screen bg-slate-50 py-8 md:py-12 px-4 pb-24 md:pb-12">
+                                <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-start">
+                                    <div className="space-y-6 md:space-y-8 animate-slide-up order-2 lg:order-1">
+                                        <div><h1 className="text-2xl md:text-3xl font-black text-slate-900 mb-2">Pago Seguro</h1><div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-100 w-fit px-3 py-1.5 rounded-full font-mono font-bold text-xs"><Clock className="w-4 h-4" /> 09:45 para completar</div></div>
+                                        <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100"><h3 className="font-bold text-lg mb-6 flex items-center gap-2 text-slate-800"><CreditCard className="text-brand-600"/> Tarjeta de Crédito/Débito</h3><CheckoutCard form={checkoutForm} setForm={setCheckoutForm} /></div>
+                                        <button onClick={completePurchase} className="hidden lg:flex w-full bg-green-600 hover:bg-green-700 text-white font-bold py-5 rounded-xl shadow-xl shadow-green-500/20 transition-all text-xl justify-between px-8 items-center"><span>Confirmar Pago</span><span>{cart.total} €</span></button>
+                                    </div>
+                                    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 sticky top-24 order-1 lg:order-2">
+                                        <div className="flex items-start gap-4 mb-6 pb-6 border-b border-dashed border-slate-200">
+                                            <img src={cart.event.image} className="w-20 h-20 rounded-xl object-cover shadow-md" />
+                                            <div>
+                                                <h3 className="font-black text-lg leading-tight mb-1">{cart.event.artist}</h3>
+                                                <p className="text-sm text-slate-500 font-medium">{cart.event.venue}</p>
+                                                <div className="mt-2 text-[10px] font-bold bg-brand-50 text-brand-700 px-2 py-1 rounded w-fit border border-brand-100 uppercase tracking-wide">{new Date(cart.event.date).toLocaleDateString()}</div>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4 text-sm text-slate-600">
+                                            <div className="flex justify-between"><span>Entradas ({cart.quantity} x {cart.zone.name})</span><span className="font-mono font-bold">{cart.quantity * cart.zone.price} €</span></div>
+                                            <div className="flex justify-between"><span>Gastos de gestión</span><span className="font-mono font-bold">{cart.quantity * 12} €</span></div>
+                                            <div className="pt-4 border-t border-slate-100 flex justify-between items-center text-slate-900"><span className="font-black text-lg">Total a Pagar</span><span className="font-black text-3xl">{cart.total} €</span></div>
+                                        </div>
+                                        <button onClick={completePurchase} className="lg:hidden mt-6 w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg text-lg flex justify-center items-center gap-2">Pagar {cart.total} €</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* SUCCESS */}
+                        {page === 'success' && (
+                            <div className="min-h-screen bg-brand-600 flex items-center justify-center p-4 relative overflow-hidden">
+                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                                <div className="bg-white w-full max-w-lg p-8 md:p-12 rounded-3xl shadow-2xl text-center relative z-10 animate-slide-up">
+                                    <div className="w-20 h-20 md:w-24 md:h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500 shadow-inner"><CheckCircle className="w-10 h-10 md:w-12 md:h-12" /></div>
+                                    <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight">¡Todo listo!</h1>
+                                    <p className="text-slate-500 mb-8 text-base md:text-lg">Hemos enviado tus entradas a <strong className="text-slate-800">{userProfile?.email}</strong>. Prepárate para el show.</p>
+                                    <div className="flex flex-col md:flex-row gap-3"><button onClick={()=>setPage('profile')} className="flex-1 bg-brand-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-500/20 hover:bg-brand-800 transition-all">Ver Mis Entradas</button><button onClick={()=>setPage('home')} className="flex-1 bg-slate-50 text-slate-700 font-bold py-4 rounded-xl hover:bg-slate-100 transition-all border border-slate-100">Volver al Inicio</button></div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PROFILE */}
+                        {page === 'profile' && (
+                            <div className="min-h-screen bg-slate-50 pt-24 pb-20 px-4 md:px-6">
+                                <div className="container mx-auto max-w-4xl">
+                                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 md:mb-12">
+                                        <div>
+                                            <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight mb-2">Mi Cuenta</h1>
+                                            <p className="text-slate-500 text-lg">Gestiona tus entradas y próximos eventos.</p>
+                                        </div>
+                                        <div className="mt-4 md:mt-0 bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-brand-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md">{userProfile?.name.charAt(0)}</div>
+                                            <div>
+                                                <div className="font-bold text-slate-900">{userProfile?.name}</div>
+                                                <div className="text-sm text-slate-400">{userProfile?.email}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="mb-6">
+                                        <h2 className="text-xl font-black text-slate-800 flex items-center gap-2 mb-6"><Ticket className="text-brand-600"/> Mis Entradas</h2>
+                                        {userTickets.length === 0 ? (
+                                            <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-300">
+                                                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300"><Ticket size={40}/></div>
+                                                <h3 className="text-xl font-bold text-slate-900 mb-2">Aún no tienes entradas</h3>
+                                                <p className="text-slate-500 mb-6 max-w-md mx-auto">Explora los eventos disponibles y vive experiencias inolvidables.</p>
+                                                <button onClick={() => setPage('home')} className="bg-brand-600 text-white font-bold px-8 py-3 rounded-full hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/30">Explorar Eventos</button>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-6">
+                                                {userTickets.map((ticket) => (
+                                                    <TicketCard key={ticket.id} ticket={ticket} />
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* HELP */}
+                        {page === 'help' && (
+                            <div className="min-h-screen bg-slate-50 pb-24 md:pb-20">
+                                <div className="bg-brand-800 text-white py-16 md:py-24 text-center relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-brand-900/50 pattern-grid-lg opacity-30"></div>
+                                    <div className="relative z-10 px-4">
+                                        <h1 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">Centro de Ayuda</h1>
+                                        <p className="text-brand-100 text-lg max-w-2xl mx-auto">Resolvemos tus dudas para que solo te preocupes de disfrutar.</p>
+                                    </div>
+                                </div>
+                                <div className="container mx-auto px-4 -mt-10 relative z-10 max-w-5xl">
+                                    <div className="bg-white rounded-2xl shadow-xl shadow-brand-900/5 p-6 md:p-8 mb-8 border border-slate-100">
+                                        <div className="grid md:grid-cols-2 gap-8 items-center">
+                                            <div>
+                                                <h3 className="text-2xl font-bold mb-3 text-slate-900">¿Necesitas ayuda urgente?</h3>
+                                                <p className="text-slate-600 mb-6 leading-relaxed">Nuestro asistente virtual está disponible 24/7 para resolver problemas con tus entradas al instante.</p>
+                                                <button onClick={() => setShowChat(true)} className="flex items-center gap-3 bg-brand-600 hover:bg-brand-700 text-white px-8 py-4 rounded-xl font-bold transition-all shadow-lg shadow-brand-500/30 w-full md:w-fit justify-center transform hover:-translate-y-0.5">
+                                                    <MessageCircle className="w-5 h-5"/> Iniciar Chat
+                                                </button>
+                                            </div>
+                                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                                <h4 className="font-bold mb-2 text-slate-800">Estado del Servicio</h4>
+                                                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-100 mb-2">
+                                                    <span className="text-sm font-medium text-slate-600">Sistema de Entradas</span>
+                                                    <div className="flex items-center gap-2 text-green-600 text-xs font-bold uppercase tracking-wider"><div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div> Operativo</div>
+                                                </div>
+                                                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-100">
+                                                    <span className="text-sm font-medium text-slate-600">Pagos</span>
+                                                    <div className="flex items-center gap-2 text-green-600 text-xs font-bold uppercase tracking-wider"><div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div> Operativo</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid md:grid-cols-3 gap-6">
+                                        {HELP_TOPICS.map(topic => (
+                                            <div key={topic.id} className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-xl transition-all border border-slate-100 group cursor-pointer hover:-translate-y-1 duration-300">
+                                                <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mb-5 group-hover:bg-brand-600 group-hover:text-white transition-colors duration-300"><topic.icon size={28} /></div>
+                                                <h3 className="font-bold text-xl mb-2 text-slate-800">{topic.title}</h3>
+                                                <p className="text-sm text-slate-500 mb-6 leading-relaxed">{topic.desc}</p>
+                                                <div className="space-y-3">
+                                                    {topic.faqs.slice(0, 2).map((faq, i) => (
+                                                        <details key={i} className="text-sm cursor-pointer group/details">
+                                                            <summary className="font-bold text-slate-700 hover:text-brand-600 list-none flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors">
+                                                                {faq.q} 
+                                                                <ChevronRight className="w-4 h-4 text-slate-400 transition-transform group-open/details:rotate-90"/>
+                                                            </summary>
+                                                            <div className="pl-2 pr-4 py-2 text-slate-600 leading-relaxed border-l-2 border-brand-100 ml-2 mt-1">{faq.a}</div>
+                                                        </details>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* LOGIN SCREEN */}
+                        {page === 'login' && <AuthScreen onLogin={handleLogin} setPage={setPage} />}
+
+                        {/* CHAT OVERLAY */}
+                        {showChat && <ChatOverlay onClose={() => setShowChat(false)} />}
+
+                    </div>
+                </ToastProvider>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
