@@ -20,18 +20,18 @@
     
     <style>
         :root {
-            /* Paleta Mejorada */
-            --primary: #4f46e5;
-            --primary-glow: rgba(79, 70, 229, 0.4);
+            /* Paleta Base (Default) Mejorada */
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.3);
             --secondary: #ec4899;
             
-            --bg-body: #f8fafc;
+            --bg-body: #f1f5f9;
             --bg-sidebar: #0f172a;
             --bg-sidebar-glass: rgba(15, 23, 42, 0.95);
             --bg-card: #ffffff;
-            --bg-input: #f1f5f9;
+            --bg-input: #f8fafc;
             
-            --text-main: #0f172a;
+            --text-main: #1e293b;
             --text-muted: #64748b;
             --text-light: #94a3b8;
             
@@ -42,16 +42,69 @@
             --danger: #ef4444;
             --warning: #f59e0b;
             
-            --radius-sm: 8px;
-            --radius-md: 16px;
-            --radius-lg: 24px;
+            --radius-sm: 10px;
+            --radius-md: 18px;
+            --radius-lg: 28px;
             
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -1px rgb(0 0 0 / 0.03);
-            --shadow-hover: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -2px rgb(0 0 0 / 0.04);
+            --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
             
             --font-main: 'Plus Jakarta Sans', sans-serif;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Gradient Overlay corregido */
+            --bg-overlay: linear-gradient(180deg, #e0e7ff 0%, rgba(241, 245, 249, 0) 100%);
+        }
+
+        /* --- TEMAS NUEVOS --- */
+        [data-theme="aurora"] {
+            --bg-body: #ecfeff;
+            --primary: #06b6d4;
+            --primary-glow: rgba(6, 182, 212, 0.3);
+            --bg-overlay: linear-gradient(135deg, #cffafe 0%, rgba(236, 254, 255, 0) 100%);
+        }
+        [data-theme="midnight"] {
+            --bg-body: #020617;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --bg-input: #334155;
+            --border: #334155;
+            --bg-sidebar: #0f172a;
+            --bg-overlay: linear-gradient(180deg, #0f172a 0%, rgba(2, 6, 23, 0) 100%);
+            --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+        }
+        [data-theme="sunset"] {
+            --bg-body: #fff7ed;
+            --primary: #f97316;
+            --primary-glow: rgba(249, 115, 22, 0.4);
+            --bg-overlay: linear-gradient(180deg, #ffedd5 0%, rgba(255, 247, 237, 0) 100%);
+        }
+        [data-theme="forest"] {
+            --bg-body: #f0fdf4;
+            --primary: #16a34a;
+            --primary-glow: rgba(22, 163, 74, 0.3);
+            --bg-overlay: linear-gradient(180deg, #dcfce7 0%, rgba(240, 253, 244, 0) 100%);
+        }
+        [data-theme="nebula"] {
+            --bg-body: #2e1065;
+            --bg-card: #4c1d95;
+            --text-main: #f5f3ff;
+            --text-muted: #c4b5fd;
+            --bg-input: #5b21b6;
+            --border: #6d28d9;
+            --bg-sidebar: #170536;
+            --primary: #d8b4fe;
+            --primary-glow: rgba(216, 180, 254, 0.4);
+            --bg-overlay: linear-gradient(180deg, #170536 0%, rgba(46, 16, 101, 0) 100%);
+        }
+        [data-theme="coffee"] {
+            --bg-body: #f5f5f4;
+            --primary: #78350f;
+            --primary-glow: rgba(120, 53, 15, 0.3);
+            --bg-sidebar: #451a03;
+            --bg-overlay: linear-gradient(180deg, #e7e5e4 0%, rgba(245, 245, 244, 0) 100%);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
@@ -63,6 +116,41 @@
             height: 100vh;
             display: flex;
             overflow: hidden;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        /* --- Estilos de Autenticación (Login) --- */
+        #auth-view {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-body);
+            z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .auth-card {
+            background: var(--bg-card);
+            width: 100%; max-width: 420px;
+            padding: 40px;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 20px 40px -5px rgba(0,0,0,0.1);
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        .auth-brand { font-size: 2rem; font-weight: 800; color: var(--text-main); margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .auth-brand i { color: var(--primary); }
+        .auth-subtitle { color: var(--text-muted); margin-bottom: 30px; }
+        .auth-tabs { display: flex; margin-bottom: 24px; background: var(--bg-input); padding: 4px; border-radius: 12px; }
+        .auth-tab { flex: 1; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.3s; color: var(--text-muted); border: none; background: transparent; }
+        .auth-tab.active { background: var(--bg-card); color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        .auth-form { display: flex; flex-direction: column; gap: 16px; text-align: left; }
+        .auth-footer { margin-top: 20px; font-size: 0.85rem; color: var(--text-muted); }
+
+        /* --- Layout de la App (Oculto por defecto) --- */
+        #app-layout {
+            display: none; /* Se activa con JS tras login */
+            width: 100%; height: 100%;
+            display: flex; overflow: hidden;
         }
 
         /* --- Sidebar Mejorado --- */
@@ -75,13 +163,15 @@
             padding: 32px 24px;
             transition: var(--transition);
             position: relative;
-            z-index: 10;
+            z-index: 20;
+            flex-shrink: 0;
+            box-shadow: 5px 0 20px rgba(0,0,0,0.05);
+            overflow: hidden; 
         }
         
-        /* Efecto de fondo sutil en sidebar */
         aside::before {
             content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.15), transparent 70%);
+            background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.1), transparent 70%);
             pointer-events: none; z-index: -1;
         }
 
@@ -120,14 +210,15 @@
         }
         
         .nav-item:hover {
-            background-color: rgba(255,255,255,0.05);
+            background-color: rgba(255,255,255,0.08);
             color: white;
         }
 
         .nav-item.active { 
-            background: linear-gradient(90deg, rgba(79, 70, 229, 0.2) 0%, rgba(79, 70, 229, 0.05) 100%);
-            color: #818cf8;
-            border: 1px solid rgba(79, 70, 229, 0.3);
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.05) 100%);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
         .storage-info {
@@ -157,14 +248,14 @@
             flex-direction: column;
             overflow: hidden;
             position: relative;
-            background: #f8fafc;
+            background: transparent;
         }
         
-        /* Gradient background accent */
         main::after {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 300px;
-            background: linear-gradient(180deg, #e0e7ff 0%, rgba(248, 250, 252, 0) 100%);
-            z-index: 0; pointer-events: none; opacity: 0.6;
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 350px;
+            background: var(--bg-overlay);
+            z-index: 0; pointer-events: none; opacity: 1;
+            transition: background 0.5s ease;
         }
 
         header {
@@ -175,8 +266,19 @@
             z-index: 2;
         }
 
-        .header-title h2 { font-size: 1.5rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; }
-        .header-title p { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; }
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            color: var(--text-main);
+            cursor: pointer;
+            margin-right: 15px;
+        }
+
+        .header-left { display: flex; align-items: center; }
+        .header-title h2 { font-size: 1.8rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
+        .header-title p { color: var(--text-muted); font-size: 0.95rem; margin-top: 4px; }
 
         .btn-primary {
             background: var(--primary);
@@ -188,6 +290,7 @@
             cursor: pointer;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 10px;
             transition: var(--transition);
             box-shadow: 0 4px 12px var(--primary-glow);
@@ -195,19 +298,26 @@
         }
         .btn-primary:hover { 
             transform: translateY(-2px); 
-            box-shadow: 0 6px 16px var(--primary-glow);
-            background: #4338ca; 
+            box-shadow: 0 8px 20px var(--primary-glow);
+            filter: brightness(1.1);
         }
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-danger {
+            background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5;
+        }
+        .btn-danger:hover { background: #fecaca; }
 
-        /* Scrollable Content */
         .content-area {
             flex: 1;
             padding: 0 40px 40px 40px;
             overflow-y: auto;
-            z-index: 2;
+            z-index: 2; /* Importante para que esté sobre el fondo */
         }
 
-        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -226,7 +336,7 @@
             justify-content: space-between;
             transition: var(--transition);
         }
-        .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); border-color: #cbd5e1; }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); border-color: var(--primary); }
         
         .stat-icon {
             width: 56px; height: 56px;
@@ -236,7 +346,6 @@
             transition: transform 0.3s;
         }
         .stat-card:hover .stat-icon { transform: scale(1.1) rotate(5deg); }
-        
         .stat-icon.blue { background: #e0e7ff; color: var(--primary); }
         .stat-icon.green { background: #d1fae5; color: var(--success); }
         .stat-icon.orange { background: #ffedd5; color: var(--warning); }
@@ -245,15 +354,12 @@
         .stat-info h3 { font-size: 2rem; font-weight: 800; margin-bottom: 4px; color: var(--text-main); }
         .stat-info p { color: var(--text-muted); font-size: 0.95rem; font-weight: 500; }
 
-        /* Dashboard Split */
         .dash-split {
             display: grid;
             grid-template-columns: 2fr 1fr;
             gap: 32px;
             margin-bottom: 32px;
         }
-
-        @media (max-width: 1024px) { .dash-split { grid-template-columns: 1fr; } }
 
         .card {
             background: var(--bg-card);
@@ -264,20 +370,19 @@
             display: flex; flex-direction: column;
             transition: var(--transition);
         }
-        .card:hover { box-shadow: var(--shadow-hover); }
+        .card:hover { box-shadow: var(--shadow-hover); border-color: var(--border-hover); }
 
         .card-header {
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
         }
         .card-title { font-size: 1.2rem; font-weight: 700; color: var(--text-main); }
 
-        /* Dropzone Mejorado */
         .dropzone {
             border: 2px dashed var(--border);
             border-radius: var(--radius-md);
             padding: 40px 20px;
             text-align: center;
-            background: #f8fafc;
+            background: rgba(248, 250, 252, 0.3); /* Más transparente */
             transition: var(--transition);
             cursor: pointer;
             position: relative;
@@ -285,7 +390,7 @@
         }
         .dropzone:hover, .dropzone.active {
             border-color: var(--primary);
-            background: #eef2ff;
+            background: rgba(99, 102, 241, 0.05);
             transform: scale(1.01);
         }
         .dropzone i { font-size: 3.5rem; color: #cbd5e1; margin-bottom: 16px; display: block; transition: 0.3s; }
@@ -293,29 +398,119 @@
         
         #file-input { display: none; }
 
-        /* File List Table */
+        /* Toolbar y Grid */
+        .toolbar {
+            display: flex; gap: 12px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;
+        }
+        
+        .toolbar-group {
+            display: flex; background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; overflow: hidden;
+        }
+        
+        .toolbar-btn {
+            background: transparent; border: none; padding: 10px 14px;
+            cursor: pointer; color: var(--text-muted); transition: 0.2s;
+            display: flex; align-items: center; gap: 6px; font-size: 1rem;
+        }
+        .toolbar-btn:hover { background: var(--bg-input); color: var(--primary); }
+        .toolbar-btn.active { background: var(--primary); color: white; }
+        .toolbar-btn + .toolbar-btn { border-left: 1px solid var(--border); }
+        
+        .sort-select {
+            padding: 10px 14px; border: 1px solid var(--border); border-radius: 12px;
+            background: var(--bg-card); color: var(--text-main); font-family: var(--font-main);
+            outline: none; cursor: pointer; transition: 0.2s;
+        }
+        .sort-select:hover, .sort-select:focus { border-color: var(--primary); }
+
+        .breadcrumb {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 20px;
+            font-size: 0.95rem; color: var(--text-muted);
+            background: var(--bg-card); padding: 10px 16px; border-radius: 10px;
+            width: fit-content; border: 1px solid var(--border);
+        }
+        .breadcrumb-item { cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
+        .breadcrumb-item:hover { color: var(--primary); }
+        .breadcrumb-item.active { font-weight: 700; color: var(--text-main); cursor: default; }
+        .breadcrumb-separator { color: var(--text-light); }
+
+        /* Vista Grid */
+        .files-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px;
+        }
+        
+        .file-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 20px; text-align: center;
+            transition: all 0.2s; cursor: pointer; position: relative;
+            display: flex; flex-direction: column; align-items: center;
+            height: 100%; box-shadow: var(--shadow-sm);
+        }
+        .file-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); border-color: var(--primary); }
+        /* Estilo de selección */
+        .file-card.selected {
+            border-color: var(--primary);
+            background-color: rgba(99, 102, 241, 0.08);
+            box-shadow: 0 0 0 2px var(--primary-glow);
+        }
+        
+        /* Drag & Drop Visuals */
+        .file-card.drag-over {
+            border: 2px dashed var(--primary); background: rgba(99, 102, 241, 0.05); transform: scale(1.02);
+        }
+        
+        .file-card-icon {
+            font-size: 2.8rem; margin-bottom: 15px; width: 64px; height: 64px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 16px; margin: 0 auto 15px auto;
+        }
+        .file-card-name {
+            font-size: 0.9rem; font-weight: 600; color: var(--text-main);
+            word-break: break-word; line-height: 1.4; overflow: hidden;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        }
+        .file-card-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; }
+        
+        /* Carpetas en Grid */
+        .folder-card .file-card-icon { color: #f59e0b; background: #fffbeb; }
+        .folder-card { background: #fffdf5; border-color: #fde68a; }
+
         .file-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
         .file-table th { 
             text-align: left; color: var(--text-muted); font-weight: 600; 
             padding: 0 16px 12px 16px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; 
         }
         .file-table td { 
-            padding: 16px; vertical-align: middle; background: white; 
+            padding: 16px; vertical-align: middle; background: var(--bg-card); 
             border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); 
+            color: var(--text-main);
         }
         .file-table tr td:first-child { border-left: 1px solid var(--border); border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
         .file-table tr td:last-child { border-right: 1px solid var(--border); border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
         
-        .file-table tr { transition: transform 0.2s; }
-        .file-table tr:hover td { background: #f8fafc; border-color: #cbd5e1; }
+        .file-table tr { transition: transform 0.2s; cursor: pointer; }
+        .file-table tr:hover td { background: var(--bg-input); border-color: var(--border-hover); }
         .file-table tr:hover { transform: scale(1.005); }
+        
+        /* Estilo Selección en Lista */
+        .file-table tr.selected td {
+            background-color: rgba(99, 102, 241, 0.08) !important;
+            border-top-color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .file-table tr.selected td:first-child { border-left-color: var(--primary); }
+        .file-table tr.selected td:last-child { border-right-color: var(--primary); }
+
+        .file-table tr.folder-row.drag-over td { background: rgba(99, 102, 241, 0.05) !important; border-top: 2px dashed var(--primary); border-bottom: 2px dashed var(--primary); }
 
         .file-name { display: flex; align-items: center; gap: 16px; font-weight: 600; color: var(--text-main); }
         .file-icon-sm { 
             width: 42px; height: 42px; border-radius: 10px; 
             display: flex; align-items: center; justify-content: center;
             font-size: 1.4rem; color: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            flex-shrink: 0;
         }
 
         .badge { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.3px; }
@@ -327,23 +522,22 @@
         .badge-video { background: #f3e8ff; color: #a855f7; }
         .badge-audio { background: #fef9c3; color: #ca8a04; }
         .badge-other { background: #f1f5f9; color: #94a3b8; }
+        .badge-folder { background: #fef3c7; color: #d97706; }
 
         .actions-cell { display: flex; gap: 8px; justify-content: flex-end; }
         .action-btn {
             background: transparent; border: 1px solid transparent; cursor: pointer;
-            width: 34px; height: 34px; border-radius: 8px; color: var(--text-muted);
+            width: 36px; height: 36px; border-radius: 8px; color: var(--text-muted);
             transition: all 0.2s; display: flex; align-items: center; justify-content: center;
         }
-        .action-btn:hover { background: white; border-color: var(--border); color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .action-btn:hover { background: var(--bg-body); border-color: var(--border); color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .action-btn.delete:hover { color: var(--danger); border-color: #fee2e2; background: #fef2f2; }
-        .action-btn.fav.active { color: #f59e0b; } /* Estrella amarilla */
+        .action-btn.fav.active { color: #f59e0b; }
 
         /* Settings Panel */
-        .settings-container {
-            max-width: 800px; margin: 0 auto;
-        }
+        .settings-container { max-width: 800px; margin: 0 auto; }
         .settings-section {
-            background: white; border-radius: var(--radius-md); border: 1px solid var(--border);
+            background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--border);
             padding: 30px; margin-bottom: 24px; box-shadow: var(--shadow-card);
         }
         .settings-header { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
@@ -351,12 +545,58 @@
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-main); font-size: 0.9rem; }
         .form-control {
-            width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
-            background: var(--bg-input); font-family: var(--font-main); transition: 0.3s;
+            width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            background: var(--bg-input); font-family: var(--font-main); transition: 0.3s; color: var(--text-main);
         }
-        .form-control:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
-        .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; }
+        .form-control:focus { border-color: var(--primary); background: var(--bg-card); box-shadow: 0 0 0 3px var(--primary-glow); }
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; color: var(--text-main); }
         
+        .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 16px; margin-top: 15px; }
+        .theme-card {
+            border: 2px solid var(--border); border-radius: 12px; padding: 12px;
+            cursor: pointer; transition: 0.2s; text-align: center; background: var(--bg-input);
+        }
+        .theme-card:hover { transform: translateY(-3px); border-color: var(--primary); }
+        .theme-card.active { border-color: var(--primary); background: rgba(99, 102, 241, 0.05); position: relative; }
+        .theme-card.active::after {
+            content: '\2713'; position: absolute; top: -8px; right: -8px; background: var(--primary);
+            color: white; width: 20px; height: 20px; border-radius: 50%; font-size: 12px; display: flex; align-items: center; justify-content: center;
+        }
+        .theme-preview { width: 100%; height: 70px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        .preview-default { background: #f8fafc; border: 1px solid #e2e8f0; }
+        .preview-aurora { background: linear-gradient(135deg, #ccfbf1 0%, #e0f2fe 100%); }
+        .preview-midnight { background: #0f172a; border: 1px solid #334155; }
+        .preview-sunset { background: linear-gradient(180deg, #ffedd5 0%, #fff7ed 100%); }
+        .preview-forest { background: #f0fdf4; border: 1px solid #bbf7d0; }
+        .preview-nebula { background: #2e1065; border: 1px solid #5b21b6; }
+        .preview-coffee { background: #f5f5f4; border: 1px solid #d6d3d1; }
+
+        /* Estilos para el Avatar Editable */
+        #settings-avatar {
+            position: relative; cursor: pointer; transition: 0.3s; overflow: hidden;
+        }
+        #settings-avatar:hover::after {
+            content: 'Cambiar'; position: absolute; bottom: 0; left: 0; width: 100%; 
+            background: rgba(0,0,0,0.6); color: white; font-size: 0.6rem; padding: 4px 0; text-align: center;
+        }
+        #settings-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Context Menu (Click Derecho) */
+        #context-menu {
+            position: absolute; display: none; z-index: 5000;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; box-shadow: var(--shadow-hover);
+            min-width: 180px; overflow: hidden; padding: 5px;
+        }
+        .ctx-item {
+            padding: 10px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+            font-size: 0.9rem; color: var(--text-main); border-radius: 6px; transition: 0.2s;
+        }
+        .ctx-item:hover { background: var(--bg-input); color: var(--primary); }
+        .ctx-item.delete:hover { background: #fef2f2; color: var(--danger); }
+        .ctx-divider { height: 1px; background: var(--border); margin: 5px 0; }
+
         /* Modal */
         .modal-backdrop {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -376,18 +616,17 @@
         @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
         .modal-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #ffffff; }
-        .modal-body { flex: 1; overflow: hidden; display: flex; position: relative; background: #1e293b; } /* Dark bg for content */
+        .modal-body { flex: 1; overflow: hidden; display: flex; position: relative; background: #1e293b; }
         
         .editor-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
         .editor-toolbar {
-            background: #0f172a; padding: 12px 20px; display: flex; gap: 12px; border-bottom: 1px solid #334155; align-items: center;
+            background: #0f172a; padding: 12px 20px; display: flex; gap: 12px; border-bottom: 1px solid #334155; align-items: center; flex-wrap: wrap;
         }
         .tool-btn {
             background: #334155; color: #e2e8f0; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; transition: 0.2s;
         }
         .tool-btn:hover, .tool-btn.active { background: var(--primary); color: white; }
 
-        /* Input colors */
         input[type="color"] {
             -webkit-appearance: none; border: none; width: 32px; height: 32px; background: none; cursor: pointer;
         }
@@ -398,8 +637,11 @@
             width: 100%; height: 100%; background: #0f172a; color: #e2e8f0; border: none; padding: 24px; font-family: 'Courier New', monospace; line-height: 1.6; resize: none; font-size: 15px;
         }
 
-        /* Toast */
-        .toast-container { position: fixed; bottom: 32px; right: 32px; z-index: 100; display: flex; flex-direction: column; gap: 12px; }
+        .toast-container { 
+            position: fixed; bottom: 32px; right: 32px; 
+            z-index: 2000;
+            display: flex; flex-direction: column; gap: 12px; 
+        }
         .toast {
             background: white; padding: 16px 24px; border-radius: var(--radius-sm);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); display: flex; align-items: center; gap: 14px;
@@ -407,9 +649,9 @@
         }
         @keyframes slideIn { from { transform: translateX(100%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
 
-        /* Loader */
         .loader-line {
-            height: 4px; width: 100%; position: absolute; top: 0; left: 0; overflow: hidden; background: transparent; display: none; z-index: 1000;
+            height: 4px; width: 100%; position: absolute; top: 0; left: 0; overflow: hidden; background: transparent; display: none; 
+            z-index: 2000;
         }
         .loader-line::before {
             content: ''; display: block; position: absolute; left: -200px; width: 200px; height: 100%; background: var(--primary);
@@ -418,7 +660,6 @@
         }
         @keyframes loading { from { left: -200px; width: 30%; } 50% { width: 30%; } 70% { width: 70%; } to { left: 100%; } }
 
-        /* Error Box */
         .error-box {
             background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c;
             padding: 20px; border-radius: var(--radius-sm); margin-bottom: 24px;
@@ -432,282 +673,477 @@
 
         canvas#fileChart { width: 100%; height: 100%; }
 
-        /* Toggle Switch */
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; }
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(20px); }
+        
+        .sidebar-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 15;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .sidebar-backdrop.active { display: block; opacity: 1; }
+
+        @media (max-width: 1024px) { 
+            .dash-split { grid-template-columns: 1fr; } 
+        }
+
+        @media (max-width: 768px) {
+            aside {
+                position: fixed; left: -290px; top: 0; bottom: 0;
+                box-shadow: 5px 0 20px rgba(0,0,0,0.2);
+            }
+            aside.open { left: 0; }
+            header { padding: 16px 20px; }
+            .header-title h2 { font-size: 1.2rem; }
+            .header-title p { display: none; }
+            .mobile-menu-btn { display: block; }
+            .content-area { padding: 16px; }
+            .stats-grid { grid-template-columns: 1fr; gap: 16px; }
+            .stat-card { padding: 16px; }
+            .file-table th:nth-child(2), .file-table td:nth-child(2), 
+            .file-table th:nth-child(4), .file-table td:nth-child(4) { display: none; }
+            .card { padding: 16px; }
+            .dropzone { padding: 20px; }
+            .dropzone i { font-size: 2.5rem; }
+            .settings-header h3 { font-size: 1rem; }
+            .theme-grid { grid-template-columns: repeat(2, 1fr); }
+            
+            #auth-view { padding: 10px; }
+            .auth-card { padding: 25px; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- Sidebar -->
-    <aside>
-        <div class="brand">
-            <i class="ph ph-stack-simple"></i> DocuManager
-        </div>
-        <ul class="nav-menu">
-            <li class="nav-item active" onclick="app.switchView('dashboard', this)"><i class="ph ph-squares-four"></i> Panel Principal</li>
-            <li class="nav-item" onclick="app.switchView('files', this)"><i class="ph ph-folder-open"></i> Mis Archivos</li>
-            <li class="nav-item" onclick="app.switchView('favorites', this)"><i class="ph ph-star"></i> Favoritos</li>
-            <li class="nav-item" onclick="app.switchView('settings', this)"><i class="ph ph-gear-six"></i> Configuración</li>
-        </ul>
-        
-        <div style="margin-top: auto;">
-            <div class="storage-info">
-                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px; color: #cbd5e1;">
-                    <span>Almacenamiento</span>
-                    <span id="storage-percent" style="color: white; font-weight: 600;">0%</span>
-                </div>
-                <div class="storage-bar">
-                    <div class="storage-fill" id="storage-fill"></div>
-                </div>
-                <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 10px; display: flex; align-items: center; gap: 5px;" id="storage-text">
-                    <i class="ph ph-hard-drives"></i> 0 MB de 1 GB
-                </p>
-            </div>
-        </div>
-    </aside>
+    <!-- Menú Contextual Flotante -->
+    <div id="context-menu">
+        <div class="ctx-item" onclick="app.ctxAction('open')"><i class="ph ph-eye"></i> Abrir</div>
+        <div class="ctx-item" onclick="app.ctxAction('rename')"><i class="ph ph-pencil-simple"></i> Renombrar</div>
+        <div class="ctx-item" onclick="app.ctxAction('fav')"><i class="ph ph-star"></i> Favorito</div>
+        <div class="ctx-divider"></div>
+        <div class="ctx-item delete" onclick="app.ctxAction('delete')"><i class="ph ph-trash"></i> Eliminar</div>
+    </div>
 
-    <!-- Main Content -->
-    <main>
-        <!-- Loading Line -->
-        <div class="loader-line" id="global-loader"></div>
-
-        <header>
-            <div class="header-title">
-                <h2 id="page-title">Bienvenido de nuevo</h2>
-                <p id="page-subtitle">Gestiona tu contenido digital de forma eficiente.</p>
+    <!-- Vista de Autenticación (Login/Register) -->
+    <div id="auth-view" style="display: none;">
+        <div class="auth-card">
+            <div class="auth-brand">
+                <i class="ph ph-stack-simple"></i> DocuManager
             </div>
-            <div style="display: flex; gap: 20px; align-items: center;">
-                <button class="btn-primary" onclick="document.getElementById('file-input').click()">
-                    <i class="ph ph-cloud-arrow-up" style="font-size: 1.2rem;"></i> Subir Archivo
-                </button>
-                <div style="position: relative; cursor: pointer;" onclick="app.switchView('settings', document.querySelectorAll('.nav-item')[3])">
-                    <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 1.1rem; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);">
-                        JM
-                    </div>
-                    <div style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; background: #22c55e; border: 2px solid white; border-radius: 50%;"></div>
-                </div>
-            </div>
-        </header>
-
-        <div class="content-area">
+            <p class="auth-subtitle">Gestiona tus documentos de forma segura</p>
             
-            <!-- SQL Error Helper -->
-            <div class="error-box" id="sql-error-box">
-                <strong><i class="ph ph-warning-octagon"></i> Configuración de Base de Datos Requerida</strong>
-                <p style="margin-top: 8px;">Parece que la tabla de metadatos no existe. Ejecuta esto en tu Supabase SQL Editor:</p>
-                <div class="code-block" id="sql-code">
-create table if not exists public.files_metadata (
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="app.toggleAuthMode('login')">Iniciar Sesión</button>
+                <button class="auth-tab" onclick="app.toggleAuthMode('register')">Registrarse</button>
+            </div>
+
+            <!-- Login Form -->
+            <div id="form-login" class="auth-form">
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" id="login-email" class="form-control" placeholder="usuario@ejemplo.com">
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="login-password" class="form-control" placeholder="••••••••">
+                </div>
+                <button class="btn-primary" id="btn-login-submit" onclick="app.login()" style="width: 100%; margin-top: 10px;">
+                    Entrar <i class="ph ph-sign-in"></i>
+                </button>
+            </div>
+
+            <!-- Register Form -->
+            <div id="form-register" class="auth-form" style="display: none;">
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" id="reg-email" class="form-control" placeholder="usuario@ejemplo.com">
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="reg-password" class="form-control" placeholder="Mínimo 6 caracteres">
+                </div>
+                <button class="btn-primary" id="btn-register-submit" onclick="app.register()" style="width: 100%; margin-top: 10px;">
+                    Crear Cuenta <i class="ph ph-user-plus"></i>
+                </button>
+            </div>
+            
+            <div class="auth-footer" id="auth-msg">
+                Bienvenido de nuevo
+            </div>
+        </div>
+    </div>
+
+    <!-- Layout de la Aplicación -->
+    <div id="app-layout">
+        <!-- Backdrop Móvil -->
+        <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="app.toggleSidebar()"></div>
+
+        <!-- Sidebar -->
+        <aside id="app-sidebar">
+            <div class="brand">
+                <i class="ph ph-stack-simple"></i> DocuManager
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item active" onclick="app.switchView('dashboard', this); app.closeSidebarOnMobile()"><i class="ph ph-squares-four"></i> Panel Principal</li>
+                <li class="nav-item" onclick="app.switchView('files', this); app.closeSidebarOnMobile()"><i class="ph ph-folder-open"></i> Mis Archivos</li>
+                <li class="nav-item" onclick="app.switchView('favorites', this); app.closeSidebarOnMobile()"><i class="ph ph-star"></i> Favoritos</li>
+                <li class="nav-item" onclick="app.switchView('settings', this); app.closeSidebarOnMobile()"><i class="ph ph-gear-six"></i> Configuración</li>
+            </ul>
+            
+            <div style="margin-top: auto;">
+                <div class="storage-info">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px; color: #cbd5e1;">
+                        <span>Almacenamiento</span>
+                        <span id="storage-percent" style="color: white; font-weight: 600;">0%</span>
+                    </div>
+                    <div class="storage-bar">
+                        <div class="storage-fill" id="storage-fill"></div>
+                    </div>
+                    <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 10px; display: flex; align-items: center; gap: 5px;" id="storage-text">
+                        <i class="ph ph-hard-drives"></i> 0 MB de 1 GB
+                    </p>
+                    <button onclick="app.logout()" style="width: 100%; margin-top: 15px; background: rgba(255,255,255,0.1); border: none; padding: 8px; color: white; border-radius: 6px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <i class="ph ph-sign-out"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main onclick="app.hideContextMenu(event)">
+            <!-- Loading Line -->
+            <div class="loader-line" id="global-loader"></div>
+
+            <header>
+                <div class="header-left">
+                    <button class="mobile-menu-btn" onclick="app.toggleSidebar()">
+                        <i class="ph ph-list"></i>
+                    </button>
+                    <div class="header-title">
+                        <h2 id="page-title">Bienvenido de nuevo</h2>
+                        <p id="page-subtitle">Gestiona tu contenido digital de forma eficiente.</p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <button class="btn-primary" onclick="document.getElementById('file-input').click()">
+                        <i class="ph ph-cloud-arrow-up" style="font-size: 1.2rem;"></i> <span style="display:none; @media(min-width:640px){display:inline;}">Subir</span>
+                    </button>
+                    <div style="position: relative; cursor: pointer;" onclick="app.switchView('settings', document.querySelectorAll('.nav-item')[3])">
+                        <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 1.1rem; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3); overflow: hidden;" id="header-avatar-container">
+                            <span id="user-initials">JM</span>
+                        </div>
+                        <div style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; background: #22c55e; border: 2px solid white; border-radius: 50%;"></div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-area">
+                
+                <!-- SQL Error Helper -->
+                <div class="error-box" id="sql-error-box">
+                    <strong><i class="ph ph-warning-octagon"></i> Configuración de Base de Datos Requerida</strong>
+                    <p style="margin-top: 8px;">Para que el sistema multi-usuario funcione, necesitas corregir la tabla en Supabase. Copia y ejecuta este script de reparación:</p>
+                    <div class="code-block" id="sql-code">
+-- SCRIPT DE REPARACIÓN (Borra y crea de nuevo)
+drop policy if exists "Usuarios ven sus propios archivos" on public.files_metadata;
+drop policy if exists "Usuarios suben sus propios archivos" on public.files_metadata;
+drop policy if exists "Usuarios editan sus archivos" on public.files_metadata;
+drop policy if exists "Usuarios borran sus archivos" on public.files_metadata;
+drop table if exists public.files_metadata;
+
+create table public.files_metadata (
   id uuid default gen_random_uuid() primary key,
   name text not null,
   type text not null,
   size bigint not null,
   url text not null,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  user_id uuid default auth.uid(), 
+  created_at timestamp with time zone default timezone('utc', now()) not null
 );
-insert into storage.buckets (id, name, public) values ('uploads', 'uploads', true) on conflict do nothing;
-create policy "Public Access" on storage.objects for all using ( bucket_id = 'uploads' ) with check ( bucket_id = 'uploads' );
+
 alter table public.files_metadata enable row level security;
-create policy "Enable all access" on public.files_metadata for all using (true) with check (true);
-                </div>
-                <button class="btn-primary" onclick="app.copySQL()" style="margin-top: 15px; padding: 8px 16px; font-size: 0.85rem;">Copiar SQL</button>
-            </div>
 
-            <!-- Dashboard View -->
-            <div id="view-dashboard" class="app-view">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-info">
-                            <h3 id="stat-total">0</h3>
-                            <p>Archivos Totales</p>
-                        </div>
-                        <div class="stat-icon blue"><i class="ph ph-files"></i></div>
+create policy "Usuarios ven sus propios archivos" on public.files_metadata for select using (auth.uid() = user_id);
+create policy "Usuarios suben sus propios archivos" on public.files_metadata for insert with check (auth.uid() = user_id);
+create policy "Usuarios editan sus archivos" on public.files_metadata for update using (auth.uid() = user_id);
+create policy "Usuarios borran sus archivos" on public.files_metadata for delete using (auth.uid() = user_id);
+
+insert into storage.buckets (id, name, public) values ('uploads', 'uploads', true) on conflict (id) do nothing;
+drop policy if exists "Ver archivos públicos" on storage.objects;
+create policy "Ver archivos públicos" on storage.objects for select using ( bucket_id = 'uploads' );
+create policy "Usuarios autenticados pueden subir" on storage.objects for insert with check ( bucket_id = 'uploads' and auth.role() = 'authenticated' );
+create policy "Usuarios autenticados pueden borrar" on storage.objects for delete using ( bucket_id = 'uploads' and auth.role() = 'authenticated' );
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-info">
-                            <h3 id="stat-media">0</h3>
-                            <p>Multimedia</p>
-                        </div>
-                        <div class="stat-icon purple"><i class="ph ph-film-strip"></i></div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-info">
-                            <h3 id="stat-favs">0</h3>
-                            <p>Favoritos</p>
-                        </div>
-                        <div class="stat-icon orange"><i class="ph ph-star"></i></div>
-                    </div>
+                    <button class="btn-primary" onclick="app.copySQL()" style="margin-top: 15px; padding: 8px 16px; font-size: 0.85rem;">Copiar Script de Reparación</button>
                 </div>
 
-                <div class="dash-split">
-                    <!-- Recent Files -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Archivos Recientes</h3>
-                            <button class="action-btn" onclick="app.fetchFiles()"><i class="ph ph-arrows-clockwise"></i></button>
+                <!-- Dashboard View -->
+                <div id="view-dashboard" class="app-view">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <h3 id="stat-total">0</h3>
+                                <p>Archivos Totales</p>
+                            </div>
+                            <div class="stat-icon blue"><i class="ph ph-files"></i></div>
                         </div>
-                        <table class="file-table">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Tipo</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recent-files-body">
-                                <!-- JS Injection -->
-                            </tbody>
-                        </table>
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <h3 id="stat-media">0</h3>
+                                <p>Multimedia</p>
+                            </div>
+                            <div class="stat-icon purple"><i class="ph ph-film-strip"></i></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <h3 id="stat-favs">0</h3>
+                                <p>Favoritos</p>
+                            </div>
+                            <div class="stat-icon orange"><i class="ph ph-star"></i></div>
+                        </div>
                     </div>
 
-                    <!-- Upload & Chart -->
-                    <div style="display: flex; flex-direction: column; gap: 32px;">
-                        <div class="card" style="flex: 1;">
-                            <h3 class="card-title" style="margin-bottom: 20px;">Distribución</h3>
-                            <div style="height: 220px; position: relative;">
-                                <canvas id="fileChart"></canvas>
+                    <div class="dash-split">
+                        <!-- Recent Files -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Archivos Recientes</h3>
+                                <button class="action-btn" onclick="app.fetchFiles()"><i class="ph ph-arrows-clockwise"></i></button>
+                            </div>
+                            <table class="file-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Tipo</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-files-body">
+                                    <!-- JS Injection -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Upload & Chart -->
+                        <div style="display: flex; flex-direction: column; gap: 32px;">
+                            <div class="card" style="flex: 1; position: relative; overflow: hidden;">
+                                <h3 class="card-title" style="margin-bottom: 20px;">Distribución</h3>
+                                <div style="height: 220px; position: relative;">
+                                    <canvas id="fileChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="dropzone" id="drop-zone">
+                                <i class="ph ph-cloud-arrow-up"></i>
+                                <h4 style="margin-bottom: 8px; color: var(--text-main); font-weight: 700;">Sube tus archivos</h4>
+                                <p style="font-size: 0.85rem; color: #94a3b8;">Arrastra o haz clic para explorar</p>
+                                <input type="file" id="file-input" multiple>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- All Files View (MEJORADA) -->
+                <div id="view-files" class="app-view" style="display: none;">
+                    <div class="card" style="min-height: 500px;" onclick="app.clearSelection(event)">
+                        <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
+                            <h3 class="card-title">Explorador</h3>
+                            <div style="position: relative;">
+                                <i class="ph ph-magnifying-glass" style="position: absolute; left: 10px; top: 10px; color: var(--text-light);"></i>
+                                <input type="text" placeholder="Buscar..." onkeyup="app.filterFiles(this.value)" style="padding: 10px 10px 10px 32px; border: 1px solid var(--border); border-radius: 12px; width: 220px;">
                             </div>
                         </div>
                         
-                        <div class="dropzone" id="drop-zone">
-                            <i class="ph ph-cloud-arrow-up"></i>
-                            <h4 style="margin-bottom: 8px; color: var(--text-main); font-weight: 700;">Sube tus archivos</h4>
-                            <p style="font-size: 0.85rem; color: #94a3b8;">Arrastra o haz clic para explorar</p>
-                            <input type="file" id="file-input" multiple>
+                        <!-- Toolbar de Gestión -->
+                        <div class="toolbar">
+                            <button class="btn-primary" onclick="app.createFolder()" style="padding: 10px 18px; font-size: 0.9rem;">
+                                <i class="ph ph-folder-plus"></i> Nueva Carpeta
+                            </button>
+                            
+                            <button class="btn-primary btn-danger" id="btn-delete-selected" onclick="app.deleteSelected()" style="padding: 10px 18px; font-size: 0.9rem; display: none;">
+                                <i class="ph ph-trash"></i> Eliminar (<span id="selected-count">0</span>)
+                            </button>
+                            
+                            <div class="toolbar-group">
+                                <button class="toolbar-btn" id="view-btn-list" onclick="app.setViewMode('list')" title="Lista"><i class="ph ph-list-dashes"></i></button>
+                                <button class="toolbar-btn" id="view-btn-grid" onclick="app.setViewMode('grid')" title="Cuadrícula"><i class="ph ph-squares-four"></i></button>
+                            </div>
+                            
+                            <select class="sort-select" onchange="app.setSortMode(this.value)">
+                                <option value="date-desc">Fecha: Reciente primero</option>
+                                <option value="date-asc">Fecha: Antiguo primero</option>
+                                <option value="name-asc">Nombre: A-Z</option>
+                                <option value="name-desc">Nombre: Z-A</option>
+                                <option value="size-desc">Tamaño: Mayor primero</option>
+                            </select>
                         </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- All Files View -->
-            <div id="view-files" class="app-view" style="display: none;">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Todos los Archivos</h3>
-                        <div style="position: relative;">
-                            <i class="ph ph-magnifying-glass" style="position: absolute; left: 10px; top: 10px; color: var(--text-light);"></i>
-                            <input type="text" placeholder="Buscar archivo..." onkeyup="app.filterFiles(this.value)" style="padding: 8px 8px 8px 32px; border: 1px solid var(--border); border-radius: 8px; width: 250px;">
-                        </div>
-                    </div>
-                    <table class="file-table">
-                        <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Fecha</th>
-                                <th>Tipo</th>
-                                <th>Tamaño</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="all-files-body"></tbody>
-                    </table>
-                </div>
-            </div>
 
-             <!-- Favorites View -->
-             <div id="view-favorites" class="app-view" style="display: none;">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Mis Favoritos</h3>
-                    </div>
-                    <table class="file-table">
-                        <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Fecha</th>
-                                <th>Tipo</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="fav-files-body"></tbody>
-                    </table>
-                    <div id="no-favs-msg" style="text-align: center; padding: 40px; color: var(--text-muted); display: none;">
-                        <i class="ph ph-star" style="font-size: 3rem; margin-bottom: 10px; opacity: 0.3;"></i>
-                        <p>No tienes archivos favoritos aún.</p>
+                        <!-- Migas de Pan (Breadcrumbs) -->
+                        <div class="breadcrumb" id="breadcrumbs">
+                            <div class="breadcrumb-item active"><i class="ph ph-house"></i> Inicio</div>
+                        </div>
+                        
+                        <!-- Contenedor Principal de Archivos -->
+                        <div id="files-container" style="position: relative; min-height: 200px;">
+                            <!-- Inyectado por JS: Tabla o Grid -->
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Settings View -->
-            <div id="view-settings" class="app-view" style="display: none;">
-                <div class="settings-container">
-                    
-                    <div class="settings-section">
-                        <div class="settings-header">
-                            <h3>Perfil de Usuario</h3>
+                 <!-- Favorites View -->
+                 <div id="view-favorites" class="app-view" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Mis Favoritos</h3>
                         </div>
-                        <div style="display: flex; gap: 24px; align-items: center;">
-                            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; font-weight: bold;">JM</div>
-                            <div style="flex: 1;">
-                                <div class="form-group">
-                                    <label>Nombre Mostrado</label>
-                                    <input type="text" class="form-control" value="Juan Martinez" id="setting-name">
+                        <div style="overflow-x: auto;">
+                            <table class="file-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Fecha</th>
+                                        <th>Tipo</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fav-files-body"></tbody>
+                            </table>
+                        </div>
+                        <div id="no-favs-msg" style="text-align: center; padding: 40px; color: var(--text-muted); display: none;">
+                            <i class="ph ph-star" style="font-size: 3rem; margin-bottom: 10px; opacity: 0.3;"></i>
+                            <p>No tienes archivos favoritos aún.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings View -->
+                <div id="view-settings" class="app-view" style="display: none;">
+                    <div class="settings-container">
+                        
+                        <div class="settings-section">
+                            <div class="settings-header">
+                                <h3>Perfil de Usuario</h3>
+                            </div>
+                            <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+                                <!-- Avatar Clickable -->
+                                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; font-weight: bold; flex-shrink: 0;" id="settings-avatar" onclick="app.changeAvatar()" title="Haz clic o Ctrl+V para cambiar foto">JM</div>
+                                <input type="file" id="avatar-input" hidden accept="image/*" onchange="app.handleAvatarInput(this.files[0])">
+                                
+                                <div style="flex: 1; min-width: 200px;">
+                                    <div class="form-group">
+                                        <label>Email</label>
+                                        <input type="email" class="form-control" value="Cargando..." id="setting-email" disabled style="background: var(--bg-input); cursor: not-allowed; opacity: 0.7;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>ID de Usuario</label>
+                                        <input type="text" class="form-control" value="..." id="setting-uid" disabled style="background: var(--bg-input); cursor: not-allowed; opacity: 0.7; font-family: monospace;">
+                                    </div>
                                 </div>
-                                <div class="form-group">
-                                    <label>Email</label>
-                                    <input type="email" class="form-control" value="juan.martinez@empresa.com" disabled style="background: #f1f5f9; cursor: not-allowed;">
+                            </div>
+                            <p style="font-size: 0.8rem; color: var(--text-light); margin-top: 10px;"><i class="ph ph-info"></i> Tip: Haz clic en el círculo o presiona <b>Ctrl + V</b> para pegar una imagen de tu portapapeles.</p>
+                        </div>
+
+                        <!-- Personalización Avanzada -->
+                        <div class="settings-section">
+                            <div class="settings-header">
+                                <h3>Personalización Avanzada</h3>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Tema General</label>
+                                <div class="theme-grid">
+                                    <div class="theme-card active" onclick="app.setTheme('default', this)">
+                                        <div class="theme-preview preview-default"></div>
+                                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Clásico</span>
+                                    </div>
+                                    <div class="theme-card" onclick="app.setTheme('aurora', this)">
+                                        <div class="theme-preview preview-aurora"></div>
+                                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Aurora</span>
+                                    </div>
+                                    <div class="theme-card" onclick="app.setTheme('sunset', this)">
+                                        <div class="theme-preview preview-sunset"></div>
+                                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Sunset</span>
+                                    </div>
+                                    <div class="theme-card" onclick="app.setTheme('midnight', this)">
+                                        <div class="theme-preview preview-midnight"></div>
+                                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Midnight</span>
+                                    </div>
+                                    <div class="theme-card" onclick="app.setTheme('forest', this)">
+                                        <div class="theme-preview preview-forest"></div>
+                                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Bosque</span>
+                                    </div>
+                                    <div class="theme-card" onclick="app.setTheme('nebula', this)">
+                                        <div class="theme-preview preview-nebula"></div>
+                                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Nébula</span>
+                                    </div>
+                                    <div class="theme-card" onclick="app.setTheme('coffee', this)">
+                                        <div class="theme-preview preview-coffee"></div>
+                                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Café</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-top: 25px;">
+                                <label>Color de Acento</label>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <input type="color" id="accent-color-picker" onchange="document.documentElement.style.setProperty('--primary', this.value)" style="width: 50px; height: 40px; padding: 0; border: 2px solid var(--border); border-radius: 8px;">
+                                    <span style="font-size: 0.9rem; color: var(--text-muted);">Elige tu color favorito para botones y destacados.</span>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="settings-section">
-                        <div class="settings-header">
-                            <h3>Apariencia y Preferencias</h3>
+                        <div class="settings-section">
+                            <div class="settings-header">
+                                <h3>Preferencias del Sistema</h3>
+                            </div>
+                            <div class="toggle-row">
+                                <span style="font-weight: 500;">Notificaciones de Escritorio</span>
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
+                            <div class="toggle-row">
+                                <span style="font-weight: 500;">Compresión Automática de Imágenes</span>
+                                <label class="switch">
+                                    <input type="checkbox">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
                         </div>
-                        <div class="toggle-row">
-                            <span style="font-weight: 500;">Modo Oscuro (Beta)</span>
-                            <label class="switch">
-                                <input type="checkbox" onchange="app.toast('Modo oscuro disponible en próxima versión', 'info')">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
-                        <div class="toggle-row">
-                            <span style="font-weight: 500;">Notificaciones de Escritorio</span>
-                            <label class="switch">
-                                <input type="checkbox" checked>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
-                        <div class="toggle-row">
-                            <span style="font-weight: 500;">Compresión Automática de Imágenes</span>
-                            <label class="switch">
-                                <input type="checkbox">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
 
-                    <button class="btn-primary" onclick="app.saveSettings()">Guardar Cambios</button>
+                        <button class="btn-primary" onclick="app.saveSettings()">Guardar Cambios</button>
+                    </div>
                 </div>
-            </div>
 
-        </div>
-    </main>
+            </div>
+        </main>
+    </div>
 
     <!-- Editor/Preview Modal -->
     <div class="modal-backdrop" id="editor-modal">
         <div class="modal">
             <div class="modal-header">
-                <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px; overflow: hidden;">
                     <i class="ph ph-pencil-simple" id="modal-icon" style="font-size: 1.2rem; color: var(--primary);"></i>
-                    <h3 id="modal-filename" style="font-size: 1.1rem; color: var(--text-main);">documento.txt</h3>
+                    <h3 id="modal-filename" style="font-size: 1.1rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">documento.txt</h3>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
                     <button class="btn-primary" id="btn-save-changes" style="padding: 8px 16px; font-size: 0.85rem; display: none;">
-                        <i class="ph ph-floppy-disk"></i> Guardar
+                        <i class="ph ph-floppy-disk"></i> <span style="display:none; @media(min-width:640px){display:inline;}">Guardar</span>
                     </button>
                     <button class="action-btn" onclick="app.closeModal()"><i class="ph ph-x" style="font-size: 1.5rem;"></i></button>
                 </div>
             </div>
             
-            <!-- Toolbar for Images -->
             <div class="editor-toolbar" id="image-toolbar" style="display: none;">
                 <div style="display: flex; gap: 8px; border-right: 1px solid #334155; padding-right: 15px;">
                     <button class="tool-btn active" id="tool-pen" onclick="imageEditor.setTool('pen')" title="Pincel"><i class="ph ph-pencil"></i></button>
@@ -733,12 +1169,24 @@ create policy "Enable all access" on public.files_metadata for all using (true) 
 
     <!-- Rename Modal -->
     <div class="modal-backdrop" id="rename-modal" style="z-index: 60;">
-        <div class="modal" style="width: 400px; height: auto; padding: 20px;">
-            <h3 style="margin-bottom: 15px; font-size: 1.2rem;">Renombrar Archivo</h3>
+        <div class="modal" style="width: 90%; max-width: 400px; height: auto; padding: 20px;">
+            <h3 style="margin-bottom: 15px; font-size: 1.2rem; color: var(--text-main);">Renombrar Archivo</h3>
             <input type="text" id="rename-input" class="form-control" style="margin-bottom: 20px;">
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
                 <button class="action-btn" onclick="document.getElementById('rename-modal').style.display='none'" style="width: auto; padding: 8px 16px; border: 1px solid var(--border);">Cancelar</button>
                 <button class="btn-primary" onclick="app.confirmRename()">Guardar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- New Folder Modal -->
+    <div class="modal-backdrop" id="folder-modal" style="z-index: 60;">
+        <div class="modal" style="width: 90%; max-width: 400px; height: auto; padding: 20px;">
+            <h3 style="margin-bottom: 15px; font-size: 1.2rem; color: var(--text-main);">Nueva Carpeta</h3>
+            <input type="text" id="folder-name-input" class="form-control" placeholder="Nombre de la carpeta" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="action-btn" onclick="document.getElementById('folder-modal').style.display='none'" style="width: auto; padding: 8px 16px; border: 1px solid var(--border);">Cancelar</button>
+                <button class="btn-primary" onclick="app.submitCreateFolder()">Crear</button>
             </div>
         </div>
     </div>
@@ -967,24 +1415,296 @@ const app = {
     files: [],
     currentEditingFile: null,
     favorites: new Set(),
+    selectedFiles: new Set(), // Estado para selección múltiple
     renameTargetId: null,
+    user: null, // Usuario actual
+    
+    // Estados Nuevos
+    viewMode: 'list', // 'list' | 'grid'
+    sortMode: 'date-desc', // 'date-desc', 'name-asc', etc
+    currentFolderId: null,
+    folderStructure: {}, // Mapeo { fileId: folderId }
+    ctxMenuFileId: null, // Archivo seleccionado para context menu
 
     init: async () => {
-        app.loadFavorites();
+        app.loadTheme(); 
         app.setupListeners();
-        await app.fetchFiles();
+        // Check session
+        app.checkUser();
+        // Paste event for avatar
+        window.addEventListener('paste', app.handlePaste);
     },
 
-    loadFavorites: () => {
-        const stored = localStorage.getItem('documanager_favs');
-        if (stored) {
-            app.favorites = new Set(JSON.parse(stored));
+    setupListeners: () => {
+        const dz = document.getElementById('drop-zone');
+        const input = document.getElementById('file-input');
+
+        if(dz && input) {
+            dz.addEventListener('click', () => input.click());
+            input.addEventListener('change', (e) => [...e.target.files].forEach(app.uploadFile));
+
+            ['dragenter', 'dragover'].forEach(e => dz.addEventListener(e, (ev) => {
+                ev.preventDefault(); dz.classList.add('active');
+            }));
+            ['dragleave', 'drop'].forEach(e => dz.addEventListener(e, (ev) => {
+                ev.preventDefault(); dz.classList.remove('active');
+            }));
+            dz.addEventListener('drop', (e) => {
+                [...e.dataTransfer.files].forEach(app.uploadFile);
+            });
+        }
+
+        const saveBtn = document.getElementById('btn-save-changes');
+        if(saveBtn) saveBtn.addEventListener('click', app.saveFileContent);
+        
+        // Cargar vista default
+        app.setViewMode('list');
+    },
+
+    checkUser: async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            app.user = session.user;
+            app.showApp();
+        } else {
+            app.showAuth();
+        }
+        
+        // Listen for auth changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                app.user = session.user;
+                app.showApp();
+            } else {
+                app.user = null;
+                app.showAuth();
+            }
+        });
+    },
+
+    showApp: () => {
+        document.getElementById('auth-view').style.display = 'none';
+        document.getElementById('app-layout').style.display = 'flex';
+        app.updateUserInfo();
+        app.loadFavorites();
+        app.loadFolderStructure();
+        app.loadAvatar(); // Cargar avatar local
+        app.fetchFiles();
+    },
+
+    showAuth: () => {
+        document.getElementById('auth-view').style.display = 'flex';
+        document.getElementById('app-layout').style.display = 'none';
+    },
+
+    updateUserInfo: () => {
+        if(!app.user) return;
+        const email = app.user.email;
+        const initial = email.charAt(0).toUpperCase();
+        
+        // Default text content (will be overwritten if image exists)
+        document.getElementById('user-initials').innerText = initial;
+        document.getElementById('settings-avatar').innerText = initial;
+        
+        document.getElementById('setting-email').value = email;
+        document.getElementById('setting-uid').value = app.user.id;
+    },
+
+    toggleAuthMode: (mode) => {
+        document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.auth-form').forEach(f => f.style.display = 'none');
+        
+        if (mode === 'login') {
+            document.querySelectorAll('.auth-tab')[0].classList.add('active');
+            document.getElementById('form-login').style.display = 'flex';
+            document.getElementById('auth-msg').innerText = 'Bienvenido de nuevo';
+        } else {
+            document.querySelectorAll('.auth-tab')[1].classList.add('active');
+            document.getElementById('form-register').style.display = 'flex';
+            document.getElementById('auth-msg').innerText = 'Crea una cuenta para empezar';
         }
     },
 
+    setLoadingState: (btnId, isLoading, originalText) => {
+        const btn = document.getElementById(btnId);
+        if(isLoading) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando...';
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    },
+
+    login: async () => {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        
+        if(!email || !password) return app.toast('Rellena todos los campos', 'error');
+        
+        app.setLoadingState('btn-login-submit', true, 'Entrar <i class="ph ph-sign-in"></i>');
+        app.toast('Iniciando sesión...', 'info');
+        
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        
+        app.setLoadingState('btn-login-submit', false, 'Entrar <i class="ph ph-sign-in"></i>');
+        
+        if (error) app.toast(error.message, 'error');
+        else app.toast('Sesión iniciada', 'success');
+    },
+
+    register: async () => {
+        const email = document.getElementById('reg-email').value;
+        const password = document.getElementById('reg-password').value;
+        
+        if(!email || !password) return app.toast('Rellena todos los campos', 'error');
+        if(password.length < 6) return app.toast('La contraseña debe tener 6 caracteres', 'error');
+
+        app.setLoadingState('btn-register-submit', true, 'Crear Cuenta <i class="ph ph-user-plus"></i>');
+        app.toast('Registrando...', 'info');
+        
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        
+        app.setLoadingState('btn-register-submit', false, 'Crear Cuenta <i class="ph ph-user-plus"></i>');
+
+        if (error) {
+            app.toast(error.message, 'error');
+        } else {
+            if (data?.user && data?.session === null) {
+                app.toast('¡Cuenta creada! Revisa tu email para confirmar.', 'info');
+            } else {
+                app.toast('Registro exitoso. ¡Bienvenido!', 'success');
+            }
+        }
+    },
+
+    logout: async () => {
+        await supabase.auth.signOut();
+        app.toast('Sesión cerrada', 'info');
+    },
+
+    // --- Gestión de Perfil / Avatar (Nuevo) ---
+    changeAvatar: () => {
+        document.getElementById('avatar-input').click();
+    },
+
+    handleAvatarInput: (file) => {
+        if (!file || !file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const dataUrl = e.target.result;
+            app.saveAvatar(dataUrl);
+        };
+        reader.readAsDataURL(file);
+    },
+
+    handlePaste: (e) => {
+        if (!document.getElementById('view-settings') || document.getElementById('view-settings').style.display === 'none') return;
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (const item of items) {
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const blob = item.getAsFile();
+                app.handleAvatarInput(blob);
+                app.toast('Imagen pegada desde portapapeles', 'success');
+            }
+        }
+    },
+
+    saveAvatar: (dataUrl) => {
+        if (!app.user) return;
+        localStorage.setItem(`documanager_avatar_${app.user.id}`, dataUrl);
+        app.loadAvatar();
+        app.toast('Foto de perfil actualizada', 'success');
+    },
+
+    loadAvatar: () => {
+        if (!app.user) return;
+        const dataUrl = localStorage.getItem(`documanager_avatar_${app.user.id}`);
+        if (dataUrl) {
+            // Update Settings Avatar
+            const settingsAvatar = document.getElementById('settings-avatar');
+            settingsAvatar.innerHTML = `<img src="${dataUrl}" style="border-radius:50%; width:100%; height:100%; object-fit:cover;">`;
+            
+            // Update Header Avatar
+            const headerAvatar = document.getElementById('header-avatar-container');
+            headerAvatar.innerHTML = `<img src="${dataUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+        }
+    },
+
+    // --- Gestión de Favoritos y Carpetas Local ---
+    loadFavorites: () => {
+        if(!app.user) return;
+        const stored = localStorage.getItem(`documanager_favs_${app.user.id}`);
+        if (stored) {
+            app.favorites = new Set(JSON.parse(stored));
+        } else {
+            app.favorites = new Set();
+        }
+    },
+
+    loadFolderStructure: () => {
+        if(!app.user) return;
+        const stored = localStorage.getItem(`documanager_structure_${app.user.id}`);
+        if (stored) {
+            app.folderStructure = JSON.parse(stored);
+        } else {
+            app.folderStructure = {};
+        }
+    },
+
+    saveFolderStructure: () => {
+        if(!app.user) return;
+        localStorage.setItem(`documanager_structure_${app.user.id}`, JSON.stringify(app.folderStructure));
+    },
+
     saveFavoritesLocal: () => {
-        localStorage.setItem('documanager_favs', JSON.stringify([...app.favorites]));
+        if(!app.user) return;
+        localStorage.setItem(`documanager_favs_${app.user.id}`, JSON.stringify([...app.favorites]));
         app.updateUI();
+    },
+    
+    // --- Lógica de Temas ---
+    loadTheme: () => {
+        const theme = localStorage.getItem('documanager_theme') || 'default';
+        app.setTheme(theme);
+    },
+
+    setTheme: (themeName, element) => {
+        if (element) {
+            document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+            element.classList.add('active');
+        } else {
+            const cards = document.querySelectorAll('.theme-card');
+            // Mapeo simple de nombres a índice
+            const themes = ['default', 'aurora', 'sunset', 'midnight', 'forest', 'nebula', 'coffee'];
+            const index = themes.indexOf(themeName);
+            if(index >= 0 && cards[index]) cards[index].classList.add('active');
+        }
+
+        if (themeName === 'default') {
+            document.documentElement.removeAttribute('data-theme');
+        } else {
+            document.documentElement.setAttribute('data-theme', themeName);
+        }
+        
+        localStorage.setItem('documanager_theme', themeName);
+        setTimeout(() => chartModule.draw(app.files), 100);
+    },
+
+    toggleSidebar: () => {
+        const sidebar = document.getElementById('app-sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('active');
+    },
+
+    closeSidebarOnMobile: () => {
+        if (window.innerWidth <= 768) {
+            const sidebar = document.getElementById('app-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            sidebar.classList.remove('open');
+            backdrop.classList.remove('active');
+        }
     },
 
     toggleFavorite: (id) => {
@@ -999,32 +1719,39 @@ const app = {
     },
 
     fetchFiles: async () => {
+        if (!app.user) return;
+
         app.toggleLoader(true);
+        // Filtramos por user_id para privacidad
         const { data, error } = await supabase
             .from('files_metadata')
             .select('*')
+            .eq('user_id', app.user.id) 
             .order('created_at', { ascending: false });
 
         app.toggleLoader(false);
 
         if (error) {
-            if (error.code === 'PGRST205' || error.message.includes('relation "public.files_metadata" does not exist')) {
+            // Check for table existence error or column error
+            if (error.code === 'PGRST205' || error.message.includes('relation "public.files_metadata" does not exist') || error.message.includes('column "user_id" does not exist')) {
                 document.getElementById('sql-error-box').style.display = 'block';
             } else {
-                app.toast('Error cargando archivos', 'error');
+                app.toast('Error cargando archivos: ' + error.message, 'error');
             }
             return;
         }
 
         document.getElementById('sql-error-box').style.display = 'none';
-        app.files = data;
+        app.files = data || [];
         app.updateUI();
     },
 
     uploadFile: async (file) => {
+        if (!app.user) return;
+
         const timestamp = new Date().getTime();
         const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-        const path = `${timestamp}_${safeName}`;
+        const path = `${app.user.id}/${timestamp}_${safeName}`; // Carpeta por usuario
 
         app.toggleLoader(true);
         app.toast('Subiendo archivo...', 'info');
@@ -1035,14 +1762,21 @@ const app = {
 
             const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(path);
 
-            const { error: dbErr } = await supabase.from('files_metadata').insert([{
+            const { data, error: dbErr } = await supabase.from('files_metadata').insert([{
                 name: file.name,
                 type: app.getExt(file.name),
                 size: file.size,
-                url: publicUrl
-            }]);
+                url: publicUrl,
+                user_id: app.user.id 
+            }]).select();
 
             if (dbErr) throw dbErr;
+            
+            // Si estamos dentro de una carpeta, asociamos el nuevo archivo a ella
+            if (app.currentFolderId && data && data.length > 0) {
+                app.folderStructure[data[0].id] = app.currentFolderId;
+                app.saveFolderStructure();
+            }
 
             app.toast('Archivo subido correctamente', 'success');
             await app.fetchFiles();
@@ -1087,7 +1821,7 @@ const app = {
     },
 
     saveFileContent: async () => {
-        if (!app.currentEditingFile) return;
+        if (!app.currentEditingFile || !app.user) return;
         
         const file = app.currentEditingFile;
         const btn = document.getElementById('btn-save-changes');
@@ -1110,7 +1844,7 @@ const app = {
             if (!blob) throw new Error("Tipo de archivo no editable");
 
             const timestamp = new Date().getTime();
-            const path = `${timestamp}_edited_${file.name}`;
+            const path = `${app.user.id}/${timestamp}_edited_${file.name}`;
             
             const { error: upErr } = await supabase.storage.from('uploads').upload(path, blob);
             if (upErr) throw upErr;
@@ -1135,58 +1869,456 @@ const app = {
         } catch (err) {
             app.toast('Error al guardar: ' + err.message, 'error');
         } finally {
-            btn.innerHTML = '<i class="ph ph-floppy-disk"></i> Guardar';
+            btn.innerHTML = '<i class="ph ph-floppy-disk"></i> <span style="display:none; @media(min-width:640px){display:inline;}">Guardar</span>';
             app.toggleLoader(false);
         }
     },
 
     deleteFile: async (id) => {
+        // Eliminar un solo archivo (wrapper para deleteSelected o lógica directa)
+        if (!id) return;
         const file = app.files.find(f => f.id === id);
         if (!file) return;
-
-        const name = file.name;
-        if (!confirm(`¿Estás seguro de que quieres eliminar "${name}" permanentemente?`)) return;
+        if (!confirm(`¿Estás seguro de que quieres eliminar "${file.name}" permanentemente?`)) return;
         
-        const originalFiles = [...app.files];
-        app.files = app.files.filter(f => f.id !== id);
-        app.updateUI();
-        app.toast('Eliminando archivo...', 'info');
+        await app.performDelete([id]);
+    },
 
+    deleteSelected: async () => {
+        const ids = Array.from(app.selectedFiles);
+        if (ids.length === 0) return;
+        
+        if (!confirm(`¿Estás seguro de que quieres eliminar ${ids.length} elemento(s)?`)) return;
+        
+        await app.performDelete(ids);
+    },
+
+    performDelete: async (ids) => {
+        app.toggleLoader(true);
+        app.toast('Eliminando...', 'info');
+        
         try {
-            if (file.url) {
-                const bucketName = 'uploads';
-                const urlParts = file.url.split(`/${bucketName}/`);
-                if (urlParts.length > 1) {
-                    const storagePath = decodeURIComponent(urlParts[1]);
-                    await supabase.storage.from(bucketName).remove([storagePath]);
+            for (const id of ids) {
+                const file = app.files.find(f => f.id === id);
+                if (!file) continue;
+
+                // Si es carpeta, lógica simple: eliminar solo la referencia de carpeta
+                if (file.type !== 'folder' && file.url) {
+                    const bucketName = 'uploads';
+                    const urlParts = file.url.split(`/${bucketName}/`);
+                    if (urlParts.length > 1) {
+                        const storagePath = decodeURIComponent(urlParts[1]);
+                        await supabase.storage.from(bucketName).remove([storagePath]);
+                    }
                 }
+
+                const { error: dbError } = await supabase.from('files_metadata').delete().eq('id', id);
+                if (dbError) throw dbError;
+                
+                if(app.favorites.has(id)) app.favorites.delete(id);
+                delete app.folderStructure[id];
             }
-
-            const { error: dbError } = await supabase
-                .from('files_metadata')
-                .delete()
-                .eq('id', id);
-
-            if (dbError) throw dbError;
             
-            // Eliminar de favoritos si existe
-            if(app.favorites.has(id)){
-                app.favorites.delete(id);
-                app.saveFavoritesLocal();
-            }
-            app.toast('Archivo eliminado correctamente.', 'success');
+            app.saveFavoritesLocal();
+            app.saveFolderStructure();
+            app.selectedFiles.clear();
+            app.toast('Elementos eliminados correctamente.', 'success');
+            await app.fetchFiles(); // Recargar todo
 
         } catch (error) {
             console.error("Error borrando:", error);
             app.toast('Error al eliminar: ' + error.message, 'error');
-            app.files = originalFiles;
-            app.updateUI();
+        } finally {
+            app.toggleLoader(false);
         }
     },
 
+    // --- NUEVAS FUNCIONES DE GESTIÓN Y VISTA ---
+    
+    setViewMode: (mode) => {
+        app.viewMode = mode;
+        document.getElementById('view-btn-list').classList.toggle('active', mode === 'list');
+        document.getElementById('view-btn-grid').classList.toggle('active', mode === 'grid');
+        app.renderFiles();
+    },
+
+    setSortMode: (mode) => {
+        app.sortMode = mode;
+        app.renderFiles();
+    },
+
+    createFolder: () => {
+        document.getElementById('folder-name-input').value = '';
+        document.getElementById('folder-modal').style.display = 'flex';
+        document.getElementById('folder-name-input').focus();
+    },
+
+    submitCreateFolder: async () => {
+        const name = document.getElementById('folder-name-input').value;
+        if (!name) return;
+        
+        app.toggleLoader(true);
+        document.getElementById('folder-modal').style.display = 'none';
+
+        try {
+            const { data, error } = await supabase.from('files_metadata').insert([{
+                name: name,
+                type: 'folder',
+                size: 0,
+                url: '#folder',
+                user_id: app.user.id
+            }]).select();
+
+            if (error) throw error;
+            
+            if (app.currentFolderId && data && data.length > 0) {
+                 app.folderStructure[data[0].id] = app.currentFolderId;
+                 app.saveFolderStructure();
+            }
+
+            app.toast('Carpeta creada', 'success');
+            await app.fetchFiles();
+
+        } catch (err) {
+            app.toast('Error creando carpeta: ' + err.message, 'error');
+        } finally {
+            app.toggleLoader(false);
+        }
+    },
+
+    enterFolder: (folderId) => {
+        app.currentFolderId = folderId;
+        app.selectedFiles.clear(); // Limpiar selección al cambiar carpeta
+        app.renderFiles();
+        app.updateBreadcrumbs();
+    },
+
+    navigateUp: () => {
+        if (!app.currentFolderId) return;
+        // Buscar padre
+        const parentId = app.folderStructure[app.currentFolderId] || null;
+        app.currentFolderId = parentId;
+        app.selectedFiles.clear();
+        app.renderFiles();
+        app.updateBreadcrumbs();
+    },
+
+    navigateHome: () => {
+        app.currentFolderId = null;
+        app.selectedFiles.clear();
+        app.renderFiles();
+        app.updateBreadcrumbs();
+    },
+
+    updateBreadcrumbs: () => {
+        const bc = document.getElementById('breadcrumbs');
+        bc.innerHTML = `<div class="breadcrumb-item" onclick="app.navigateHome()"><i class="ph ph-house"></i> Inicio</div>`;
+        
+        if (!app.currentFolderId) return;
+
+        // Construir camino
+        const path = [];
+        let curr = app.currentFolderId;
+        while(curr) {
+            const f = app.files.find(x => x.id === curr);
+            if(f) {
+                path.unshift(f);
+                curr = app.folderStructure[f.id];
+            } else {
+                break;
+            }
+        }
+
+        path.forEach((folder, index) => {
+            bc.innerHTML += `
+                <i class="ph ph-caret-right breadcrumb-separator"></i>
+                <div class="breadcrumb-item ${index === path.length - 1 ? 'active' : ''}" 
+                     onclick="${index !== path.length - 1 ? `app.enterFolder('${folder.id}')` : ''}">
+                     ${folder.name}
+                </div>
+            `;
+        });
+    },
+
+    handleDropOnFolder: (idsToMove, targetFolderId) => {
+        // idsToMove es un array de IDs (o un string si es uno solo)
+        if (typeof idsToMove === 'string') idsToMove = [idsToMove];
+        
+        let movedCount = 0;
+        idsToMove.forEach(id => {
+            if (id === targetFolderId) return; // No mover carpeta a sí misma
+            app.folderStructure[id] = targetFolderId;
+            movedCount++;
+        });
+        
+        app.saveFolderStructure();
+        app.selectedFiles.clear(); // Limpiar selección tras mover
+        app.toast(`${movedCount} elemento(s) movido(s)`, 'success');
+        app.renderFiles();
+    },
+
+    // --- Lógica de Selección Múltiple ---
+    toggleSelection: (e, id) => {
+        // e.ctrlKey (Windows) o e.metaKey (Mac Cmd)
+        if (e.ctrlKey || e.metaKey) {
+            // Toggle
+            if (app.selectedFiles.has(id)) {
+                app.selectedFiles.delete(id);
+            } else {
+                app.selectedFiles.add(id);
+            }
+        } else {
+            // Selección única
+            // Si ya está seleccionado y no pulsamos ctrl, no hacemos nada (para permitir arrastrar)
+            // PERO si pulsamos click y no arrastramos, debería seleccionarse solo ese.
+            // Simplificación: click normal selecciona solo ese.
+            app.selectedFiles.clear();
+            app.selectedFiles.add(id);
+        }
+        app.renderFiles();
+    },
+
+    clearSelection: (e) => {
+        // Evitar limpiar si clicamos en un elemento
+        if (e.target.closest('.file-card') || e.target.closest('tr') || e.target.closest('.toolbar') || e.target.closest('.breadcrumb')) return;
+        app.selectedFiles.clear();
+        app.renderFiles();
+    },
+
+    sortFiles: (files) => {
+        return files.sort((a, b) => {
+            // Carpetas siempre primero
+            if (a.type === 'folder' && b.type !== 'folder') return -1;
+            if (a.type !== 'folder' && b.type === 'folder') return 1;
+
+            switch (app.sortMode) {
+                case 'date-desc': return new Date(b.created_at) - new Date(a.created_at);
+                case 'date-asc': return new Date(a.created_at) - new Date(b.created_at);
+                case 'name-asc': return a.name.localeCompare(b.name);
+                case 'name-desc': return b.name.localeCompare(a.name);
+                case 'size-desc': return b.size - a.size;
+                default: return 0;
+            }
+        });
+    },
+
+    renderFiles: () => {
+        const container = document.getElementById('files-container');
+        container.innerHTML = '';
+        
+        // Actualizar botón eliminar
+        const deleteBtn = document.getElementById('btn-delete-selected');
+        if (app.selectedFiles.size > 0) {
+            deleteBtn.style.display = 'flex';
+            document.getElementById('selected-count').innerText = app.selectedFiles.size;
+        } else {
+            deleteBtn.style.display = 'none';
+        }
+
+        // Filtrar por carpeta actual
+        let currentFiles = app.files.filter(f => {
+            const parent = app.folderStructure[f.id] || null;
+            return parent === app.currentFolderId;
+        });
+
+        // Ordenar
+        currentFiles = app.sortFiles(currentFiles);
+
+        if (currentFiles.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; padding: 40px; color: var(--text-light);">
+                    <i class="ph ph-folder-open" style="font-size: 3rem; margin-bottom: 10px; opacity: 0.5;"></i>
+                    <p>Esta carpeta está vacía.</p>
+                </div>
+            `;
+            return;
+        }
+
+        if (app.viewMode === 'list') {
+            const table = document.createElement('table');
+            table.className = 'file-table';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Tamaño</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="files-list-body"></tbody>
+            `;
+            container.appendChild(table);
+            const tbody = table.querySelector('tbody');
+
+            currentFiles.forEach(f => {
+                const isFolder = f.type === 'folder';
+                const isSelected = app.selectedFiles.has(f.id);
+                const tr = document.createElement('tr');
+                if (isSelected) tr.classList.add('selected');
+                
+                // Click para selección
+                tr.onclick = (e) => {
+                    // Evitar conflicto con botones de acción
+                    if (e.target.closest('.action-btn')) return;
+                    app.toggleSelection(e, f.id);
+                };
+
+                // Doble click para abrir
+                tr.ondblclick = () => {
+                    if (isFolder) app.enterFolder(f.id);
+                    else app.openEditor(f.id);
+                };
+                
+                // Context menu
+                tr.oncontextmenu = (e) => app.showContextMenu(e, f.id);
+
+                if (isFolder) {
+                    tr.classList.add('folder-row');
+                    tr.ondragover = (e) => { e.preventDefault(); tr.classList.add('drag-over'); };
+                    tr.ondragleave = () => tr.classList.remove('drag-over');
+                    tr.ondrop = (e) => {
+                        e.preventDefault();
+                        tr.classList.remove('drag-over');
+                        const data = e.dataTransfer.getData('text/plain');
+                        const ids = JSON.parse(data); // Parsear array de IDs
+                        app.handleDropOnFolder(ids, f.id);
+                    };
+                }
+
+                // Draggable (Arrastrar en lote)
+                tr.draggable = true;
+                tr.ondragstart = (e) => {
+                    // Si arrastramos algo NO seleccionado, lo seleccionamos primero
+                    if (!app.selectedFiles.has(f.id)) {
+                        app.selectedFiles.clear();
+                        app.selectedFiles.add(f.id);
+                        app.renderFiles(); // Visual update before drag
+                    }
+                    const idsToMove = Array.from(app.selectedFiles);
+                    e.dataTransfer.setData('text/plain', JSON.stringify(idsToMove));
+                    e.dataTransfer.effectAllowed = 'move';
+                };
+
+                const iconHtml = app.getIconHtml(f);
+                const isFav = app.favorites.has(f.id);
+                
+                tr.innerHTML = `
+                    <td>
+                        <div class="file-name">
+                            ${iconHtml}
+                            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px;">${f.name}</span>
+                        </div>
+                    </td>
+                    <td>${new Date(f.created_at).toLocaleDateString()}</td>
+                    <td><span class="badge ${isFolder ? 'badge-folder' : 'badge-txt'}">${f.type.toUpperCase()}</span></td>
+                    <td>${isFolder ? '-' : app.formatBytes(f.size)}</td>
+                    <td>
+                        <div class="actions-cell">
+                            ${!isFolder ? `<button class="action-btn fav ${isFav ? 'active' : ''}" onclick="app.toggleFavorite('${f.id}')"><i class="ph ${isFav ? 'ph-star-fill' : 'ph-star'}"></i></button>` : ''}
+                            <button class="action-btn" onclick="app.openRenameModal('${f.id}', '${f.name}')"><i class="ph ph-pencil-simple"></i></button>
+                            ${!isFolder ? `<button class="action-btn" onclick="app.openEditor('${f.id}')"><i class="ph ph-eye"></i></button>` : ''}
+                            <button class="action-btn delete" onclick="app.deleteFile('${f.id}')"><i class="ph ph-trash"></i></button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+        } else {
+            // Grid View
+            const grid = document.createElement('div');
+            grid.className = 'files-grid';
+            
+            currentFiles.forEach(f => {
+                const isFolder = f.type === 'folder';
+                const isSelected = app.selectedFiles.has(f.id);
+                const card = document.createElement('div');
+                card.className = `file-card ${isFolder ? 'folder-card' : ''} ${isSelected ? 'selected' : ''}`;
+                
+                // Selección
+                card.onclick = (e) => app.toggleSelection(e, f.id);
+                // Apertura
+                card.ondblclick = () => { if(isFolder) app.enterFolder(f.id); else app.openEditor(f.id); };
+                // Context menu
+                card.oncontextmenu = (e) => app.showContextMenu(e, f.id);
+
+                card.draggable = true;
+                
+                // Drop logic (recibir)
+                if (isFolder) {
+                    card.ondragover = (e) => { e.preventDefault(); card.classList.add('drag-over'); };
+                    card.ondragleave = () => card.classList.remove('drag-over');
+                    card.ondrop = (e) => {
+                        e.preventDefault();
+                        card.classList.remove('drag-over');
+                        const data = e.dataTransfer.getData('text/plain');
+                        const ids = JSON.parse(data);
+                        app.handleDropOnFolder(ids, f.id);
+                    };
+                }
+
+                // Drag logic (iniciar arrastre)
+                card.ondragstart = (e) => {
+                    if (!app.selectedFiles.has(f.id)) {
+                        app.selectedFiles.clear();
+                        app.selectedFiles.add(f.id);
+                        app.renderFiles();
+                    }
+                    const idsToMove = Array.from(app.selectedFiles);
+                    e.dataTransfer.setData('text/plain', JSON.stringify(idsToMove));
+                };
+
+                const isFav = app.favorites.has(f.id);
+
+                card.innerHTML = `
+                    <div class="file-card-icon" style="${isFolder ? '' : 'background:'+app.getIconColor(f.type)+'; color:white;'}">
+                        <i class="ph ${app.getIconClass(f.type)}"></i>
+                    </div>
+                    <div class="file-card-name" title="${f.name}">${f.name}</div>
+                    <div class="file-card-meta">${isFolder ? new Date(f.created_at).toLocaleDateString() : app.formatBytes(f.size)}</div>
+                    ${!isFolder && isFav ? '<i class="ph ph-star-fill" style="color:#f59e0b; position:absolute; top:10px; right:10px; font-size:1rem;"></i>' : ''}
+                `;
+                grid.appendChild(card);
+            });
+            
+            container.appendChild(grid);
+        }
+    },
+
+    getIconHtml: (f) => {
+        const color = app.getIconColor(f.type);
+        const icon = app.getIconClass(f.type);
+        return `<div class="file-icon-sm" style="background: ${f.type==='folder'?'#fef3c7':color}; color:${f.type==='folder'?'#d97706':'white'}"><i class="ph ${icon}"></i></div>`;
+    },
+
+    getIconColor: (type) => {
+        if (type === 'pdf') return '#ef4444';
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(type)) return '#10b981';
+        if (['mp4', 'webm', 'ogg', 'mov'].includes(type)) return '#8b5cf6';
+        if (['mp3', 'wav'].includes(type)) return '#eab308';
+        if (['html', 'xml'].includes(type)) return '#f97316';
+        if (['css', 'js', 'json', 'sql', 'py', 'ts'].includes(type)) return '#8b5cf6';
+        if (type === 'folder') return '#f59e0b';
+        return '#64748b'; // txt, md, etc
+    },
+
+    getIconClass: (type) => {
+        if (type === 'pdf') return 'ph-file-pdf';
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(type)) return 'ph-image';
+        if (['mp4', 'webm', 'ogg', 'mov'].includes(type)) return 'ph-film-strip';
+        if (['mp3', 'wav'].includes(type)) return 'ph-speaker-high';
+        if (['html', 'xml'].includes(type)) return 'ph-file-html';
+        if (['css', 'js', 'json', 'sql', 'py', 'ts'].includes(type)) return 'ph-file-code';
+        if (type === 'folder') return 'ph-folder-simple-fill';
+        return 'ph-file-text';
+    },
+
     updateUI: () => {
-        const totalSize = app.files.reduce((a, b) => a + b.size, 0);
-        document.getElementById('stat-total').innerText = app.files.length;
+        // Actualizamos Dashboard
+        const totalSize = app.files.filter(f => f.type !== 'folder').reduce((a, b) => a + b.size, 0);
+        document.getElementById('stat-total').innerText = app.files.filter(f => f.type !== 'folder').length;
         
         const mediaTypes = ['png','jpg','jpeg','webp','gif','mp4','webm','mp3','wav','ogg'];
         const mediaCount = app.files.filter(f => mediaTypes.includes(f.type)).length;
@@ -1200,14 +2332,16 @@ const app = {
         document.getElementById('storage-percent').innerText = `${percent}%`;
         document.getElementById('storage-text').innerHTML = `<i class="ph ph-hard-drives"></i> ${app.formatBytes(totalSize)} usados`;
 
-        // Filter favorites
+        // Renderizar tablas auxiliares
         const favFiles = app.files.filter(f => app.favorites.has(f.id));
+        const recent = app.files.filter(f => f.type !== 'folder').slice(0, 5); // No mostrar carpetas en recientes
         
-        const recent = app.files.slice(0, 5);
         app.renderTable(recent, 'recent-files-body', true);
-        app.renderTable(app.files, 'all-files-body', false);
         
-        // Render Favorites Table
+        // Renderizar VISTA PRINCIPAL (Aquí es donde está la magia de carpetas)
+        app.renderFiles();
+
+        // Renderizar Favoritos View
         app.renderTable(favFiles, 'fav-files-body', false);
         const noFavsMsg = document.getElementById('no-favs-msg');
         const favTable = document.getElementById('fav-files-body').parentElement;
@@ -1219,7 +2353,7 @@ const app = {
              favTable.style.display = 'table';
         }
 
-        chartModule.draw(app.files);
+        setTimeout(() => chartModule.draw(app.files), 50);
     },
 
     renderTable: (files, elementId, isShort) => {
@@ -1227,37 +2361,16 @@ const app = {
         tbody.innerHTML = '';
         
         files.forEach(f => {
-            let iconColor = '#3b82f6';
-            let iconClass = 'ph-file';
-            let badgeClass = 'badge-other';
-
-            if (f.type === 'pdf') {
-                iconColor = '#ef4444'; iconClass = 'ph-file-pdf'; badgeClass = 'badge-pdf';
-            } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(f.type)) {
-                iconColor = '#10b981'; iconClass = 'ph-image'; badgeClass = 'badge-img';
-            } else if (['mp4', 'webm', 'ogg', 'mov'].includes(f.type)) {
-                iconColor = '#8b5cf6'; iconClass = 'ph-film-strip'; badgeClass = 'badge-video';
-            } else if (['mp3', 'wav'].includes(f.type)) {
-                iconColor = '#eab308'; iconClass = 'ph-speaker-high'; badgeClass = 'badge-audio';
-            } else if (['html', 'xml'].includes(f.type)) {
-                iconColor = '#f97316'; iconClass = 'ph-file-html'; badgeClass = 'badge-html';
-            } else if (['css', 'js', 'json', 'sql', 'py', 'ts'].includes(f.type)) {
-                iconColor = '#8b5cf6'; iconClass = 'ph-file-code'; badgeClass = 'badge-code';
-            } else if (['txt', 'md'].includes(f.type)) {
-                iconColor = '#64748b'; iconClass = 'ph-file-text'; badgeClass = 'badge-txt';
-            }
-            
             const isFav = app.favorites.has(f.id);
             const tr = document.createElement('tr');
             
-            // Construccion dinamica de columnas
+            const iconHtml = app.getIconHtml(f);
+
             let content = `
                 <td>
                     <div class="file-name">
-                        <div class="file-icon-sm" style="background: ${iconColor};">
-                            <i class="ph ${iconClass}"></i>
-                        </div>
-                        ${f.name}
+                        ${iconHtml}
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:150px;">${f.name}</span>
                     </div>
                 </td>
             `;
@@ -1265,29 +2378,21 @@ const app = {
             if (!isShort) {
                 content += `
                     <td>${new Date(f.created_at).toLocaleDateString()}</td>
-                    <td><span class="badge ${badgeClass}">${f.type.toUpperCase()}</span></td>
-                    <td>${elementId !== 'fav-files-body' ? app.formatBytes(f.size) : ''}</td>
+                    <td><span class="badge ${f.type==='folder'?'badge-folder':'badge-other'}">${f.type.toUpperCase()}</span></td>
+                    <td>${app.formatBytes(f.size)}</td>
                 `;
             } else {
                  content += `
-                    <td><span class="badge ${badgeClass}">${f.type.toUpperCase()}</span></td>
+                    <td><span class="badge ${f.type==='folder'?'badge-folder':'badge-other'}">${f.type.toUpperCase()}</span></td>
                 `;
             }
 
             content += `
                 <td>
                     <div class="actions-cell">
-                        <button class="action-btn fav ${isFav ? 'active' : ''}" onclick="app.toggleFavorite('${f.id}')" title="Favorito">
-                            <i class="ph ${isFav ? 'ph-star-fill' : 'ph-star'}"></i>
-                        </button>
-                        <button class="action-btn" onclick="app.openRenameModal('${f.id}', '${f.name}')" title="Renombrar">
-                            <i class="ph ph-pencil-simple"></i>
-                        </button>
+                        ${!isShort ? `<button class="action-btn fav ${isFav ? 'active' : ''}" onclick="app.toggleFavorite('${f.id}')" title="Favorito"><i class="ph ${isFav ? 'ph-star-fill' : 'ph-star'}"></i></button>` : ''}
                         <button class="action-btn" onclick="app.openEditor('${f.id}')" title="Ver/Editar">
                             <i class="ph ph-eye"></i>
-                        </button>
-                        <button class="action-btn delete" onclick="app.deleteFile('${f.id}')" title="Eliminar">
-                            <i class="ph ph-trash"></i>
                         </button>
                     </div>
                 </td>
@@ -1300,13 +2405,38 @@ const app = {
 
     filterFiles: (query) => {
         const term = query.toLowerCase();
+        // Si hay búsqueda, mostramos todo plano (sin carpetas) o filtramos en la vista actual
+        // Para simplificar, buscamos en TODOS los archivos y forzamos render
+        if (!term) {
+            app.renderFiles(); 
+            return;
+        }
+        
+        const container = document.getElementById('files-container');
+        container.innerHTML = '';
         const filtered = app.files.filter(f => f.name.toLowerCase().includes(term));
-        app.renderTable(filtered, 'all-files-body', false);
+        
+        // Render simplificado para búsqueda (siempre lista para ver resultados rápido)
+        const table = document.createElement('table');
+            table.className = 'file-table';
+            table.innerHTML = `<thead><tr><th>Resultados</th><th>Ubicación</th></tr></thead><tbody></tbody>`;
+            container.appendChild(table);
+            const tbody = table.querySelector('tbody');
+            
+            filtered.forEach(f => {
+                 const tr = document.createElement('tr');
+                 tr.innerHTML = `
+                    <td><div class="file-name">${app.getIconHtml(f)} ${f.name}</div></td>
+                    <td>${f.type === 'folder' ? 'Carpeta' : 'Archivo'}</td>
+                 `;
+                 tr.ondblclick = () => { if(f.type==='folder') app.enterFolder(f.id); else app.openEditor(f.id); };
+                 tbody.appendChild(tr);
+            });
     },
 
     openEditor: async (fileId) => {
         const file = app.files.find(f => f.id === fileId);
-        if (!file) return;
+        if (!file || file.type === 'folder') return; // No abrir editor para carpetas
 
         app.currentEditingFile = file;
         const modal = document.getElementById('editor-modal');
@@ -1408,37 +2538,14 @@ const app = {
 
     saveSettings: () => {
         app.toast('Configuración guardada correctamente', 'success');
-        // Aquí podrías guardar otras preferencias en localStorage si quisieras
-    },
-
-    setupListeners: () => {
-        const dz = document.getElementById('drop-zone');
-        const input = document.getElementById('file-input');
-
-        dz.addEventListener('click', () => input.click());
-        input.addEventListener('change', (e) => [...e.target.files].forEach(app.uploadFile));
-
-        ['dragenter', 'dragover'].forEach(e => dz.addEventListener(e, (ev) => {
-            ev.preventDefault(); dz.classList.add('active');
-        }));
-        ['dragleave', 'drop'].forEach(e => dz.addEventListener(e, (ev) => {
-            ev.preventDefault(); dz.classList.remove('active');
-        }));
-        dz.addEventListener('drop', (e) => {
-            [...e.dataTransfer.files].forEach(app.uploadFile);
-        });
-
-        document.getElementById('btn-save-changes').addEventListener('click', app.saveFileContent);
     },
 
     switchView: (viewName, navElement) => {
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         if(navElement) navElement.classList.add('active');
         
-        // Hide all views
         document.querySelectorAll('.app-view').forEach(el => el.style.display = 'none');
         
-        // Update Title
         const title = document.getElementById('page-title');
         const sub = document.getElementById('page-subtitle');
         
@@ -1451,15 +2558,17 @@ const app = {
             document.getElementById('view-files').style.display = 'block';
             title.innerText = 'Explorador de Archivos';
             sub.innerText = 'Todos tus documentos en un solo lugar.';
+            app.renderFiles(); // Asegurar render al cambiar
         } else if (viewName === 'favorites') {
              document.getElementById('view-favorites').style.display = 'block';
              title.innerText = 'Archivos Favoritos';
              sub.innerText = 'Acceso rápido a lo más importante.';
-             app.updateUI(); // Refresh fav list
+             app.updateUI(); 
         } else if (viewName === 'settings') {
             document.getElementById('view-settings').style.display = 'block';
             title.innerText = 'Configuración';
             sub.innerText = 'Personaliza tu experiencia.';
+            app.updateUserInfo(); // Refrescar datos
         }
     },
 
@@ -1497,10 +2606,72 @@ const app = {
         const sql = document.getElementById('sql-code').innerText;
         navigator.clipboard.writeText(sql);
         app.toast('SQL Copiado al portapapeles', 'success');
-    }
+    },
+
+    // --- Context Menu Logic ---
+    showContextMenu: (e, fileId) => {
+        e.preventDefault();
+        
+        // Si hacemos click derecho en un item que NO está seleccionado, seleccionarlo solo a él
+        if (!app.selectedFiles.has(fileId)) {
+            app.selectedFiles.clear();
+            app.selectedFiles.add(fileId);
+            app.renderFiles();
+        }
+        
+        app.ctxMenuFileId = fileId;
+        const menu = document.getElementById('context-menu');
+        
+        // Posicionamiento inteligente
+        let x = e.pageX;
+        let y = e.pageY;
+        
+        menu.style.display = 'block';
+        menu.style.left = `${x}px`;
+        menu.style.top = `${y}px`;
+    },
+
+    hideContextMenu: () => {
+        document.getElementById('context-menu').style.display = 'none';
+        app.ctxMenuFileId = null;
+    },
+
+    ctxAction: (action) => {
+        // Ejecutar acción sobre la selección completa si es posible
+        if (app.selectedFiles.size === 0 && app.ctxMenuFileId) {
+            app.selectedFiles.add(app.ctxMenuFileId);
+        }
+        
+        const ids = Array.from(app.selectedFiles);
+        
+        app.hideContextMenu();
+
+        if (action === 'open') {
+            // Abrir el último seleccionado (o el primero)
+            const id = ids[0];
+            const file = app.files.find(f => f.id === id);
+            if(file) {
+                if(file.type === 'folder') app.enterFolder(id);
+                else app.openEditor(id);
+            }
+        } else if (action === 'rename') {
+            if (ids.length === 1) {
+                const file = app.files.find(f => f.id === ids[0]);
+                app.openRenameModal(ids[0], file.name);
+            } else {
+                app.toast("Solo puedes renombrar un archivo a la vez", "info");
+            }
+        } else if (action === 'fav') {
+            ids.forEach(id => app.toggleFavorite(id));
+        } else if (action === 'delete') {
+            app.deleteSelected();
+        }
+    },
+
+    // La función exportData ha sido eliminada por solicitud
 };
 
-// --- Chart Module ---
+// --- Chart Module Refinado ---
 const chartModule = {
     draw: (files) => {
         const canvas = document.getElementById('fileChart');
@@ -1514,33 +2685,38 @@ const chartModule = {
         
         const ctx = canvas.getContext('2d');
         const w = canvas.width, h = canvas.height;
+        
+        const realFiles = files.filter(f => f.type !== 'folder'); // Solo contar archivos
 
         const types = {};
-        files.forEach(f => types[f.type] = (types[f.type] || 0) + 1);
+        realFiles.forEach(f => types[f.type] = (types[f.type] || 0) + 1);
         const data = Object.entries(types);
         
+        // Limpieza total del canvas para evitar glitches
         ctx.clearRect(0,0,w,h);
         
         if (data.length === 0) {
-            ctx.font = "500 14px 'Plus Jakarta Sans'"; ctx.fillStyle = "#94a3b8"; ctx.textAlign = "center";
-            ctx.fillText("No hay datos disponibles", w/2, h/2);
+            ctx.font = "500 14px 'Plus Jakarta Sans'"; 
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-muted').trim(); 
+            ctx.textAlign = "center";
+            ctx.fillText("Sin datos", w/2, h/2);
             return;
         }
 
-        let total = files.length;
+        let total = realFiles.length;
         let startAngle = 0;
         
-        const radius = Math.max(0, Math.min(w, h) / 2 - 10);
+        const radius = Math.max(0, Math.min(w, h) / 2 - 20); // Margen
         if (radius <= 0) return;
 
         const cx = w/2, cy = h/2;
-        // Paleta moderna para el gráfico
         const colors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6', '#0ea5e9'];
 
         data.forEach(([type, count], i) => {
             const sliceAngle = (count / total) * 2 * Math.PI;
             const endAngle = startAngle + sliceAngle;
             
+            // Dibujar segmento
             ctx.beginPath();
             ctx.moveTo(cx, cy);
             ctx.arc(cx, cy, radius, startAngle, endAngle);
@@ -1548,33 +2724,45 @@ const chartModule = {
             ctx.fillStyle = colors[i % colors.length];
             ctx.fill();
             
-            // Donut hole
+            // Borde entre segmentos para mejor estética
+            ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--bg-card').trim();
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Dibujar agujero del donut (transparente visualmente, usando el color de fondo de la tarjeta)
             ctx.beginPath();
-            ctx.arc(cx, cy, radius * 0.65, 0, 2*Math.PI);
-            ctx.fillStyle = "#ffffff";
+            ctx.arc(cx, cy, radius * 0.70, 0, 2*Math.PI);
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--bg-card').trim();
             ctx.fill();
 
-            // Labels only for large slices
-            if (sliceAngle > 0.25) { 
+            // Etiquetas inteligentes (Solo si el trozo es grande)
+            if (sliceAngle > 0.3) { 
                 const mid = startAngle + sliceAngle / 2;
-                const lx = cx + Math.cos(mid) * (radius * 0.82);
-                const ly = cy + Math.sin(mid) * (radius * 0.82);
+                const lx = cx + Math.cos(mid) * (radius * 0.85);
+                const ly = cy + Math.sin(mid) * (radius * 0.85);
                 ctx.fillStyle = "white"; 
                 ctx.font = "bold 11px 'Plus Jakarta Sans'"; 
                 ctx.textAlign = "center"; 
                 ctx.textBaseline = "middle";
-                ctx.shadowColor = "rgba(0,0,0,0.3)";
+                ctx.shadowColor = "rgba(0,0,0,0.5)";
                 ctx.shadowBlur = 4;
                 ctx.fillText(type.toUpperCase(), lx, ly);
-                ctx.shadowBlur = 0; // reset shadow
+                ctx.shadowBlur = 0;
             }
             startAngle = endAngle;
         });
 
-        // Center Text
-        ctx.fillStyle = "#1e293b"; ctx.font = "bold 28px 'Plus Jakarta Sans'"; ctx.textAlign = "center";
+        // Texto Central (Total)
+        const textColor = getComputedStyle(document.body).getPropertyValue('--text-main').trim();
+        const subTextColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+        
+        ctx.fillStyle = textColor; 
+        ctx.font = "bold 28px 'Plus Jakarta Sans'"; 
+        ctx.textAlign = "center";
         ctx.fillText(total, cx, cy + 8);
-        ctx.font = "500 13px 'Plus Jakarta Sans'"; ctx.fillStyle = "#64748b";
+        
+        ctx.font = "500 13px 'Plus Jakarta Sans'"; 
+        ctx.fillStyle = subTextColor;
         ctx.fillText("Archivos", cx, cy + 26);
     }
 };
