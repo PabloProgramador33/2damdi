@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocuManager Pro | Suite Multimedia</title>
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Iconos Phosphor -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- PDF.js para visualización nativa -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Configurar Worker de PDF.js
+        var pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <!-- Fuente Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Paleta Mejorada */
+            --primary: #4f46e5;
+            --primary-glow: rgba(79, 70, 229, 0.4);
+            --secondary: #ec4899;
+            
+            --bg-body: #f8fafc;
+            --bg-sidebar: #0f172a;
+            --bg-sidebar-glass: rgba(15, 23, 42, 0.95);
+            --bg-card: #ffffff;
+            --bg-input: #f1f5f9;
+            
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --text-light: #94a3b8;
+            
+            --border: #e2e8f0;
+            --border-hover: #cbd5e1;
+            
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -1px rgb(0 0 0 / 0.03);
+            --shadow-hover: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -2px rgb(0 0 0 / 0.04);
+            
+            --font-main: 'Plus Jakarta Sans', sans-serif;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
+        
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- Sidebar Mejorado --- */
+        aside {
+            width: 280px;
+            background-color: var(--bg-sidebar);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 32px 24px;
+            transition: var(--transition);
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Efecto de fondo sutil en sidebar */
+        aside::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.15), transparent 70%);
+            pointer-events: none; z-index: -1;
+        }
+
+        .brand {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 48px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            letter-spacing: -0.5px;
+        }
+        
+        .brand i { 
+            color: var(--primary); 
+            background: rgba(255,255,255,0.1);
+            padding: 8px;
+            border-radius: 12px;
+            font-size: 1.4rem; 
+        }
+
+        .nav-menu { list-style: none; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .nav-item {
+            padding: 14px 16px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            color: #94a3b8;
+            transition: var(--transition);
+            font-size: 0.95rem;
+            font-weight: 500;
+            border: 1px solid transparent;
+        }
+        
+        .nav-item:hover {
+            background-color: rgba(255,255,255,0.05);
+            color: white;
+        }
+
+        .nav-item.active { 
+            background: linear-gradient(90deg, rgba(79, 70, 229, 0.2) 0%, rgba(79, 70, 229, 0.05) 100%);
+            color: #818cf8;
+            border: 1px solid rgba(79, 70, 229, 0.3);
+        }
+
+        .storage-info {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: var(--radius-md);
+            backdrop-filter: blur(10px);
+        }
+        .storage-bar {
+            height: 6px; background: rgba(255,255,255,0.1);
+            border-radius: 10px; margin-top: 12px; overflow: hidden;
+        }
+        .storage-fill { 
+            height: 100%; 
+            background: linear-gradient(90deg, var(--secondary), #f472b6); 
+            width: 0%; 
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(236, 72, 153, 0.4);
+        }
+
+        /* --- Main Content --- */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            background: #f8fafc;
+        }
+        
+        /* Gradient background accent */
+        main::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 300px;
+            background: linear-gradient(180deg, #e0e7ff 0%, rgba(248, 250, 252, 0) 100%);
+            z-index: 0; pointer-events: none; opacity: 0.6;
+        }
+
+        header {
+            padding: 24px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .header-title h2 { font-size: 1.5rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; }
+        .header-title p { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: var(--transition);
+            box-shadow: 0 4px 12px var(--primary-glow);
+            font-size: 0.95rem;
+        }
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 6px 16px var(--primary-glow);
+            background: #4338ca; 
+        }
+
+        /* Scrollable Content */
+        .content-area {
+            flex: 1;
+            padding: 0 40px 40px 40px;
+            overflow-y: auto;
+            z-index: 2;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 24px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            transition: var(--transition);
+        }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); border-color: #cbd5e1; }
+        
+        .stat-icon {
+            width: 56px; height: 56px;
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6rem;
+            transition: transform 0.3s;
+        }
+        .stat-card:hover .stat-icon { transform: scale(1.1) rotate(5deg); }
+        
+        .stat-icon.blue { background: #e0e7ff; color: var(--primary); }
+        .stat-icon.green { background: #d1fae5; color: var(--success); }
+        .stat-icon.orange { background: #ffedd5; color: var(--warning); }
+        .stat-icon.purple { background: #f3e8ff; color: #9333ea; }
+
+        .stat-info h3 { font-size: 2rem; font-weight: 800; margin-bottom: 4px; color: var(--text-main); }
+        .stat-info p { color: var(--text-muted); font-size: 0.95rem; font-weight: 500; }
+
+        /* Dashboard Split */
+        .dash-split {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 1024px) { .dash-split { grid-template-columns: 1fr; } }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border);
+            padding: 28px;
+            display: flex; flex-direction: column;
+            transition: var(--transition);
+        }
+        .card:hover { box-shadow: var(--shadow-hover); }
+
+        .card-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
+        }
+        .card-title { font-size: 1.2rem; font-weight: 700; color: var(--text-main); }
+
+        /* Dropzone Mejorado */
+        .dropzone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-md);
+            padding: 40px 20px;
+            text-align: center;
+            background: #f8fafc;
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .dropzone:hover, .dropzone.active {
+            border-color: var(--primary);
+            background: #eef2ff;
+            transform: scale(1.01);
+        }
+        .dropzone i { font-size: 3.5rem; color: #cbd5e1; margin-bottom: 16px; display: block; transition: 0.3s; }
+        .dropzone:hover i { color: var(--primary); transform: translateY(-5px); }
+        
+        #file-input { display: none; }
+
+        /* File List Table */
+        .file-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+        .file-table th { 
+            text-align: left; color: var(--text-muted); font-weight: 600; 
+            padding: 0 16px 12px 16px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; 
+        }
+        .file-table td { 
+            padding: 16px; vertical-align: middle; background: white; 
+            border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); 
+        }
+        .file-table tr td:first-child { border-left: 1px solid var(--border); border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+        .file-table tr td:last-child { border-right: 1px solid var(--border); border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+        
+        .file-table tr { transition: transform 0.2s; }
+        .file-table tr:hover td { background: #f8fafc; border-color: #cbd5e1; }
+        .file-table tr:hover { transform: scale(1.005); }
+
+        .file-name { display: flex; align-items: center; gap: 16px; font-weight: 600; color: var(--text-main); }
+        .file-icon-sm { 
+            width: 42px; height: 42px; border-radius: 10px; 
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .badge { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.3px; }
+        .badge-pdf { background: #fee2e2; color: #ef4444; }
+        .badge-img { background: #dcfce7; color: #10b981; }
+        .badge-txt { background: #f1f5f9; color: #64748b; }
+        .badge-code { background: #e0e7ff; color: #6366f1; }
+        .badge-html { background: #ffedd5; color: #f97316; }
+        .badge-video { background: #f3e8ff; color: #a855f7; }
+        .badge-audio { background: #fef9c3; color: #ca8a04; }
+        .badge-other { background: #f1f5f9; color: #94a3b8; }
+
+        .actions-cell { display: flex; gap: 8px; justify-content: flex-end; }
+        .action-btn {
+            background: transparent; border: 1px solid transparent; cursor: pointer;
+            width: 34px; height: 34px; border-radius: 8px; color: var(--text-muted);
+            transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+        }
+        .action-btn:hover { background: white; border-color: var(--border); color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .action-btn.delete:hover { color: var(--danger); border-color: #fee2e2; background: #fef2f2; }
+        .action-btn.fav.active { color: #f59e0b; } /* Estrella amarilla */
+
+        /* Settings Panel */
+        .settings-container {
+            max-width: 800px; margin: 0 auto;
+        }
+        .settings-section {
+            background: white; border-radius: var(--radius-md); border: 1px solid var(--border);
+            padding: 30px; margin-bottom: 24px; box-shadow: var(--shadow-card);
+        }
+        .settings-header { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+        .settings-header h3 { font-size: 1.1rem; font-weight: 700; color: var(--text-main); }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-main); font-size: 0.9rem; }
+        .form-control {
+            width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            background: var(--bg-input); font-family: var(--font-main); transition: 0.3s;
+        }
+        .form-control:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; }
+        
+        /* Modal */
+        .modal-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center;
+            z-index: 50;
+        }
+        .modal {
+            background: white; width: 90%; max-width: 1000px; height: 85vh;
+            border-radius: var(--radius-lg);
+            display: flex; flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+        .modal-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #ffffff; }
+        .modal-body { flex: 1; overflow: hidden; display: flex; position: relative; background: #1e293b; } /* Dark bg for content */
+        
+        .editor-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
+        .editor-toolbar {
+            background: #0f172a; padding: 12px 20px; display: flex; gap: 12px; border-bottom: 1px solid #334155; align-items: center;
+        }
+        .tool-btn {
+            background: #334155; color: #e2e8f0; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; transition: 0.2s;
+        }
+        .tool-btn:hover, .tool-btn.active { background: var(--primary); color: white; }
+
+        /* Input colors */
+        input[type="color"] {
+            -webkit-appearance: none; border: none; width: 32px; height: 32px; background: none; cursor: pointer;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: 2px solid #334155; border-radius: 8px; }
+
+        textarea.code-editor {
+            width: 100%; height: 100%; background: #0f172a; color: #e2e8f0; border: none; padding: 24px; font-family: 'Courier New', monospace; line-height: 1.6; resize: none; font-size: 15px;
+        }
+
+        /* Toast */
+        .toast-container { position: fixed; bottom: 32px; right: 32px; z-index: 100; display: flex; flex-direction: column; gap: 12px; }
+        .toast {
+            background: white; padding: 16px 24px; border-radius: var(--radius-sm);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); display: flex; align-items: center; gap: 14px;
+            animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); border-left: 5px solid var(--primary); min-width: 320px;
+        }
+        @keyframes slideIn { from { transform: translateX(100%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
+
+        /* Loader */
+        .loader-line {
+            height: 4px; width: 100%; position: absolute; top: 0; left: 0; overflow: hidden; background: transparent; display: none; z-index: 1000;
+        }
+        .loader-line::before {
+            content: ''; display: block; position: absolute; left: -200px; width: 200px; height: 100%; background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+            animation: loading 1.5s linear infinite;
+        }
+        @keyframes loading { from { left: -200px; width: 30%; } 50% { width: 30%; } 70% { width: 70%; } to { left: 100%; } }
+
+        /* Error Box */
+        .error-box {
+            background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c;
+            padding: 20px; border-radius: var(--radius-sm); margin-bottom: 24px;
+            display: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .code-block {
+            background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px;
+            font-family: monospace; font-size: 0.85rem; overflow-x: auto; margin-top: 12px;
+            border: 1px solid #334155;
+        }
+
+        canvas#fileChart { width: 100%; height: 100%; }
+
+        /* Toggle Switch */
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(20px); }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside>
+        <div class="brand">
+            <i class="ph ph-stack-simple"></i> DocuManager
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item active" onclick="app.switchView('dashboard', this)"><i class="ph ph-squares-four"></i> Panel Principal</li>
+            <li class="nav-item" onclick="app.switchView('files', this)"><i class="ph ph-folder-open"></i> Mis Archivos</li>
+            <li class="nav-item" onclick="app.switchView('favorites', this)"><i class="ph ph-star"></i> Favoritos</li>
+            <li class="nav-item" onclick="app.switchView('settings', this)"><i class="ph ph-gear-six"></i> Configuración</li>
+        </ul>
+        
+        <div style="margin-top: auto;">
+            <div class="storage-info">
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px; color: #cbd5e1;">
+                    <span>Almacenamiento</span>
+                    <span id="storage-percent" style="color: white; font-weight: 600;">0%</span>
+                </div>
+                <div class="storage-bar">
+                    <div class="storage-fill" id="storage-fill"></div>
+                </div>
+                <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 10px; display: flex; align-items: center; gap: 5px;" id="storage-text">
+                    <i class="ph ph-hard-drives"></i> 0 MB de 1 GB
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Loading Line -->
+        <div class="loader-line" id="global-loader"></div>
+
+        <header>
+            <div class="header-title">
+                <h2 id="page-title">Bienvenido de nuevo</h2>
+                <p id="page-subtitle">Gestiona tu contenido digital de forma eficiente.</p>
+            </div>
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <button class="btn-primary" onclick="document.getElementById('file-input').click()">
+                    <i class="ph ph-cloud-arrow-up" style="font-size: 1.2rem;"></i> Subir Archivo
+                </button>
+                <div style="position: relative; cursor: pointer;" onclick="app.switchView('settings', document.querySelectorAll('.nav-item')[3])">
+                    <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 1.1rem; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);">
+                        JM
+                    </div>
+                    <div style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; background: #22c55e; border: 2px solid white; border-radius: 50%;"></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-area">
+            
+            <!-- SQL Error Helper -->
+            <div class="error-box" id="sql-error-box">
+                <strong><i class="ph ph-warning-octagon"></i> Configuración de Base de Datos Requerida</strong>
+                <p style="margin-top: 8px;">Parece que la tabla de metadatos no existe. Ejecuta esto en tu Supabase SQL Editor:</p>
+                <div class="code-block" id="sql-code">
+create table if not exists public.files_metadata (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  type text not null,
+  size bigint not null,
+  url text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+insert into storage.buckets (id, name, public) values ('uploads', 'uploads', true) on conflict do nothing;
+create policy "Public Access" on storage.objects for all using ( bucket_id = 'uploads' ) with check ( bucket_id = 'uploads' );
+alter table public.files_metadata enable row level security;
+create policy "Enable all access" on public.files_metadata for all using (true) with check (true);
+                </div>
+                <button class="btn-primary" onclick="app.copySQL()" style="margin-top: 15px; padding: 8px 16px; font-size: 0.85rem;">Copiar SQL</button>
+            </div>
+
+            <!-- Dashboard View -->
+            <div id="view-dashboard" class="app-view">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3 id="stat-total">0</h3>
+                            <p>Archivos Totales</p>
+                        </div>
+                        <div class="stat-icon blue"><i class="ph ph-files"></i></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3 id="stat-media">0</h3>
+                            <p>Multimedia</p>
+                        </div>
+                        <div class="stat-icon purple"><i class="ph ph-film-strip"></i></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3 id="stat-favs">0</h3>
+                            <p>Favoritos</p>
+                        </div>
+                        <div class="stat-icon orange"><i class="ph ph-star"></i></div>
+                    </div>
+                </div>
+
+                <div class="dash-split">
+                    <!-- Recent Files -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Archivos Recientes</h3>
+                            <button class="action-btn" onclick="app.fetchFiles()"><i class="ph ph-arrows-clockwise"></i></button>
+                        </div>
+                        <table class="file-table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Tipo</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-files-body">
+                                <!-- JS Injection -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Upload & Chart -->
+                    <div style="display: flex; flex-direction: column; gap: 32px;">
+                        <div class="card" style="flex: 1;">
+                            <h3 class="card-title" style="margin-bottom: 20px;">Distribución</h3>
+                            <div style="height: 220px; position: relative;">
+                                <canvas id="fileChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="dropzone" id="drop-zone">
+                            <i class="ph ph-cloud-arrow-up"></i>
+                            <h4 style="margin-bottom: 8px; color: var(--text-main); font-weight: 700;">Sube tus archivos</h4>
+                            <p style="font-size: 0.85rem; color: #94a3b8;">Arrastra o haz clic para explorar</p>
+                            <input type="file" id="file-input" multiple>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- All Files View -->
+            <div id="view-files" class="app-view" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Todos los Archivos</h3>
+                        <div style="position: relative;">
+                            <i class="ph ph-magnifying-glass" style="position: absolute; left: 10px; top: 10px; color: var(--text-light);"></i>
+                            <input type="text" placeholder="Buscar archivo..." onkeyup="app.filterFiles(this.value)" style="padding: 8px 8px 8px 32px; border: 1px solid var(--border); border-radius: 8px; width: 250px;">
+                        </div>
+                    </div>
+                    <table class="file-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th>Tamaño</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-files-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+             <!-- Favorites View -->
+             <div id="view-favorites" class="app-view" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Mis Favoritos</h3>
+                    </div>
+                    <table class="file-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fav-files-body"></tbody>
+                    </table>
+                    <div id="no-favs-msg" style="text-align: center; padding: 40px; color: var(--text-muted); display: none;">
+                        <i class="ph ph-star" style="font-size: 3rem; margin-bottom: 10px; opacity: 0.3;"></i>
+                        <p>No tienes archivos favoritos aún.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div id="view-settings" class="app-view" style="display: none;">
+                <div class="settings-container">
+                    
+                    <div class="settings-section">
+                        <div class="settings-header">
+                            <h3>Perfil de Usuario</h3>
+                        </div>
+                        <div style="display: flex; gap: 24px; align-items: center;">
+                            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; font-weight: bold;">JM</div>
+                            <div style="flex: 1;">
+                                <div class="form-group">
+                                    <label>Nombre Mostrado</label>
+                                    <input type="text" class="form-control" value="Juan Martinez" id="setting-name">
+                                </div>
+                                <div class="form-group">
+                                    <label>Email</label>
+                                    <input type="email" class="form-control" value="juan.martinez@empresa.com" disabled style="background: #f1f5f9; cursor: not-allowed;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <div class="settings-header">
+                            <h3>Apariencia y Preferencias</h3>
+                        </div>
+                        <div class="toggle-row">
+                            <span style="font-weight: 500;">Modo Oscuro (Beta)</span>
+                            <label class="switch">
+                                <input type="checkbox" onchange="app.toast('Modo oscuro disponible en próxima versión', 'info')">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
+                        <div class="toggle-row">
+                            <span style="font-weight: 500;">Notificaciones de Escritorio</span>
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
+                        <div class="toggle-row">
+                            <span style="font-weight: 500;">Compresión Automática de Imágenes</span>
+                            <label class="switch">
+                                <input type="checkbox">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button class="btn-primary" onclick="app.saveSettings()">Guardar Cambios</button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Editor/Preview Modal -->
+    <div class="modal-backdrop" id="editor-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i class="ph ph-pencil-simple" id="modal-icon" style="font-size: 1.2rem; color: var(--primary);"></i>
+                    <h3 id="modal-filename" style="font-size: 1.1rem; color: var(--text-main);">documento.txt</h3>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button class="btn-primary" id="btn-save-changes" style="padding: 8px 16px; font-size: 0.85rem; display: none;">
+                        <i class="ph ph-floppy-disk"></i> Guardar
+                    </button>
+                    <button class="action-btn" onclick="app.closeModal()"><i class="ph ph-x" style="font-size: 1.5rem;"></i></button>
+                </div>
+            </div>
+            
+            <!-- Toolbar for Images -->
+            <div class="editor-toolbar" id="image-toolbar" style="display: none;">
+                <div style="display: flex; gap: 8px; border-right: 1px solid #334155; padding-right: 15px;">
+                    <button class="tool-btn active" id="tool-pen" onclick="imageEditor.setTool('pen')" title="Pincel"><i class="ph ph-pencil"></i></button>
+                    <input type="color" id="pen-color" value="#ef4444" title="Color de pincel" onchange="imageEditor.setColor(this.value)">
+                </div>
+                
+                <div style="display: flex; gap: 8px; border-right: 1px solid #334155; padding-right: 15px;">
+                    <button class="tool-btn" onclick="imageEditor.applyFilter('grayscale')">B&N</button>
+                    <button class="tool-btn" onclick="imageEditor.applyFilter('sepia')">Sepia</button>
+                    <button class="tool-btn" onclick="imageEditor.applyFilter('invert')">Invertir</button>
+                </div>
+
+                <div style="display: flex; gap: 8px;">
+                    <button class="tool-btn" onclick="imageEditor.reset()" title="Restaurar Original"><i class="ph ph-arrow-counter-clockwise"></i> Reset</button>
+                </div>
+            </div>
+
+            <div class="modal-body" id="modal-content-area" style="display: flex; justify-content: center; align-items: center; background: #1e293b;">
+                <!-- Content injected dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Modal -->
+    <div class="modal-backdrop" id="rename-modal" style="z-index: 60;">
+        <div class="modal" style="width: 400px; height: auto; padding: 20px;">
+            <h3 style="margin-bottom: 15px; font-size: 1.2rem;">Renombrar Archivo</h3>
+            <input type="text" id="rename-input" class="form-control" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="action-btn" onclick="document.getElementById('rename-modal').style.display='none'" style="width: auto; padding: 8px 16px; border: 1px solid var(--border);">Cancelar</button>
+                <button class="btn-primary" onclick="app.confirmRename()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+<script>
+// --- Configuración ---
+const SUPABASE_URL = 'https://tmzwwyabpdxqjqqxwcwp.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtend3eWFicGR4cWpxcXh3Y3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0NTQxNjksImV4cCI6MjA4MTAzMDE2OX0.qlVXfa5eCXAEvSfzF3IYrYoPc725sRVGu7QX6kMW92Y';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// --- PDF Viewer Module (PDF.js) ---
+const pdfViewer = {
+    doc: null,
+    pageNum: 1,
+    scale: 1.2,
+    
+    load: async (url) => {
+        try {
+            const loadingTask = pdfjsLib.getDocument(url);
+            pdfViewer.doc = await loadingTask.promise;
+            pdfViewer.pageNum = 1;
+            pdfViewer.renderPage(1);
+        } catch (error) {
+            console.error(error);
+            document.getElementById('modal-content-area').innerHTML = `<p style="color:white; padding:20px;">Error cargando PDF: ${error.message}</p>`;
+        }
+    },
+
+    renderPage: async (num) => {
+        if (!pdfViewer.doc) return;
+        const page = await pdfViewer.doc.getPage(num);
+        
+        const canvas = document.getElementById('pdf-render');
+        if(!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const viewport = page.getViewport({scale: pdfViewer.scale});
+
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        const renderContext = {
+            canvasContext: ctx,
+            viewport: viewport
+        };
+        
+        await page.render(renderContext).promise;
+        document.getElementById('pdf-page-num').innerText = `Página ${num} de ${pdfViewer.doc.numPages}`;
+    },
+
+    prevPage: () => {
+        if (pdfViewer.pageNum <= 1) return;
+        pdfViewer.pageNum--;
+        pdfViewer.renderPage(pdfViewer.pageNum);
+    },
+
+    nextPage: () => {
+        if (pdfViewer.pageNum >= pdfViewer.doc.numPages) return;
+        pdfViewer.pageNum++;
+        pdfViewer.renderPage(pdfViewer.pageNum);
+    }
+};
+
+// --- Image Editor Module (Canvas Drawing) ---
+const imageEditor = {
+    canvas: null,
+    ctx: null,
+    originalImage: null,
+    isDrawing: false,
+    lastX: 0, 
+    lastY: 0,
+    color: '#ef4444',
+    tool: 'pen',
+
+    init: (imgElement) => {
+        const container = document.getElementById('modal-content-area');
+        container.innerHTML = '';
+        
+        const canvas = document.createElement('canvas');
+        canvas.id = 'editor-canvas';
+        const maxWidth = container.clientWidth - 40;
+        const maxHeight = container.clientHeight - 40;
+        
+        let width = imgElement.naturalWidth;
+        let height = imgElement.naturalHeight;
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        canvas.style.maxWidth = '100%';
+        canvas.style.maxHeight = '100%';
+        canvas.style.objectFit = 'contain';
+        canvas.style.boxShadow = '0 0 30px rgba(0,0,0,0.3)';
+        canvas.style.cursor = 'crosshair';
+
+        container.appendChild(canvas);
+        
+        imageEditor.canvas = canvas;
+        imageEditor.ctx = canvas.getContext('2d');
+        imageEditor.originalImage = imgElement;
+        
+        imageEditor.ctx.drawImage(imgElement, 0, 0);
+
+        canvas.addEventListener('mousedown', imageEditor.startDrawing);
+        canvas.addEventListener('mousemove', imageEditor.draw);
+        canvas.addEventListener('mouseup', imageEditor.stopDrawing);
+        canvas.addEventListener('mouseout', imageEditor.stopDrawing);
+        
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent("mousedown", {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent("mousemove", {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        });
+        canvas.addEventListener('touchend', () => canvas.dispatchEvent(new MouseEvent("mouseup")));
+    },
+
+    startDrawing: (e) => {
+        imageEditor.isDrawing = true;
+        const { x, y } = imageEditor.getPos(e);
+        imageEditor.lastX = x;
+        imageEditor.lastY = y;
+    },
+
+    draw: (e) => {
+        if (!imageEditor.isDrawing) return;
+        const { x, y } = imageEditor.getPos(e);
+        
+        const ctx = imageEditor.ctx;
+        ctx.strokeStyle = imageEditor.color;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 5;
+
+        ctx.beginPath();
+        ctx.moveTo(imageEditor.lastX, imageEditor.lastY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+
+        imageEditor.lastX = x;
+        imageEditor.lastY = y;
+    },
+
+    stopDrawing: () => {
+        imageEditor.isDrawing = false;
+    },
+
+    getPos: (e) => {
+        const rect = imageEditor.canvas.getBoundingClientRect();
+        const scaleX = imageEditor.canvas.width / rect.width;
+        const scaleY = imageEditor.canvas.height / rect.height;
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
+    },
+
+    setTool: (tool) => {
+        imageEditor.tool = tool;
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tool-' + tool).classList.add('active');
+    },
+
+    setColor: (color) => {
+        imageEditor.color = color;
+    },
+    
+    applyFilter: (filter) => {
+        if (!imageEditor.ctx) return;
+        const w = imageEditor.canvas.width;
+        const h = imageEditor.canvas.height;
+        
+        imageEditor.ctx.drawImage(imageEditor.originalImage, 0, 0, w, h);
+        
+        const imageData = imageEditor.ctx.getImageData(0, 0, w, h);
+        const data = imageData.data;
+        
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i], g = data[i+1], b = data[i+2];
+            if (filter === 'grayscale') {
+                const avg = 0.34 * r + 0.5 * g + 0.16 * b;
+                data[i] = avg; data[i+1] = avg; data[i+2] = avg;
+            } else if (filter === 'sepia') {
+                data[i] = r * 0.393 + g * 0.769 + b * 0.189;
+                data[i+1] = r * 0.349 + g * 0.686 + b * 0.168;
+                data[i+2] = r * 0.272 + g * 0.534 + b * 0.131;
+            } else if (filter === 'invert') {
+                data[i] = 255 - r; data[i+1] = 255 - g; data[i+2] = 255 - b;
+            }
+        }
+        imageEditor.ctx.putImageData(imageData, 0, 0);
+    },
+    
+    reset: () => {
+        if (!imageEditor.ctx) return;
+        imageEditor.ctx.clearRect(0, 0, imageEditor.canvas.width, imageEditor.canvas.height);
+        imageEditor.ctx.drawImage(imageEditor.originalImage, 0, 0);
+    },
+
+    getDataBlob: () => {
+        return new Promise(resolve => {
+            imageEditor.canvas.toBlob(blob => {
+                resolve(blob);
+            }, 'image/png');
+        });
+    }
+};
+
+// --- App Principal ---
+const app = {
+    files: [],
+    currentEditingFile: null,
+    favorites: new Set(),
+    renameTargetId: null,
+
+    init: async () => {
+        app.loadFavorites();
+        app.setupListeners();
+        await app.fetchFiles();
+    },
+
+    loadFavorites: () => {
+        const stored = localStorage.getItem('documanager_favs');
+        if (stored) {
+            app.favorites = new Set(JSON.parse(stored));
+        }
+    },
+
+    saveFavoritesLocal: () => {
+        localStorage.setItem('documanager_favs', JSON.stringify([...app.favorites]));
+        app.updateUI();
+    },
+
+    toggleFavorite: (id) => {
+        if (app.favorites.has(id)) {
+            app.favorites.delete(id);
+            app.toast('Eliminado de favoritos');
+        } else {
+            app.favorites.add(id);
+            app.toast('Añadido a favoritos', 'success');
+        }
+        app.saveFavoritesLocal();
+    },
+
+    fetchFiles: async () => {
+        app.toggleLoader(true);
+        const { data, error } = await supabase
+            .from('files_metadata')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        app.toggleLoader(false);
+
+        if (error) {
+            if (error.code === 'PGRST205' || error.message.includes('relation "public.files_metadata" does not exist')) {
+                document.getElementById('sql-error-box').style.display = 'block';
+            } else {
+                app.toast('Error cargando archivos', 'error');
+            }
+            return;
+        }
+
+        document.getElementById('sql-error-box').style.display = 'none';
+        app.files = data;
+        app.updateUI();
+    },
+
+    uploadFile: async (file) => {
+        const timestamp = new Date().getTime();
+        const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+        const path = `${timestamp}_${safeName}`;
+
+        app.toggleLoader(true);
+        app.toast('Subiendo archivo...', 'info');
+
+        try {
+            const { error: uploadErr } = await supabase.storage.from('uploads').upload(path, file);
+            if (uploadErr) throw uploadErr;
+
+            const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(path);
+
+            const { error: dbErr } = await supabase.from('files_metadata').insert([{
+                name: file.name,
+                type: app.getExt(file.name),
+                size: file.size,
+                url: publicUrl
+            }]);
+
+            if (dbErr) throw dbErr;
+
+            app.toast('Archivo subido correctamente', 'success');
+            await app.fetchFiles();
+
+        } catch (err) {
+            console.error(err);
+            app.toast('Error: ' + err.message, 'error');
+        } finally {
+            app.toggleLoader(false);
+        }
+    },
+
+    openRenameModal: (id, currentName) => {
+        app.renameTargetId = id;
+        document.getElementById('rename-input').value = currentName;
+        document.getElementById('rename-modal').style.display = 'flex';
+        document.getElementById('rename-input').focus();
+    },
+
+    confirmRename: async () => {
+        const newName = document.getElementById('rename-input').value;
+        if (!newName || !app.renameTargetId) return;
+
+        app.toggleLoader(true);
+        document.getElementById('rename-modal').style.display = 'none';
+
+        try {
+            const { error } = await supabase
+                .from('files_metadata')
+                .update({ name: newName })
+                .eq('id', app.renameTargetId);
+
+            if (error) throw error;
+            
+            app.toast('Archivo renombrado', 'success');
+            app.fetchFiles();
+        } catch (err) {
+            app.toast('Error al renombrar: ' + err.message, 'error');
+        } finally {
+            app.toggleLoader(false);
+        }
+    },
+
+    saveFileContent: async () => {
+        if (!app.currentEditingFile) return;
+        
+        const file = app.currentEditingFile;
+        const btn = document.getElementById('btn-save-changes');
+        
+        app.toggleLoader(true);
+        btn.innerText = 'Guardando...';
+
+        try {
+            let blob = null;
+            const isImage = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(file.type);
+            const isCode = ['txt', 'md', 'json', 'html', 'css', 'js', 'xml', 'svg', 'csv', 'yaml', 'yml', 'sql', 'py', 'java', 'c', 'cpp', 'h', 'ts', 'php'].includes(file.type);
+
+            if (isImage) {
+                blob = await imageEditor.getDataBlob();
+            } else if (isCode) {
+                const content = document.getElementById('editor-textarea').value;
+                blob = new Blob([content], { type: 'text/plain' });
+            }
+
+            if (!blob) throw new Error("Tipo de archivo no editable");
+
+            const timestamp = new Date().getTime();
+            const path = `${timestamp}_edited_${file.name}`;
+            
+            const { error: upErr } = await supabase.storage.from('uploads').upload(path, blob);
+            if (upErr) throw upErr;
+            
+            const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(path);
+            
+            const { error: dbErr } = await supabase
+                .from('files_metadata')
+                .update({ 
+                    url: publicUrl,
+                    size: blob.size,
+                    created_at: new Date()
+                })
+                .eq('id', file.id);
+                
+            if (dbErr) throw dbErr;
+
+            app.toast('Cambios guardados exitosamente', 'success');
+            app.closeModal();
+            app.fetchFiles();
+
+        } catch (err) {
+            app.toast('Error al guardar: ' + err.message, 'error');
+        } finally {
+            btn.innerHTML = '<i class="ph ph-floppy-disk"></i> Guardar';
+            app.toggleLoader(false);
+        }
+    },
+
+    deleteFile: async (id) => {
+        const file = app.files.find(f => f.id === id);
+        if (!file) return;
+
+        const name = file.name;
+        if (!confirm(`¿Estás seguro de que quieres eliminar "${name}" permanentemente?`)) return;
+        
+        const originalFiles = [...app.files];
+        app.files = app.files.filter(f => f.id !== id);
+        app.updateUI();
+        app.toast('Eliminando archivo...', 'info');
+
+        try {
+            if (file.url) {
+                const bucketName = 'uploads';
+                const urlParts = file.url.split(`/${bucketName}/`);
+                if (urlParts.length > 1) {
+                    const storagePath = decodeURIComponent(urlParts[1]);
+                    await supabase.storage.from(bucketName).remove([storagePath]);
+                }
+            }
+
+            const { error: dbError } = await supabase
+                .from('files_metadata')
+                .delete()
+                .eq('id', id);
+
+            if (dbError) throw dbError;
+            
+            // Eliminar de favoritos si existe
+            if(app.favorites.has(id)){
+                app.favorites.delete(id);
+                app.saveFavoritesLocal();
+            }
+            app.toast('Archivo eliminado correctamente.', 'success');
+
+        } catch (error) {
+            console.error("Error borrando:", error);
+            app.toast('Error al eliminar: ' + error.message, 'error');
+            app.files = originalFiles;
+            app.updateUI();
+        }
+    },
+
+    updateUI: () => {
+        const totalSize = app.files.reduce((a, b) => a + b.size, 0);
+        document.getElementById('stat-total').innerText = app.files.length;
+        
+        const mediaTypes = ['png','jpg','jpeg','webp','gif','mp4','webm','mp3','wav','ogg'];
+        const mediaCount = app.files.filter(f => mediaTypes.includes(f.type)).length;
+        
+        document.getElementById('stat-media').innerText = mediaCount;
+        document.getElementById('stat-favs').innerText = app.favorites.size;
+        
+        const maxStorage = 100 * 1024 * 1024;
+        const percent = Math.min(100, (totalSize / maxStorage) * 100).toFixed(1);
+        document.getElementById('storage-fill').style.width = `${percent}%`;
+        document.getElementById('storage-percent').innerText = `${percent}%`;
+        document.getElementById('storage-text').innerHTML = `<i class="ph ph-hard-drives"></i> ${app.formatBytes(totalSize)} usados`;
+
+        // Filter favorites
+        const favFiles = app.files.filter(f => app.favorites.has(f.id));
+        
+        const recent = app.files.slice(0, 5);
+        app.renderTable(recent, 'recent-files-body', true);
+        app.renderTable(app.files, 'all-files-body', false);
+        
+        // Render Favorites Table
+        app.renderTable(favFiles, 'fav-files-body', false);
+        const noFavsMsg = document.getElementById('no-favs-msg');
+        const favTable = document.getElementById('fav-files-body').parentElement;
+        if(favFiles.length === 0){
+             noFavsMsg.style.display = 'block';
+             favTable.style.display = 'none';
+        } else {
+             noFavsMsg.style.display = 'none';
+             favTable.style.display = 'table';
+        }
+
+        chartModule.draw(app.files);
+    },
+
+    renderTable: (files, elementId, isShort) => {
+        const tbody = document.getElementById(elementId);
+        tbody.innerHTML = '';
+        
+        files.forEach(f => {
+            let iconColor = '#3b82f6';
+            let iconClass = 'ph-file';
+            let badgeClass = 'badge-other';
+
+            if (f.type === 'pdf') {
+                iconColor = '#ef4444'; iconClass = 'ph-file-pdf'; badgeClass = 'badge-pdf';
+            } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(f.type)) {
+                iconColor = '#10b981'; iconClass = 'ph-image'; badgeClass = 'badge-img';
+            } else if (['mp4', 'webm', 'ogg', 'mov'].includes(f.type)) {
+                iconColor = '#8b5cf6'; iconClass = 'ph-film-strip'; badgeClass = 'badge-video';
+            } else if (['mp3', 'wav'].includes(f.type)) {
+                iconColor = '#eab308'; iconClass = 'ph-speaker-high'; badgeClass = 'badge-audio';
+            } else if (['html', 'xml'].includes(f.type)) {
+                iconColor = '#f97316'; iconClass = 'ph-file-html'; badgeClass = 'badge-html';
+            } else if (['css', 'js', 'json', 'sql', 'py', 'ts'].includes(f.type)) {
+                iconColor = '#8b5cf6'; iconClass = 'ph-file-code'; badgeClass = 'badge-code';
+            } else if (['txt', 'md'].includes(f.type)) {
+                iconColor = '#64748b'; iconClass = 'ph-file-text'; badgeClass = 'badge-txt';
+            }
+            
+            const isFav = app.favorites.has(f.id);
+            const tr = document.createElement('tr');
+            
+            // Construccion dinamica de columnas
+            let content = `
+                <td>
+                    <div class="file-name">
+                        <div class="file-icon-sm" style="background: ${iconColor};">
+                            <i class="ph ${iconClass}"></i>
+                        </div>
+                        ${f.name}
+                    </div>
+                </td>
+            `;
+
+            if (!isShort) {
+                content += `
+                    <td>${new Date(f.created_at).toLocaleDateString()}</td>
+                    <td><span class="badge ${badgeClass}">${f.type.toUpperCase()}</span></td>
+                    <td>${elementId !== 'fav-files-body' ? app.formatBytes(f.size) : ''}</td>
+                `;
+            } else {
+                 content += `
+                    <td><span class="badge ${badgeClass}">${f.type.toUpperCase()}</span></td>
+                `;
+            }
+
+            content += `
+                <td>
+                    <div class="actions-cell">
+                        <button class="action-btn fav ${isFav ? 'active' : ''}" onclick="app.toggleFavorite('${f.id}')" title="Favorito">
+                            <i class="ph ${isFav ? 'ph-star-fill' : 'ph-star'}"></i>
+                        </button>
+                        <button class="action-btn" onclick="app.openRenameModal('${f.id}', '${f.name}')" title="Renombrar">
+                            <i class="ph ph-pencil-simple"></i>
+                        </button>
+                        <button class="action-btn" onclick="app.openEditor('${f.id}')" title="Ver/Editar">
+                            <i class="ph ph-eye"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="app.deleteFile('${f.id}')" title="Eliminar">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            
+            tr.innerHTML = content;
+            tbody.appendChild(tr);
+        });
+    },
+
+    filterFiles: (query) => {
+        const term = query.toLowerCase();
+        const filtered = app.files.filter(f => f.name.toLowerCase().includes(term));
+        app.renderTable(filtered, 'all-files-body', false);
+    },
+
+    openEditor: async (fileId) => {
+        const file = app.files.find(f => f.id === fileId);
+        if (!file) return;
+
+        app.currentEditingFile = file;
+        const modal = document.getElementById('editor-modal');
+        const contentArea = document.getElementById('modal-content-area');
+        const saveBtn = document.getElementById('btn-save-changes');
+        const imgToolbar = document.getElementById('image-toolbar');
+        
+        document.getElementById('modal-filename').innerText = file.name;
+        contentArea.innerHTML = '<div style="color:white; font-size:1.2rem;">Cargando...</div>';
+        modal.style.display = 'flex';
+        
+        // Reset view
+        saveBtn.style.display = 'none';
+        imgToolbar.style.display = 'none';
+        contentArea.style.background = '#1e293b';
+
+        const isImage = ['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(file.type);
+        const isPdf = file.type === 'pdf';
+        const isVideo = ['mp4', 'webm', 'ogg', 'mov'].includes(file.type);
+        const isAudio = ['mp3', 'wav'].includes(file.type);
+        const isEditableText = ['txt', 'md', 'json', 'html', 'css', 'js', 'xml', 'svg', 'csv', 'yaml', 'yml', 'sql', 'py', 'java', 'c', 'cpp', 'h', 'ts', 'php'].includes(file.type);
+
+        if (isImage) {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = () => {
+                imageEditor.init(img);
+                imgToolbar.style.display = 'flex';
+                saveBtn.style.display = 'flex'; 
+            };
+            img.onerror = () => contentArea.innerHTML = '<p style="color:white;">Error cargando imagen.</p>';
+            img.src = file.url;
+        } 
+        else if (isVideo) {
+            contentArea.innerHTML = `
+                <div style="display:flex; justify-content:center; align-items:center; height:100%; width:100%;">
+                    <video controls style="max-width:90%; max-height:90%; border-radius:10px; box-shadow:0 0 30px rgba(0,0,0,0.5);">
+                        <source src="${file.url}" type="video/${file.type === 'mov' ? 'mp4' : file.type}">
+                        Tu navegador no soporta este video.
+                    </video>
+                </div>`;
+        }
+        else if (isAudio) {
+            contentArea.innerHTML = `
+                <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; width:100%;">
+                    <div style="width:150px; height:150px; background:rgba(255,255,255,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:30px;">
+                         <i class="ph ph-music-notes" style="font-size:4rem; color:#eab308;"></i>
+                    </div>
+                    <audio controls style="width:80%; max-width:500px;">
+                        <source src="${file.url}" type="audio/${file.type}">
+                        Tu navegador no soporta este audio.
+                    </audio>
+                    <p style="color:white; margin-top:20px; font-weight:500; letter-spacing:0.5px;">${file.name}</p>
+                </div>`;
+        }
+        else if (isEditableText) {
+            try {
+                const res = await fetch(file.url);
+                const text = await res.text();
+                contentArea.innerHTML = `<textarea id="editor-textarea" class="code-editor" spellcheck="false" placeholder="Escribe tu código o texto aquí..."></textarea>`;
+                document.getElementById('editor-textarea').value = text;
+                saveBtn.style.display = 'flex';
+            } catch(e) {
+                contentArea.innerHTML = '<p style="color:white;">Error cargando contenido de texto.</p>';
+            }
+        } 
+        else if (isPdf) {
+            contentArea.innerHTML = `
+                <div style="display:flex; flex-direction:column; height:100%; width:100%; background:#525659; align-items:center;">
+                    <div style="background:#323639; width:100%; padding:10px; display:flex; justify-content:center; gap:15px; border-bottom:1px solid #111;">
+                        <button class="tool-btn" onclick="pdfViewer.prevPage()"><i class="ph ph-caret-left"></i> Anterior</button>
+                        <span id="pdf-page-num" style="color:white; font-size:0.9rem; align-self:center;">Página 1</span>
+                        <button class="tool-btn" onclick="pdfViewer.nextPage()">Siguiente <i class="ph ph-caret-right"></i></button>
+                    </div>
+                    <div style="flex:1; overflow:auto; width:100%; display:flex; justify-content:center; padding:30px; background:#404447;">
+                        <canvas id="pdf-render" style="box-shadow:0 10px 30px rgba(0,0,0,0.5);"></canvas>
+                    </div>
+                </div>
+            `;
+            pdfViewer.load(file.url);
+        }
+        else {
+            contentArea.innerHTML = `
+                <div style="text-align:center; color:white;">
+                    <i class="ph ph-file-archive" style="font-size:5rem; margin-bottom:20px; color:#64748b;"></i>
+                    <p style="font-size:1.3rem; margin-bottom:15px; font-weight:600;">Vista previa no disponible</p>
+                    <a href="${file.url}" target="_blank" class="btn-primary" style="text-decoration:none; display:inline-flex;">
+                        <i class="ph ph-download-simple"></i> Descargar Archivo
+                    </a>
+                </div>
+            `;
+        }
+    },
+
+    closeModal: () => {
+        document.getElementById('editor-modal').style.display = 'none';
+        app.currentEditingFile = null;
+    },
+
+    saveSettings: () => {
+        app.toast('Configuración guardada correctamente', 'success');
+        // Aquí podrías guardar otras preferencias en localStorage si quisieras
+    },
+
+    setupListeners: () => {
+        const dz = document.getElementById('drop-zone');
+        const input = document.getElementById('file-input');
+
+        dz.addEventListener('click', () => input.click());
+        input.addEventListener('change', (e) => [...e.target.files].forEach(app.uploadFile));
+
+        ['dragenter', 'dragover'].forEach(e => dz.addEventListener(e, (ev) => {
+            ev.preventDefault(); dz.classList.add('active');
+        }));
+        ['dragleave', 'drop'].forEach(e => dz.addEventListener(e, (ev) => {
+            ev.preventDefault(); dz.classList.remove('active');
+        }));
+        dz.addEventListener('drop', (e) => {
+            [...e.dataTransfer.files].forEach(app.uploadFile);
+        });
+
+        document.getElementById('btn-save-changes').addEventListener('click', app.saveFileContent);
+    },
+
+    switchView: (viewName, navElement) => {
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        if(navElement) navElement.classList.add('active');
+        
+        // Hide all views
+        document.querySelectorAll('.app-view').forEach(el => el.style.display = 'none');
+        
+        // Update Title
+        const title = document.getElementById('page-title');
+        const sub = document.getElementById('page-subtitle');
+        
+        if (viewName === 'dashboard') {
+            document.getElementById('view-dashboard').style.display = 'block';
+            title.innerText = 'Bienvenido de nuevo';
+            sub.innerText = 'Gestiona tu contenido digital de forma eficiente.';
+            setTimeout(() => chartModule.draw(app.files), 100);
+        } else if (viewName === 'files') {
+            document.getElementById('view-files').style.display = 'block';
+            title.innerText = 'Explorador de Archivos';
+            sub.innerText = 'Todos tus documentos en un solo lugar.';
+        } else if (viewName === 'favorites') {
+             document.getElementById('view-favorites').style.display = 'block';
+             title.innerText = 'Archivos Favoritos';
+             sub.innerText = 'Acceso rápido a lo más importante.';
+             app.updateUI(); // Refresh fav list
+        } else if (viewName === 'settings') {
+            document.getElementById('view-settings').style.display = 'block';
+            title.innerText = 'Configuración';
+            sub.innerText = 'Personaliza tu experiencia.';
+        }
+    },
+
+    toast: (msg, type = 'info') => {
+        const box = document.createElement('div');
+        box.className = 'toast';
+        const icon = type === 'success' ? 'ph-check-circle' : type === 'error' ? 'ph-warning-circle' : 'ph-info';
+        const color = type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--danger)' : 'var(--primary)';
+        
+        box.style.borderLeftColor = color;
+        box.innerHTML = `
+            <i class="ph ${icon}" style="font-size:1.4rem; color:${color};"></i> 
+            <span style="font-weight:500; color:#1e293b;">${msg}</span>
+        `;
+        document.getElementById('toast-container').appendChild(box);
+        setTimeout(() => {
+            box.style.opacity = '0';
+            box.style.transform = 'translateX(100%)';
+            setTimeout(() => box.remove(), 400);
+        }, 3000);
+    },
+
+    toggleLoader: (show) => {
+        document.getElementById('global-loader').style.display = show ? 'block' : 'none';
+    },
+
+    getExt: (name) => name.split('.').pop().toLowerCase(),
+    formatBytes: (bytes) => {
+        if (!+bytes) return '0 B';
+        const k = 1024, sizes = ['B','KB','MB','GB'];
+        const i = Math.floor(Math.log(bytes)/Math.log(k));
+        return `${parseFloat((bytes/Math.pow(k,i)).toFixed(2))} ${sizes[i]}`;
+    },
+    copySQL: () => {
+        const sql = document.getElementById('sql-code').innerText;
+        navigator.clipboard.writeText(sql);
+        app.toast('SQL Copiado al portapapeles', 'success');
+    }
+};
+
+// --- Chart Module ---
+const chartModule = {
+    draw: (files) => {
+        const canvas = document.getElementById('fileChart');
+        if (!canvas) return;
+        
+        const parent = canvas.parentElement;
+        if (parent.clientWidth === 0 || parent.clientHeight === 0) return;
+        
+        canvas.width = parent.clientWidth;
+        canvas.height = parent.clientHeight;
+        
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width, h = canvas.height;
+
+        const types = {};
+        files.forEach(f => types[f.type] = (types[f.type] || 0) + 1);
+        const data = Object.entries(types);
+        
+        ctx.clearRect(0,0,w,h);
+        
+        if (data.length === 0) {
+            ctx.font = "500 14px 'Plus Jakarta Sans'"; ctx.fillStyle = "#94a3b8"; ctx.textAlign = "center";
+            ctx.fillText("No hay datos disponibles", w/2, h/2);
+            return;
+        }
+
+        let total = files.length;
+        let startAngle = 0;
+        
+        const radius = Math.max(0, Math.min(w, h) / 2 - 10);
+        if (radius <= 0) return;
+
+        const cx = w/2, cy = h/2;
+        // Paleta moderna para el gráfico
+        const colors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6', '#0ea5e9'];
+
+        data.forEach(([type, count], i) => {
+            const sliceAngle = (count / total) * 2 * Math.PI;
+            const endAngle = startAngle + sliceAngle;
+            
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius, startAngle, endAngle);
+            ctx.closePath();
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.fill();
+            
+            // Donut hole
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.65, 0, 2*Math.PI);
+            ctx.fillStyle = "#ffffff";
+            ctx.fill();
+
+            // Labels only for large slices
+            if (sliceAngle > 0.25) { 
+                const mid = startAngle + sliceAngle / 2;
+                const lx = cx + Math.cos(mid) * (radius * 0.82);
+                const ly = cy + Math.sin(mid) * (radius * 0.82);
+                ctx.fillStyle = "white"; 
+                ctx.font = "bold 11px 'Plus Jakarta Sans'"; 
+                ctx.textAlign = "center"; 
+                ctx.textBaseline = "middle";
+                ctx.shadowColor = "rgba(0,0,0,0.3)";
+                ctx.shadowBlur = 4;
+                ctx.fillText(type.toUpperCase(), lx, ly);
+                ctx.shadowBlur = 0; // reset shadow
+            }
+            startAngle = endAngle;
+        });
+
+        // Center Text
+        ctx.fillStyle = "#1e293b"; ctx.font = "bold 28px 'Plus Jakarta Sans'"; ctx.textAlign = "center";
+        ctx.fillText(total, cx, cy + 8);
+        ctx.font = "500 13px 'Plus Jakarta Sans'"; ctx.fillStyle = "#64748b";
+        ctx.fillText("Archivos", cx, cy + 26);
+    }
+};
+
+document.addEventListener('DOMContentLoaded', app.init);
+window.addEventListener('resize', () => chartModule.draw(app.files));
+
+</script>
+</body>
+</html>
