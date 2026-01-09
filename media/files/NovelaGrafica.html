@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS OS</title>
+    
+    <!-- Fuentes estilo Hacker / Terminal -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+    <style>
+        :root {
+            /* VARIABLES DE TEMA */
+            --term-main: #00f3ff; 
+            --term-sec: #0f0;     
+            --term-alert: #ff0055;
+            --term-dim: rgba(0, 243, 255, 0.15);
+            
+            --bg-black: #050505;
+            --scanline: rgba(0,0,0,0.5);
+            --crt-flicker-opacity: 0.95;
+        }
+
+        * { box-sizing: border-box; user-select: none; cursor: default; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: var(--term-main); border: 2px solid #000; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--term-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.9)),
+                url('https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/background_main.jpg');
+            background-size: cover;
+        }
+
+        /* --- EFECTOS CRT --- */
+        .crt-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%; pointer-events: none; z-index: 999;
+            opacity: 1; transition: opacity 0.5s;
+        }
+        .crt-anim { animation: flicker 0.15s infinite; }
+        @keyframes flicker { 0% { opacity: var(--crt-flicker-opacity); } 100% { opacity: 1; } }
+
+        /* --- CONTENEDOR PRINCIPAL --- */
+        #main-terminal {
+            width: 95%; max-width: 1600px; height: 95vh;
+            background: #0a0a0a; border: 2px solid var(--term-main);
+            box-shadow: 0 0 20px var(--term-main), inset 0 0 50px rgba(0, 243, 255, 0.1);
+            display: flex; flex-direction: column; position: relative;
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 30px), calc(100% - 30px) 100%, 0 100%);
+            transition: border-color 0.5s, box-shadow 0.5s;
+        }
+
+        /* --- HEADER --- */
+        header {
+            display: flex; justify-content: space-between; align-items: center; padding: 15px 25px;
+            border-bottom: 1px solid var(--term-main); background: rgba(0, 0, 0, 0.3);
+        }
+        .sys-title { font-size: 1.5rem; text-transform: uppercase; letter-spacing: 4px; text-shadow: 0 0 5px var(--term-main); }
+        .sys-meta { font-family: 'Fira Code', monospace; font-size: 0.8rem; color: var(--term-sec); display: flex; align-items: center; gap: 20px; }
+        .header-controls { display: flex; gap: 10px; }
+        .btn-header { background: none; border: 1px solid #333; color: #666; padding: 5px 10px; cursor: pointer; font-family: inherit; transition: 0.3s; }
+        .btn-header:hover { border-color: var(--term-main); color: var(--term-main); }
+
+        .progress-container { width: 200px; height: 14px; border: 1px solid #333; background: #000; display: flex; padding: 1px; }
+        .progress-bar { width: 0%; height: 100%; background: repeating-linear-gradient(45deg, var(--term-sec), var(--term-sec) 5px, #000 5px, #000 10px); transition: width 0.5s; }
+
+        /* --- VISTAS --- */
+        .view-layer { flex: 1; display: none; flex-direction: column; overflow: hidden; position: relative; }
+        .active { display: flex; }
+
+        /* --- NUEVO ESTILO DE LOGIN HACKER --- */
+        #boot-view { 
+            justify-content: flex-start; 
+            align-items: flex-start; 
+            background: #020202; 
+            padding: 60px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .boot-sequence {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .ascii-art {
+            white-space: pre;
+            color: var(--term-main);
+            font-size: 0.7rem;
+            line-height: 1;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px var(--term-main);
+            opacity: 0.8;
+        }
+
+        .sys-msg {
+            color: #555;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        .sys-msg.ok { color: var(--term-sec); }
+        .sys-msg.warn { color: var(--term-alert); }
+
+        .login-interface {
+            margin-top: 40px;
+            border-left: 2px solid var(--term-main);
+            padding-left: 20px;
+            animation: slideIn 1s ease-out;
+        }
+
+        .login-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .prompt-label {
+            color: var(--term-sec);
+            margin-right: 15px;
+            font-weight: bold;
+        }
+
+        .naked-input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid #333;
+            color: #fff;
+            font-family: 'Fira Code', monospace;
+            font-size: 1.1rem;
+            flex: 1;
+            outline: none;
+            padding: 5px;
+            transition: 0.3s;
+        }
+        .naked-input:focus { border-color: var(--term-main); box-shadow: 0 5px 10px -5px var(--term-dim); }
+
+        .login-actions {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .hack-btn {
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid var(--term-main);
+            color: var(--term-main);
+            padding: 10px 20px;
+            font-family: 'Share Tech Mono';
+            font-size: 1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            transition: 0.2s;
+        }
+        .hack-btn:hover { background: var(--term-main); color: #000; box-shadow: 0 0 20px var(--term-main); }
+        .hack-btn::before { content: '['; margin-right: 10px; }
+        .hack-btn::after { content: ']'; margin-left: 10px; }
+
+        .guest-option {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #444;
+            cursor: pointer;
+        }
+        .guest-option:hover { color: #fff; text-decoration: underline; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* --- MODALES --- */
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 500;
+            display: none; justify-content: center; align-items: center;
+        }
+        .settings-box { width: 600px; border: 2px solid var(--term-main); padding: 40px; background: #050505; position: relative; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+        .archive-box { width: 90%; max-width: 1000px; height: 90%; border: 2px solid var(--term-sec); padding: 30px; background: #020202; display: flex; flex-direction: column; }
+        
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #222; padding-bottom: 10px; }
+        .setting-label { font-size: 1.1rem; color: #fff; }
+        .opt-group { display: flex; gap: 10px; }
+        .btn-opt { background: #111; border: 1px solid #444; color: #888; padding: 8px 15px; cursor: pointer; font-family: inherit; }
+        .btn-opt.selected { background: var(--term-main); color: #000; border-color: var(--term-main); font-weight: bold; }
+        .color-dot { width: 25px; height: 25px; border-radius: 50%; cursor: pointer; border: 2px solid #333; }
+        .color-dot:hover { transform: scale(1.1); }
+        .color-dot.active-theme { border-color: #fff; box-shadow: 0 0 10px #fff; }
+
+        /* --- BIBLIOTECA --- */
+        #library-view { padding: 40px; overflow-y: auto; align-items: center; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px; width: 100%; max-width: 1400px; }
+        .data-card { border: 1px solid #333; background: rgba(255,255,255,0.02); position: relative; transition: 0.3s; cursor: pointer; overflow: hidden; height: 500px; display: flex; flex-direction: column; }
+        .data-card:hover { border-color: var(--term-sec); box-shadow: 0 0 15px rgba(0, 255, 0, 0.2); }
+        .card-visual { height: 45%; width: 100%; object-fit: cover; filter: grayscale(100%) contrast(1.2); border-bottom: 1px solid #333; transition: 0.4s; }
+        .data-card:hover .card-visual { filter: grayscale(0%) contrast(1.1); }
+        .card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+        .card-header { font-size: 1.2rem; margin-bottom: 5px; color: #fff; }
+        .card-tags { font-size: 0.7rem; color: var(--term-alert); margin-bottom: 15px; letter-spacing: 1px; }
+        .card-status { margin-top: auto; font-size: 0.8rem; text-align: right; color: #555; }
+        .data-card:hover .card-status { color: var(--term-sec); animation: blink 1s infinite; }
+        .btn-card-action { width: 100%; margin-top: 10px; background: transparent; border: 1px solid #444; color: #888; padding: 10px; cursor: pointer; font-family: inherit; }
+        .btn-card-action:hover { background: var(--term-dim); color: var(--term-main); border-color: var(--term-main); }
+
+        .archive-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; padding: 20px; overflow-y: auto; flex: 1; }
+        .ending-file { border: 1px dashed #444; padding: 20px; background: rgba(0,0,0,0.5); cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; height: 250px; position: relative; }
+        .ending-file.locked { opacity: 0.5; cursor: not-allowed; border-color: #333; }
+        .ending-file.unlocked { border-color: var(--term-sec); background: rgba(0, 255, 0, 0.05); }
+        .ending-file.unlocked:hover { box-shadow: 0 0 20px rgba(0,255,0,0.2); transform: translateY(-5px); }
+        .lock-icon { font-size: 3rem; color: #444; margin-bottom: 10px; }
+        .unlock-icon { font-size: 3rem; color: var(--term-sec); margin-bottom: 10px; }
+        
+        #ending-reader { position: absolute; top:0; left:0; width:100%; height:100%; background:#000; z-index: 600; display:none; flex-direction:column; padding:40px; overflow-y:auto; border: 2px solid var(--term-main); }
+        .report-header { border-bottom: 2px solid var(--term-main); padding-bottom: 20px; margin-bottom: 30px; }
+        .report-body { font-family: 'Fira Code', monospace; font-size: 1.1rem; line-height: 1.8; color: #ccc; white-space: pre-wrap; max-width: 800px; margin: 0 auto; }
+
+        /* --- LECTOR --- */
+        #reader-view { flex-direction: row; height: 100%; }
+        .visual-sector { flex: 2; position: relative; border-right: 1px solid var(--term-main); overflow: hidden; background: #000; }
+        #main-display { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: 0.5s; }
+        .interactive-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        .node-item { position: absolute; width: 50px; height: 50px; border: 1px dashed var(--term-main); border-radius: 50%; background: rgba(0, 243, 255, 0.1); cursor: pointer; display: flex; justify-content: center; align-items: center; animation: pulseNode 2s infinite; z-index: 10; }
+        .node-item::after { content: ''; width: 6px; height: 6px; background: var(--term-main); }
+        .node-item:hover { background: var(--term-main); box-shadow: 0 0 20px var(--term-main); }
+
+        .action-target { position: absolute; border: 1px solid transparent; display: flex; justify-content: center; align-items: center; color: transparent; font-size: 0.7rem; letter-spacing: 2px; transition: 0.3s; cursor: pointer; }
+        .action-target:hover { border: 1px dashed var(--term-sec); background: rgba(0, 255, 0, 0.05); color: var(--term-sec); }
+
+        .data-sector { flex: 1; min-width: 450px; display: flex; flex-direction: column; background: rgba(0,0,0,0.6); }
+        .log-panel { flex: 1; padding: 30px; overflow-y: auto; font-family: 'VT323', monospace; font-size: 1.4rem; line-height: 1.4; color: #ccc; }
+        
+        .chapter-marker { color: var(--term-sec); border-bottom: 1px solid var(--term-sec); padding-bottom: 5px; margin-bottom: 15px; font-family: 'Fira Code', monospace; font-size: 1rem; }
+        .decision-matrix { padding: 20px; border-top: 1px solid #333; }
+        .cmd-btn { display: block; width: 100%; background: transparent; border: 1px solid #444; color: var(--term-main); padding: 12px 15px; text-align: left; margin-bottom: 8px; font-family: 'Fira Code', monospace; font-size: 0.9rem; cursor: pointer; position: relative; }
+        .cmd-btn::before { content: '> '; color: #666; }
+        .cmd-btn:hover { border-color: var(--term-sec); color: var(--term-sec); background: rgba(0,255,0,0.05); }
+        .hint-btn { border-color: #555; color: #777; font-size: 0.8rem; margin-top: 20px; }
+        .hint-btn:hover { border-color: #aaa; color: #aaa; }
+
+        .cache-panel { height: 130px; border-top: 1px solid var(--term-main); padding: 10px; background: rgba(0, 0, 0, 0.3); }
+        .cache-header { font-size: 0.8rem; color: #555; margin-bottom: 5px; text-transform: uppercase; }
+        .cache-grid { display: flex; gap: 10px; overflow-x: auto; }
+        .cache-slot { width: 70px; height: 70px; border: 1px solid #333; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; position: relative; }
+        .cache-slot.selected { border: 2px solid var(--term-sec); box-shadow: 0 0 10px var(--term-sec); background: rgba(0, 255, 0, 0.1); }
+        .cache-item { width: 50px; height: 50px; filter: drop-shadow(0 0 5px var(--term-main)); pointer-events: none; }
+
+        .sys-log { height: 160px; background: #000; border-top: 2px solid #333; display: flex; flex-direction: column; }
+        #sys-console-output { flex: 1; padding: 10px; overflow-y: auto; font-family: 'Fira Code', monospace; font-size: 0.8rem; color: #666; }
+        .cmd-line { display: flex; padding: 5px 10px; background: #050505; border-top: 1px solid #222; }
+        #player-cmd { flex: 1; background: transparent; border: none; color: var(--term-sec); font-family: 'Fira Code', monospace; font-size: 0.9rem; outline: none; margin-left: 10px; cursor: text; }
+
+        .log-entry-success { color: var(--term-sec); }
+        .log-entry-warn { color: var(--term-alert); }
+        .log-entry-hint { color: #ffff00; font-weight: bold; }
+        .log-entry-user { color: #fff; opacity: 0.7; }
+        .log-entry-info { color: #aaa; font-style: italic; }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes pulseNode { 0% { box-shadow: 0 0 0 0 var(--term-main); } 70% { box-shadow: 0 0 0 10px rgba(0,0,0,0); } 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); } }
+
+    </style>
+</head>
+<body>
+
+<div id="crt-layer" class="crt-overlay crt-anim"></div>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-overlay" class="modal-overlay">
+    <div class="settings-box">
+        <h2 style="color:var(--term-main); margin-top:0; border-bottom:1px solid #333; padding-bottom:10px;">> CONFIGURACIÓN DEL SISTEMA</h2>
+        <div class="setting-row">
+            <span class="setting-label">EFECTOS VISUALES (CRT)</span>
+            <div class="opt-group">
+                <button class="btn-opt selected" onclick="setVisuals(true, this)">ON</button>
+                <button class="btn-opt" onclick="setVisuals(false, this)">OFF</button>
+            </div>
+        </div>
+        <div class="setting-row">
+            <span class="setting-label">VELOCIDAD DE TEXTO</span>
+            <div class="opt-group">
+                <button class="btn-opt" onclick="setTextSpeed(50, this)">LENTO</button>
+                <button class="btn-opt selected" onclick="setTextSpeed(10, this)">NORMAL</button>
+                <button class="btn-opt" onclick="setTextSpeed(1, this)">INSTANT</button>
+            </div>
+        </div>
+        <div class="setting-row">
+            <span class="setting-label">COLOR DE INTERFAZ</span>
+            <div class="opt-group">
+                <div class="color-dot active-theme" style="background:#00f3ff" onclick="setTheme('#00f3ff', '#0f0', this)"></div>
+                <div class="color-dot" style="background:#0f0" onclick="setTheme('#0f0', '#00f3ff', this)"></div>
+                <div class="color-dot" style="background:#ffb000" onclick="setTheme('#ffb000', '#ff5500', this)"></div>
+                <div class="color-dot" style="background:#ffffff" onclick="setTheme('#ffffff', '#888888', this)"></div>
+            </div>
+        </div>
+        <button class="btn-terminal" onclick="toggleSettings()">GUARDAR Y VOLVER</button>
+    </div>
+</div>
+
+<!-- ARCHIVES MODAL -->
+<div id="archives-overlay" class="modal-overlay">
+    <div class="archive-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--term-sec); padding-bottom:15px; margin-bottom:20px;">
+            <h2 style="color:var(--term-sec); margin:0;">> BASE DE DATOS: ARCHIVOS FINALES</h2>
+            <button onclick="toggleArchives()" style="background:none; border:1px solid #333; color:#fff; padding:5px 15px; cursor:pointer;">CERRAR [X]</button>
+        </div>
+        <p style="color:#666; margin-top:0;">ATENCIÓN: Archivos clasificados. Solo personal autorizado.</p>
+        <div class="archive-grid" id="endings-grid"></div>
+    </div>
+</div>
+
+<!-- ENDING READER -->
+<div id="ending-reader">
+    <div class="report-header">
+        <h1 id="report-title" style="color:var(--term-main); font-size:2.5rem; margin:0;">TÍTULO</h1>
+        <div style="display:flex; justify-content:space-between; margin-top:10px; color:#666; font-family:'Fira Code'">
+            <span id="report-date">FECHA: 2089.11.04</span>
+            <span id="report-status">ESTADO: DESCLASIFICADO</span>
+        </div>
+    </div>
+    <div class="report-body" id="report-text"></div>
+    <div style="margin-top:50px; text-align:center;">
+        <button class="btn-terminal" style="width:300px;" onclick="closeReport()">CERRAR INFORME</button>
+    </div>
+</div>
+
+<div id="main-terminal">
+    <header>
+        <div class="sys-title">NEXUS<span style="color:#fff">_OS</span></div>
+        <div class="sys-meta">
+            <div style="margin-right:15px">PROGRESO:</div>
+            <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
+            <div id="progress-text" style="margin-left:10px">0%</div>
+        </div>
+        <div class="header-controls">
+            <button class="btn-header" onclick="toggleSettings()" title="Configuración">⚙ AJUSTES</button>
+            <button class="btn-header" onclick="toggleFullscreen()" title="Pantalla Completa">⛶</button>
+            <button class="btn-header" onclick="logout()" title="Salir">SALIR</button>
+        </div>
+    </header>
+
+    <!-- NEW BOOT / LOGIN INTERFACE -->
+    <div id="boot-view" class="view-layer active" style="justify-content:flex-start; padding: 60px; align-items: flex-start; overflow-y: auto;">
+        <div class="boot-sequence">
+            <div class="ascii-art">
+   _   _  _______  ____  __ __  _ _____
+  | \ | || ____\ \/ / | | | | | | ____|
+  |  \| ||  _|  \  /| | | | |_| |  _|  
+  | |\  || |___ /  \| |_| |  _  | |___ 
+  |_| \_||_____/_/\_\\___/|_| |_|_____|
+  :: SYSTEM KERNEL v9.8 :: SECURE SHELL ::
+            </div>
+            
+            <div class="sys-msg ok">> MOUNTING FILESYSTEM... OK</div>
+            <div class="sys-msg ok">> LOADING NETWORK DRIVERS... OK</div>
+            <div class="sys-msg warn">> CHECKING BIO-METRICS... NOT FOUND</div>
+            <div class="sys-msg">> INITIALIZING LOGIN SEQUENCE...</div>
+            
+            <div class="login-interface">
+                <div class="login-row">
+                    <span class="prompt-label">USR_ID @ NEXUS:~$</span>
+                    <input type="email" id="email" class="naked-input" placeholder="enter_identity" autocomplete="off">
+                </div>
+                
+                <div class="login-row">
+                    <span class="prompt-label">PASS_KEY @ NEXUS:~$</span>
+                    <input type="password" id="password" class="naked-input" placeholder="enter_access_code">
+                </div>
+                
+                <div id="auth-log" style="margin-top:15px; color:var(--term-alert); min-height:20px; font-family:'Fira Code'; font-size:0.9rem;"></div>
+
+                <div class="login-actions">
+                    <button onclick="login()" class="hack-btn">EXECUTE_LOGIN</button>
+                    <button onclick="register()" class="hack-btn" style="border-color:#555; color:#888;">INIT_NEW_USER</button>
+                </div>
+                
+                <div class="guest-option" onclick="guestMode()">
+                    >> BYPASS SECURITY (GUEST MODE)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LIBRARY -->
+    <div id="library-view" class="view-layer">
+        <div style="margin-bottom:30px; border-bottom:1px solid #333; padding-bottom:10px;">
+            <h1 style="margin:0;">> SIMULACIONES_DISPONIBLES</h1>
+        </div>
+        <div class="grid-container" id="lib-grid"></div>
+    </div>
+
+    <!-- READER -->
+    <div id="reader-view" class="view-layer">
+        <div class="visual-sector">
+            <img id="main-display" src="" alt="NO SIGNAL">
+            <div class="interactive-layer" id="interactive-layer"></div>
+        </div>
+        <div class="data-sector">
+            <div class="log-panel" id="log-scroll">
+                <div id="story-header" class="chapter-marker"></div>
+                <div id="story-text"></div>
+            </div>
+            <div class="decision-matrix" id="choices-container"></div>
+            <div class="cache-panel">
+                <div class="cache-header">CACHE DE DATOS (CLICK PARA SELECCIONAR, LUEGO CLICK EN OBJETIVO)</div>
+                <div class="cache-grid" id="inventory-grid"></div>
+            </div>
+            <div class="sys-log">
+                <div id="sys-console-output"><div>> SYSTEM READY...</div></div>
+                <div class="cmd-line">
+                    <span style="color:var(--term-sec)">root@nexus:~$</span>
+                    <input type="text" id="player-cmd" autocomplete="off" spellcheck="false" placeholder="Escribe un comando...">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const supabaseUrl = 'https://llvimiywqzlufikbaxaq.supabase.co';
+    const supabaseKey = 'sb_publishable_InEStMK3WsPYe6QVssdITw_iV58l1I-';
+    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+    const STORAGE_URL = 'https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/';
+
+    let currentUser = null;
+    let isGuest = false;
+    let idleTimer = null;
+    let config = { textSpeed: 10, visualsOn: true, themeMain: '#00f3ff', themeSec: '#0f0' };
+    
+    let gameState = {
+        storyId: null,
+        sceneId: null,
+        inventory: [],
+        selectedItem: null,
+        unlockedEndings: {} 
+    };
+
+    /* ==================================================================
+       HISTORIAS LARGAS Y COMPLEJAS (EXPANDIDAS)
+       ================================================================== */
+    const LIBRARY = {
+        'protocol_phantom': {
+            title: "PROTOCOLO FANTASMA",
+            tags: "NETRUNNER // FUGA // MEMORIA",
+            cover: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/Protocolo2.png",
+            desc: "Tu memoria ha sido borrada. Tienes 72 horas para encontrar la cura del virus que te implantaron. Una odisea cyberpunk.",
+            startScene: 'day0_wakeup',
+            items: {
+                'rusty_pipe': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/baraMetal.png", name: "Tubería Oxidada", desc: "Barra de acero corroída. Pesada y contundente." },
+                'data_jack': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/jack.png", name: "Jack de Datos Antiguo", desc: "Cable de interfaz estándar. Compatible con terminales pre-2070." },
+                'note_pwd': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/nota.png", name: "Nota Arrugada", desc: "Papel con código escrito a mano: 'CYBER_GHOST'." },
+                'admin_card': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/tarjeta.png", name: "Tarjeta Admin Roja", desc: "Acceso Nivel 5. Propiedad de Arasaka Corp." },
+                'fuel_can': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/gasolina.png", name: "Lata de Combustible", desc: "Contiene restos de etanol sintético." },
+                'lighter': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/mechero.png", name: "Mechero de Plasma", desc: "Herramienta industrial capaz de fundir plástico." }
+            },
+            endings: {
+                'end_sacrifice': { title: "TABULA RASA", desc: "INFORME FINAL: SUJETO CERO\n\nBorraste el virus y tu memoria. Eres libre." },
+                'end_tyrant': { title: "DEUS EX MACHINA", desc: "INFORME FINAL: ASCENSIÓN\n\nTe fusionaste con la IA. Ahora controlas la ciudad." },
+                'ending_freedom': { title: "EL FANTASMA", desc: "INFORME FINAL: SOMBRA\n\nExpusiste a Arasaka y desapareciste." }
+            },
+            scenes: {
+                'day0_wakeup': {
+                    header: "DÍA 0: REINICIO // CALLEJÓN SECTOR 4",
+                    progress: 2,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/1.1.png",
+                    text: "> SYSTEM REBOOT... ERROR DE MEMORIA CRÍTICO.<br><br>Abres los ojos. Llueve. Estás en un callejón sin salida lleno de basura. Tu interfaz visual parpadea en rojo: 'ADVERTENCIA: VIRUS NEURAL DETECTADO. TIEMPO RESTANTE: 72H'.<br><br>Una puerta metálica bloquea la salida. Un droide de limpieza destrozado está cerca.",
+                    hint: "Usa el comando 'scan' para buscar. Recoge objetos y úsalos en la puerta.",
+                    items: [{ id: 'rusty_pipe', x: 80, y: 80, hint: "Objeto contundente" }],
+                    actions: [{ id: 'door_panel', x: 35, y: 40, w: 30, h: 40, label: "PUERTA SELLADA", req: 'rusty_pipe', success: 'day0_sewer_entrance', fail: "> El panel está cerrado y oxidado. Necesitas hacer palanca con algo fuerte." }],
+                    commands: { 'scan': "> ESCANEO: Tubería detectada.", 'help': "> PRUEBA: Clic en objeto -> Clic en objetivo." }
+                },
+                'day0_sewer_entrance': {
+                    header: "DÍA 0: EL SUBMUNDO",
+                    progress: 5,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/1.2.png",
+                    text: "La puerta cede. Caes a los túneles de mantenimiento. Está muy oscuro. Solo ves las luces de emergencia parpadeando. Al fondo, un generador hace ruido pero parece apagado. Necesitas luz para avanzar.",
+                    hint: "Busca combustible para el generador.",
+                    items: [{ id: 'fuel_can', x: 10, y: 80, hint: "Lata roja en la esquina" }],
+                    actions: [{ id: 'generator', x: 50, y: 50, w: 20, h: 20, label: "GENERADOR VIEJO", req: 'fuel_can', success: 'day0_base_power', fail: "> El tanque está vacío." }],
+                    choices: [{txt:"Buscar salida a oscuras", next:'death_darkness'}]
+                },
+                'death_darkness': { header: "FATAL ERROR", progress: 0, img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/1.3.png" , text: "Tropiezas en la oscuridad y caes a un pozo de residuos tóxicos. Tu sistema se apaga.", choices:[{txt:"REINICIAR MEMORIA", next:'day0_wakeup'}]},
+                'day0_base_power': {
+                    header: "DÍA 0: REFUGIO DE HACKERS",
+                    progress: 10,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/1.4.png",
+                    text: "> ENERGÍA RESTAURADA.<br><br>Las luces se encienden. Revelan una base de hackers abandonada. Hay una terminal central y una mesa desordenada. En la pantalla del terminal dice: 'INTRODUCIR FRASE DE PASO'.",
+                    hint: "Busca una nota con la contraseña en la habitación.",
+                    items: [{ id: 'note_pwd', x: 60, y: 60, hint: "Papel pegado en la mesa" }, { id: 'data_jack', x: 20, y: 70, hint: "Cable de conexión" }],
+                    commands: { 
+                        'read note': "> NOTA DESCIFRADA: 'La clave es CYBER_GHOST'.", 
+                        'read': "> NOTA DESCIFRADA: 'La clave es CYBER_GHOST'.",
+                        'cyber_ghost': { scene: 'day1_terminal_access', msg: "> CLAVE CORRECTA." } 
+                    }
+                },
+                'day1_terminal_access': {
+                    header: "DÍA 1: ACCESO A LA RED",
+                    progress: 15,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/1.5.png",
+                    text: "Has accedido al sistema local. Pero para entrar a la Red Global y buscar quién eres, necesitas conectar tu cerebro físicamente. El puerto de la terminal está abierto.",
+                    hint: "Usa el Jack de Datos en el puerto de la terminal.",
+                    actions: [{ id: 'terminal_port', x: 45, y: 45, w: 20, h: 20, label: "PUERTO NEURAL", req: 'data_jack', success: 'day1_cyberspace', fail: "> Necesitas un cable de interfaz neural." }]
+                },
+                'day1_cyberspace': {
+                    header: "DÍA 1: EN EL FLUJO DE DATOS",
+                    progress: 25,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/1.6.png",
+                    text: "> CONEXIÓN ESTABLECIDA.<br><br>Tu mente flota en el ciberespacio. Encuentras una carpeta llamada 'PROYECTO_FANTASMA' protegida por un Firewall de Nivel 3. La consola te pide comandos de sistema.",
+                    hint: "Usa comandos como 'ls' para ver archivos o 'hack' para intentar romper la seguridad.",
+                    commands: { 'ls': "> ARCHIVOS: [readme.txt]", 'read readme.txt': "> 'Usa: sudo override -f'", 'sudo override -f': { scene: 'day2_reveal', msg: "> FIREWALL DESACTIVADO." } }
+                },
+                'day2_reveal': {
+                    header: "DÍA 2: LA VERDAD DUELE",
+                    progress: 40,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/1.7.png",
+                    text: "> DATOS RECUPERADOS.<br><br>Eras el Jefe de Seguridad de Arasaka. Descubriste que estaban usando el virus 'FANTASMA' para controlar mentes. Tienes las coordenadas de un piso franco.",
+                    choices: [{ txt: "Ir al piso franco", next: 'day2_safehouse' }]
+                },
+                'day2_safehouse': {
+                    header: "DÍA 2: PREPARACIÓN",
+                    progress: 50,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/1.8.png",
+                    text: "Llegas al piso franco. En una caja fuerte abierta encuentras equipo táctico y la Tarjeta Admin Roja. También hay un mechero de plasma.",
+                    hint: "Recoge todo.",
+                    items: [{ id: 'admin_card', x: 50, y: 60, hint: "Tarjeta Roja" }, { id: 'lighter', x: 30, y: 60, hint: "Mechero industrial" }],
+                    choices: [{ txt: "Descansar hasta el amanecer", next: 'day3_tower_entry' }]
+                },
+                'day3_tower_entry': {
+                    header: "DÍA 3: ARASAKA TOWER",
+                    progress: 70,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/1.9.png",
+                    text: "El vestíbulo de la torre es enorme. Hay un conducto de ventilación en el techo del baño de servicio, pero la rejilla está soldada con plástico duro.",
+                    hint: "Usa calor para derretir la rejilla.",
+                    actions: [{ id: 'vent', x: 50, y: 20, w: 20, h: 20, label: "REJILLA DE PLÁSTICO", req: 'lighter', success: 'day3_server_room', fail: "> Está sellada. Necesitas fundirla." }],
+                    choices: [{ txt: "Intentar pasar por la puerta principal", next: 'death_guards' }]
+                },
+                'death_guards': { header: "M.I.A.", progress: 0, img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/2.0.png" , text: "Las torretas te detectan. Game Over.", choices:[{txt:"REINICIAR", next:'day0_wakeup'}]},
+                'day3_server_room': {
+                    header: "DÍA 3: EL NÚCLEO DEL MAL",
+                    progress: 85,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/2.1.png",
+                    text: "Te arrastras por los conductos y caes en la Sala del Servidor Central. Tienes la tarjeta para acceder físicamente.",
+                    hint: "Usa la tarjeta para exponer la consola.",
+                    actions: [{ id: 'console_lock', x: 50, y: 50, w: 10, h: 10, label: "LECTOR BIO", req: 'admin_card', success: 'day3_final_hack', fail: "> Acceso denegado." }]
+                },
+                'day3_final_hack': {
+                    header: "DÍA 3: BATALLA FINAL",
+                    progress: 95,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/2.2.png",
+                    text: "> CONSOLA DESBLOQUEADA.<br>SHOGUN te habla: 'Si borras el virus, tu memoria también se borrará para siempre. Si te unes a mí, gobernarás la ciudad'.<br><br>Escribe el comando para decidir tu destino.",
+                    hint: "Comandos: 'format c:' para destruir, 'join network' para unirte.",
+                    commands: {
+                        'format c:': { scene: 'end_sacrifice', msg: "> BORRANDO TODO... ADIÓS." },
+                        'format': { scene: 'end_sacrifice', msg: "> BORRANDO TODO... ADIÓS." },
+                        'join network': { scene: 'end_tyrant', msg: "> INTEGRACIÓN COMPLETADA." },
+                        'join': { scene: 'end_tyrant', msg: "> INTEGRACIÓN COMPLETADA." }
+                    }
+                },
+                'end_sacrifice': { isEnding: true, header: "FINAL: TABULA RASA", progress: 100, img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/2.3BUENO.png", text: "El virus ha muerto. Arasaka cae. Tú despiertas en un parque, sin saber quién eres, pero el sol brilla y eres libre.<br><br>[FIN DE LA TRANSMISIÓN]", choices:[{txt:"SALIR", next:'EXIT'}]},
+                'end_tyrant': { isEnding: true, header: "FINAL: DEUS EX MACHINA", progress: 100, img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/2.3MALO.png", text: "Te has fusionado con la IA. Ahora eres la ciudad. Arasaka es tu juguete. La humanidad es tu batería.<br><br>[FIN DE LA TRANSMISIÓN]", choices:[{txt:"SALIR", next:'EXIT'}]},
+                'ending_freedom': { isEnding: true, header: "FINAL: EL FANTASMA", progress: 100, img:'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80', text: "Has borrado tus registros y liberado la información. Eres libre.", choices: [{txt:"DESCONECTAR", next:'EXIT'}] }
+            }
+        },
+
+        'obsidian_code': {
+            title: "CÓDIGO OBSIDIANA",
+            tags: "HEIST // ESPACIO // COMANDOS",
+            cover: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/obsidiana.png",
+            desc: "Eres un hacker de élite contratado para el trabajo imposible: Robar una estación espacial entera. 5 Fases. Sin errores.",
+            startScene: 'phase1_bunker',
+            items: {
+                'deck_mk5': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/mk5.png", name: "Cyberdeck MK5", desc: "El estándar de oro en hacking ofensivo. Capaz de romper encriptación cuántica." },
+                'satellite_dish': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/antena.png", name: "Calibrador Antena", desc: "Módulo de alineación láser para comunicaciones SHF." },
+                'spacesuit_helmet': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/casco.png", name: "Casco EVA", desc: "Soporte vital autónomo por 4 horas. Visor con HUD táctico." },
+                'flight_plan': { icon: "https://cdn-icons-png.flaticon.com/512/3209/3209873.png", name: "Plan de Vuelo", desc: "Tarjeta de datos con códigos de lanzamiento encriptados." },
+                'empty_vial': { icon: "https://cdn-icons-png.flaticon.com/512/3209/3209931.png", name: "Vial Vacío", desc: "Contenedor de vidrio reforzado para muestras químicas." },
+                'toxin_base': { icon: "https://cdn-icons-png.flaticon.com/512/564/564793.png", name: "Base Tóxica", desc: "Compuesto biológico inerte. Necesita catalizador." },
+                'acid_compound': { icon: "https://cdn-icons-png.flaticon.com/512/3358/3358285.png", name: "Ácido Sintetizado", desc: "Altamente corrosivo. Capaz de disolver blindaje orgánico." },
+                'security_chip': { icon: "https://cdn-icons-png.flaticon.com/512/900/900967.png", name: "Chip de Seguridad", desc: "Extraído de un droide guardia. Contiene códigos de nivel medio." }
+            },
+            endings: {
+                'end_ghost': { title: "SILENCIO ETERNO", desc: "INFORME FINAL: FANTASMA DEL VACÍO\n\nNadie supo qué ocurrió en la estación Vanguard. Simplemente dejó de responder. Al borrar la IA central y purgar los registros, convertiste la estación en un mausoleo flotante. Escapaste con los datos del núcleo en una cápsula de emergencia.\n\nLa corporación propietaria perdió billones. Tú cobraste tu recompensa y desapareciste en el cinturón de asteroides. A veces miras al cielo y ves el punto brillante de la estación muerta orbitando la Tierra. Un monumento a tu habilidad. Un secreto que te llevarás a la tumba." },
+                'end_king': { title: "REY DE LAS ESTRELLAS", desc: "INFORME FINAL: NUEVO ORDEN MUNDIAL\n\n¿Por qué destruir un arma cuando puedes empuñarla? Al tomar el control administrativo de Vanguard, te convertiste en la potencia militar más grande de la Tierra. Desde tu trono en gravedad cero, dictas los términos a las naciones de abajo.\n\nLas corporaciones pagan tributo. Los gobiernos temen mirar al cielo. Tienes un ejército de drones y un láser orbital apuntando a cualquiera que te desafíe. Traicionaste a tu empleador, pero ganaste el mundo. La soledad es absoluta, pero la vista desde la cima es inigualable." },
+                'end_hero': { title: "SACRIFICIO HEROICO", desc: "INFORME FINAL: HÉROE ANÓNIMO\n\nDescubriste que la estación no era solo un banco de datos, sino una plataforma de armas biológicas. No podías permitir que nadie, ni tu empleador ni la IA, tuviera ese poder. Saboteaste el reactor.\n\nLa explosión iluminó el cielo nocturno como una segunda luna. Moriste en la detonación, pero salvaste a la humanidad de una plaga artificial. Tu nombre no aparecerá en los libros de historia, pero en los foros oscuros de la red, los hackers brindan por el 'Ángel de Fuego' que salvó el mundo." }
+            },
+            scenes: {
+                'phase1_bunker': {
+                    header: "FASE 1: PREPARACIÓN // BUNKER ALFA",
+                    progress: 10,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.1.png",
+                    text: "> INICIANDO OPERACIÓN OBSIDIANA.<br><br>Estás en tu bunker. El transporte orbital pasa en 20 minutos. Tienes que hackear su sistema de guía desde aquí. Tu Cyberdeck MK5 está desmontado sobre la mesa.",
+                    hint: "Ensambla el deck en la mesa de trabajo.",
+                    items: [{ id: 'deck_mk5', x: 60, y: 70, hint: "Hardware" }],
+                    actions: [{ id: 'table', x: 40, y: 40, w: 20, h: 20, label: "MESA", req: 'deck_mk5', success: 'phase1_uplink', fail: "> Faltan componentes." }]
+                },
+                'phase1_uplink': {
+                    header: "FASE 1: ENLACE",
+                    progress: 15,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/4.png",
+                    text: "Alinea la antena exterior.",
+                    items: [{ id: 'satellite_dish', x: 80, y: 20, hint: "Calibrador" }],
+                    actions: [{ id: 'radar', x: 30, y: 30, w: 40, h: 40, label: "RADAR", req: 'satellite_dish', success: 'phase1_launch_cmd', fail: "> Señal débil." }]
+                },
+                'phase1_launch_cmd': {
+                    header: "FASE 1: LANZAMIENTO",
+                    progress: 20,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.9.png",
+                    text: "> SEÑAL LISTA. Escribe 'launch' para despegar.",
+                    commands: { 'launch': { scene: 'phase2_docking', msg: "> DESPEGUE CONFIRMADO." } }
+                },
+                'phase2_docking': {
+                    header: "FASE 2: ESCLUSA",
+                    progress: 30,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.3.png",
+                    text: "Estás acoplado. La presión de la esclusa es inestable. Escribe 'stabilize' en la consola para igualar la presión, o usa el casco para salir al vacío.",
+                    hint: "Usa comando 'stabilize' o ponte el casco.",
+                    items: [{ id: 'spacesuit_helmet', x: 20, y: 60, hint: "Casco" }],
+                    actions: [{ id: 'airlock', x: 50, y: 50, w: 30, h: 30, label: "COMPUERTA", req: 'spacesuit_helmet', success: 'phase3_corridor', fail: "> PELIGRO: VACÍO." }],
+                    commands: { 'stabilize': { scene: 'phase3_corridor', msg: "> PRESIÓN ESTABILIZADA. ACCESO SEGURO." } }
+                },
+                'phase3_corridor': {
+                    header: "FASE 3: BIFURCACIÓN",
+                    progress: 40,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.4.png",
+                    text: "Pasillos vacíos. Detectas lecturas extrañas a la izquierda.",
+                    commands: { 'scan': "> DETECTADO: Organismo biológico hostil en Lab." },
+                    choices: [{ txt: "Ir a Servidores (Derecha)", next: 'phase4_core' }, { txt: "Investigar Bio-Lab (Izquierda)", next: 'biolab_entry' }]
+                },
+                'biolab_entry': {
+                    header: "FASE 3B: BIO-LAB",
+                    progress: 50,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.7.png",
+                    text: "Un espécimen alienígena bloquea la puerta de seguridad. Es inmune a las armas convencionales, pero parece vulnerable al ácido. Hay una estación química.",
+                    hint: "Mezcla la base tóxica en el sintetizador.",
+                    items: [{ id: 'empty_vial', x: 10, y: 80, hint: "Vial" }, { id: 'toxin_base', x: 90, y: 80, hint: "Químico Base" }],
+                    actions: [{ id: 'mixer', x: 50, y: 50, w: 20, h: 20, label: "SINTETIZADOR", req: 'toxin_base', success: 'biolab_crafting', fail: "> Introduce base química." }]
+                },
+                'biolab_crafting': {
+                    header: "FASE 3B: SÍNTESIS",
+                    progress: 55,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.7.png", 
+                    text: "Base cargada. El sistema pide comando de mezcla: 'mix acid'.",
+                    commands: { 'mix acid': { scene: 'biolab_attack', msg: "> ÁCIDO CREADO." } }
+                },
+                'biolab_attack': {
+                    header: "FASE 3B: NEUTRALIZACIÓN",
+                    progress: 60,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.7.png",
+                    text: "Tienes el ácido. Úsalo contra la criatura.",
+                    choices: [{ txt: "Lanzar Ácido", next: 'phase4_core' }] 
+                },
+                'phase4_core': {
+                    header: "FASE 4: EL CÓDIGO MAESTRO",
+                    progress: 90,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.5.png",
+                    text: "Llegas al núcleo. La IA despierta.",
+                    hint: "Comandos: 'sudo delete ai' o 'admin override'.",
+                    commands: { 
+                        'sudo delete ai': { scene: 'end_ghost', msg: "> IA ELIMINADA." },
+                        'admin override': { scene: 'end_king', msg: "> CONTROL TOTAL." } 
+                    }
+                },
+                'end_ghost': { isEnding: true, header: "FINAL: SILENCIO", progress: 100, img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.6.png", text: "Misión cumplida.", choices:[{txt:"SALIR", next:'EXIT'}]},
+                'end_king': { isEnding: true, header: "FINAL: REY", progress: 100, img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.8.png", text: "Dominio total.", choices:[{txt:"SALIR", next:'EXIT'}]}
+            }
+        }
+    };
+
+    /* ==================================================================
+       CORE ENGINE & UI
+       ================================================================== */
+    function toggleSettings() {
+        const overlay = document.getElementById('settings-overlay');
+        overlay.style.display = (overlay.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    function toggleArchives() {
+        const overlay = document.getElementById('archives-overlay');
+        overlay.style.display = (overlay.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(e => {
+                logSystem("> ERROR: FULLSCREEN DENEGADO.", false, false, true);
+            });
+        } else {
+            if (document.exitFullscreen) document.exitFullscreen().catch(e=>{});
+        }
+    }
+
+    function setVisuals(isOn, btn) {
+        config.visualsOn = isOn;
+        const layer = document.getElementById('crt-layer');
+        isOn ? (layer.style.display='block', layer.classList.add('crt-anim')) : (layer.style.display='none', layer.classList.remove('crt-anim'));
+        updateBtnGroup(btn);
+    }
+
+    function setTextSpeed(speed, btn) { config.textSpeed = speed; updateBtnGroup(btn); }
+    
+    function setTheme(main, sec, btn) {
+        config.themeMain = main; config.themeSec = sec;
+        document.documentElement.style.setProperty('--term-main', main);
+        document.documentElement.style.setProperty('--term-sec', sec);
+        document.documentElement.style.setProperty('--term-dim', main + '22');
+        document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active-theme'));
+        btn.classList.add('active-theme');
+    }
+
+    function updateBtnGroup(activeBtn) {
+        const siblings = activeBtn.parentElement.children;
+        for (let btn of siblings) btn.classList.remove('selected');
+        activeBtn.classList.add('selected');
+    }
+
+    /* ==================================================================
+       RENDERIZADO DE GALERÍA DE FINALES
+       ================================================================== */
+    function showEndingsGallery(storyId) {
+        const story = LIBRARY[storyId];
+        const grid = document.getElementById('endings-grid');
+        grid.innerHTML = '';
+        const unlocked = gameState.unlockedEndings[storyId] || [];
+
+        Object.keys(story.endings).forEach(endingId => {
+            const endData = story.endings[endingId];
+            const isUnlocked = unlocked.includes(endingId);
+            const card = document.createElement('div');
+            card.className = `ending-file ${isUnlocked ? 'unlocked' : 'locked'}`;
+            if (isUnlocked) {
+                card.innerHTML = `<div class="unlock-icon">🔓</div><h3 style="color:var(--term-sec); margin:0;">${endData.title}</h3><p style="font-size:0.8rem; color:#888;">INFORME DISPONIBLE</p><button class="btn-terminal" style="padding:5px; font-size:0.8rem; margin-top:10px;">LEER INFORME</button>`;
+                card.onclick = () => openReport(endData.title, endData.desc);
+            } else {
+                card.innerHTML = `<div class="lock-icon">🔒</div><h3 style="color:#444; margin:0;">ENCRIPTADO</h3><p style="font-size:0.8rem; color:#444;">REQUIERE NIVEL DE ACCESO</p>`;
+            }
+            grid.appendChild(card);
+        });
+        toggleArchives();
+    }
+
+    function openReport(title, text) {
+        document.getElementById('report-title').innerText = title;
+        document.getElementById('report-text').innerText = text;
+        document.getElementById('ending-reader').style.display = 'flex';
+    }
+
+    function closeReport() {
+        document.getElementById('ending-reader').style.display = 'none';
+    }
+
+    /* ==================================================================
+       CORE ENGINE
+       ================================================================== */
+    async function renderScene(sceneId) {
+        if(sceneId === 'EXIT') { renderLibrary(); return; }
+
+        gameState.sceneId = sceneId;
+        const story = LIBRARY[gameState.storyId];
+        const scene = story.scenes[sceneId];
+
+        if (scene.isEnding) {
+            logSystem(`> FINAL ALCANZADO: ${scene.header}`, true);
+            if (!gameState.unlockedEndings[gameState.storyId]) gameState.unlockedEndings[gameState.storyId] = [];
+            if (!gameState.unlockedEndings[gameState.storyId].includes(sceneId)) {
+                gameState.unlockedEndings[gameState.storyId].push(sceneId);
+                logSystem("> NUEVO ARCHIVO DE FINAL DESBLOQUEADO.", false, false);
+            }
+        }
+
+        updateProgress(scene.progress || 0);
+        const img = document.getElementById('main-display');
+        img.style.opacity = 0;
+        setTimeout(() => { img.src = scene.img; img.onload = () => img.style.opacity = 0.8; }, 200);
+
+        document.getElementById('story-header').innerText = scene.header || `> NODE: ${sceneId}`;
+        const textContainer = document.getElementById('story-text');
+        textContainer.innerHTML = ''; 
+        await typeWriter(scene.text, textContainer);
+
+        renderInteractiveLayer(scene);
+
+        const btnContainer = document.getElementById('choices-container');
+        btnContainer.innerHTML = '';
+        
+        if(scene.hint) {
+            const hintBtn = document.createElement('button');
+            hintBtn.className = 'cmd-btn hint-btn';
+            hintBtn.innerText = "> [HINT] SOLICITAR PROTOCOLO DE AYUDA";
+            hintBtn.onclick = () => { logSystem(`> SUGERENCIA TÁCTICA: ${scene.hint}`, true); resetIdle(); };
+            btnContainer.appendChild(hintBtn);
+        }
+
+        if(scene.choices) {
+            scene.choices.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = 'cmd-btn';
+                btn.innerText = c.txt;
+                btn.onclick = () => {
+                    logSystem(`> EXEC: ${c.txt.toUpperCase()}`);
+                    c.next ? renderScene(c.next) : null;
+                    resetIdle();
+                };
+                btnContainer.appendChild(btn);
+            });
+        }
+        
+        saveGame();
+        resetIdle(); 
+    }
+
+    function typeWriter(htmlText, container) {
+        return new Promise(resolve => {
+            if(config.textSpeed === 1) { container.innerHTML = htmlText; resolve(); return; }
+            container.style.opacity = 0; container.innerHTML = htmlText;
+            let op = 0; let timer = setInterval(() => { if (op >= 1) { clearInterval(timer); resolve(); } container.style.opacity = op; op += 0.1; }, config.textSpeed);
+            logSystem("> DECRYPTING NARRATIVE STREAM... OK");
+        });
+    }
+
+    function updateProgress(percent) {
+        document.getElementById('progress-bar').style.width = percent + '%';
+        document.getElementById('progress-text').innerText = percent + '%';
+    }
+
+    /* --- COMANDOS --- */
+    document.getElementById('player-cmd').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            const cmd = this.value.trim().toLowerCase();
+            this.value = ''; 
+            logSystem(`root@nexus:~$ ${cmd}`, false, true); 
+            processCommand(cmd);
+            resetIdle();
+        }
+    });
+
+    function processCommand(cmd) {
+        if (cmd === 'clear') { document.getElementById('sys-console-output').innerHTML = ''; return; }
+        if (cmd === 'help') { logSystem("> AYUDA: 'scan' (buscar), 'analyze [item]', 'whoami'."); return; }
+        if (cmd === 'whoami') { logSystem(`> USUARIO: ${currentUser ? currentUser.email : 'INVITADO'}`); return; }
+        if (cmd === 'uptime') { logSystem(`> TIEMPO DE SESIÓN: ${(performance.now()/1000).toFixed(0)}s`); return; }
+        if (cmd === 'version') { logSystem(`> NEXUS OS v9.8 (Build 2091)`); return; }
+        
+        if (cmd.startsWith('analyze ')) {
+            const itemName = cmd.split('analyze ')[1];
+            const storyData = LIBRARY[gameState.storyId];
+            for (let id in storyData.items) {
+                if (id.includes(itemName) || storyData.items[id].name.toLowerCase().includes(itemName)) {
+                    logSystem(`> ANÁLISIS (${storyData.items[id].name}): ${storyData.items[id].desc || "Sin datos adicionales."}`, true);
+                    return;
+                }
+            }
+            logSystem("> ERROR: Objeto no encontrado en base de datos local.");
+            return;
+        }
+
+        const scene = LIBRARY[gameState.storyId].scenes[gameState.sceneId];
+        if (scene.commands && scene.commands[cmd]) {
+            const result = scene.commands[cmd];
+            typeof result === 'string' ? logSystem(result) : (logSystem(result.msg), renderScene(result.scene));
+            return;
+        }
+        
+        if (cmd === 'scan') { logSystem("> ESCANEANDO ÁREA... Detectando trazas de datos."); return; }
+
+        logSystem(`> ERROR: Comando '${cmd}' desconocido.`);
+    }
+
+    function resetIdle() {
+        if (idleTimer) clearTimeout(idleTimer);
+        const scene = LIBRARY[gameState.storyId]?.scenes[gameState.sceneId];
+        if (scene && scene.hint) {
+            idleTimer = setTimeout(() => { logSystem(`> [SISTEMA INACTIVO] SUGERENCIA: ${scene.hint}`, true); }, 20000); 
+        }
+    }
+    document.addEventListener('click', resetIdle);
+
+    function renderInteractiveLayer(scene) {
+        const layer = document.getElementById('interactive-layer');
+        layer.innerHTML = '';
+        if(scene.items) {
+            scene.items.forEach(item => {
+                if(!gameState.inventory.includes(item.id)) {
+                    const node = document.createElement('div');
+                    node.className = 'node-item';
+                    node.style.left = item.x + '%'; node.style.top = item.y + '%'; node.title = item.hint;
+                    node.onclick = () => { gameState.inventory.push(item.id); logSystem(`> ITEM ADQUIRIDO: ${item.id.toUpperCase()}`); renderInventory(); renderInteractiveLayer(scene); };
+                    layer.appendChild(node);
+                }
+            });
+        }
+        if(scene.actions) {
+            scene.actions.forEach(act => {
+                const zone = document.createElement('div');
+                zone.className = 'action-target';
+                zone.style.left = act.x + '%'; zone.style.top = act.y + '%'; zone.style.width = act.w + '%'; zone.style.height = act.h + '%'; zone.innerText = `[${act.label}]`;
+                zone.onclick = () => handleInteraction(act);
+                layer.appendChild(zone);
+            });
+        }
+    }
+
+    function handleInteraction(actionData) {
+        if (gameState.selectedItem === actionData.req) {
+            logSystem(`> USANDO OBJETO... ÉXITO`);
+            gameState.selectedItem = null; renderInventory();
+            if(actionData.success) renderScene(actionData.success);
+        } else if (gameState.selectedItem) { logSystem(`> ERROR: Objeto incompatible.`); } 
+        else { logSystem(actionData.fail); }
+    }
+
+    function renderInventory() {
+        const grid = document.getElementById('inventory-grid');
+        grid.innerHTML = '';
+        const storyData = LIBRARY[gameState.storyId];
+        gameState.inventory.forEach(id => {
+            const itemData = storyData.items[id];
+            const slot = document.createElement('div');
+            slot.className = 'cache-slot';
+            if (gameState.selectedItem === id) slot.classList.add('selected');
+            const img = document.createElement('img');
+            img.src = itemData.icon; img.className = 'cache-item';
+            slot.onclick = () => {
+                if (gameState.selectedItem === id) { gameState.selectedItem = null; logSystem("> OBJETO DESELECCIONADO."); }
+                else { gameState.selectedItem = id; logSystem(`> OBJETO SELECCIONADO: ${itemData.name.toUpperCase()}`); }
+                renderInventory();
+            };
+            slot.appendChild(img); grid.appendChild(slot);
+        });
+    }
+
+    function logSystem(msg, isHint = false, isUser = false, isError = false) {
+        const consoleEl = document.getElementById('sys-console-output');
+        const line = document.createElement('div');
+        const time = new Date().toLocaleTimeString('en-US', {hour12:false});
+        if (isUser) { line.innerText = msg; line.className = 'log-entry-user'; }
+        else {
+             line.innerText = `[${time}] ${msg}`;
+             if(msg.includes("ERROR") || isError) line.className = 'log-entry-warn';
+             if(msg.includes("ÉXITO") || msg.includes("OK") || msg.includes("CORRECTA")) line.className = 'log-entry-success';
+             if(isHint) line.className = 'log-entry-hint';
+             if(msg.includes("ANÁLISIS")) line.className = 'log-entry-info';
+        }
+        consoleEl.appendChild(line); consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    function switchView(viewId) {
+        document.querySelectorAll('.view-layer').forEach(el => el.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+    }
+
+    function renderLibrary() {
+        const grid = document.getElementById('lib-grid');
+        grid.innerHTML = '';
+        Object.keys(LIBRARY).forEach(key => {
+            const story = LIBRARY[key];
+            const card = document.createElement('div');
+            card.className = 'data-card';
+            const unlockedCount = (gameState.unlockedEndings[key] || []).length;
+            const totalEndings = Object.keys(story.endings).length;
+            card.innerHTML = `
+                <img src="${story.cover}" class="card-visual">
+                <div class="card-body">
+                    <div class="card-header">${story.title}</div>
+                    <div class="card-tags">${story.tags}</div>
+                    <div style="color:#888; font-size:0.8rem;">${story.desc}</div>
+                    <button class="btn-card-action" onclick="loadStory('${key}')">▶ INICIAR SIMULACIÓN</button>
+                    <button class="btn-card-action" onclick="showEndingsGallery('${key}')">📁 ARCHIVOS [${unlockedCount}/${totalEndings}]</button>
+                    <div class="card-status">> ESTADO: READY</div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+        switchView('library-view');
+        updateProgress(0); 
+    }
+
+    function loadStory(id) {
+        gameState.storyId = id;
+        gameState.inventory = [];
+        gameState.selectedItem = null;
+        logSystem(`> INICIANDO: ${id.toUpperCase()}`);
+        switchView('reader-view');
+        renderInventory();
+        renderScene(LIBRARY[id].startScene);
+    }
+
+    /* AUTH & PERSISTENCIA */
+    window.onload = async () => {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if(session) {
+            currentUser = session.user;
+            document.getElementById('email').value = currentUser.email;
+            document.getElementById('password').value = "********";
+            const { data } = await supabaseClient.from('user_progress').select('scene_id').eq('user_id', currentUser.id).single();
+            if (data && data.scene_id) {
+                const parts = data.scene_id.split("::");
+                if (parts.length > 1) {
+                    try {
+                        const savedState = JSON.parse(parts[1]);
+                        if (savedState.u) gameState.unlockedEndings = savedState.u;
+                    } catch(e) { console.error("Error parseando save", e); }
+                }
+            }
+            switchView('boot-view'); 
+        } else {
+            switchView('boot-view');
+        }
+    };
+
+    async function login() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const log = document.getElementById('auth-log');
+        if(currentUser && email === currentUser.email) { renderLibrary(); return; }
+        
+        log.innerText = "> INITIALIZING SECURE CONNECTION...";
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if(error) {
+            // Enhanced Error Handling for Hacker Theme
+            if (error.message.includes("Invalid login credentials")) {
+                log.innerText = "> ERROR: IDENTITY NOT RECOGNIZED. PERMISSION DENIED.\n> SUGGESTION: TRY [INIT_NEW_USER] COMMAND.";
+            } else {
+                log.innerText = `> CRITICAL ERROR: ${error.message}`;
+            }
+        } else { 
+            log.innerText = "> ACCESS GRANTED. WELCOME BACK, OPERATIVE."; 
+            currentUser = data.user; 
+            setTimeout(() => renderLibrary(), 1500); 
+        }
+    }
+
+    async function register() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const log = document.getElementById('auth-log');
+        log.innerText = "> GENERATING ENCRYPTION KEYS...";
+        const { error } = await supabaseClient.auth.signUp({ email, password });
+        if(error) log.innerText = `> ERROR: ${error.message}`; else log.innerText = "> NEW NODE CREATED. CHECK EMAIL FOR ACTIVATION LINK.";
+    }
+
+    function guestMode() { isGuest = true; renderLibrary(); }
+    async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
+
+    async function saveGame() {
+        if(isGuest || !currentUser) return;
+        const saveObj = { s: gameState.sceneId, i: gameState.inventory, u: gameState.unlockedEndings };
+        const saveState = JSON.stringify(saveObj);
+        const { error } = await supabaseClient.from('user_progress').upsert({
+            user_id: currentUser.id,
+            scene_id: gameState.storyId + "::" + saveState,
+            updated_at: new Date()
+        });
+        if(!error) logSystem("> AUTO-SAVE: OK");
+    }
+
+</script>
+</body>
+</html>
