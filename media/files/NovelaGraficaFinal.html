@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS OS</title>
+    <title>NEXUS TERMINAL v9.7</title>
     
     <!-- Fuentes estilo Hacker / Terminal -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -87,106 +87,15 @@
         .view-layer { flex: 1; display: none; flex-direction: column; overflow: hidden; position: relative; }
         .active { display: flex; }
 
-        /* --- NUEVO ESTILO DE LOGIN HACKER --- */
-        #boot-view { 
-            justify-content: flex-start; 
-            align-items: flex-start; 
-            background: #020202; 
-            padding: 60px;
-            font-family: 'Fira Code', monospace;
-        }
-
-        .boot-sequence {
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .ascii-art {
-            white-space: pre;
-            color: var(--term-main);
-            font-size: 0.7rem;
-            line-height: 1;
-            margin-bottom: 30px;
-            text-shadow: 0 0 10px var(--term-main);
-            opacity: 0.8;
-        }
-
-        .sys-msg {
-            color: #555;
-            font-size: 0.9rem;
-            margin-bottom: 5px;
-        }
-        .sys-msg.ok { color: var(--term-sec); }
-        .sys-msg.warn { color: var(--term-alert); }
-
-        .login-interface {
-            margin-top: 40px;
-            border-left: 2px solid var(--term-main);
-            padding-left: 20px;
-            animation: slideIn 1s ease-out;
-        }
-
-        .login-row {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-        }
-
-        .prompt-label {
-            color: var(--term-sec);
-            margin-right: 15px;
-            font-weight: bold;
-        }
-
-        .naked-input {
-            background: transparent;
-            border: none;
-            border-bottom: 1px solid #333;
-            color: #fff;
-            font-family: 'Fira Code', monospace;
-            font-size: 1.1rem;
-            flex: 1;
-            outline: none;
-            padding: 5px;
-            transition: 0.3s;
-        }
-        .naked-input:focus { border-color: var(--term-main); box-shadow: 0 5px 10px -5px var(--term-dim); }
-
-        .login-actions {
-            margin-top: 30px;
-            display: flex;
-            gap: 20px;
-        }
-
-        .hack-btn {
-            background: rgba(0, 243, 255, 0.05);
-            border: 1px solid var(--term-main);
-            color: var(--term-main);
-            padding: 10px 20px;
-            font-family: 'Share Tech Mono';
-            font-size: 1rem;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            position: relative;
-            overflow: hidden;
-            transition: 0.2s;
-        }
-        .hack-btn:hover { background: var(--term-main); color: #000; box-shadow: 0 0 20px var(--term-main); }
-        .hack-btn::before { content: '['; margin-right: 10px; }
-        .hack-btn::after { content: ']'; margin-left: 10px; }
-
-        .guest-option {
-            margin-top: 20px;
-            font-size: 0.8rem;
-            color: #444;
-            cursor: pointer;
-        }
-        .guest-option:hover { color: #fff; text-decoration: underline; }
-
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        /* --- LOGIN --- */
+        #boot-view { justify-content: center; align-items: center; background: #000; }
+        .terminal-window { width: 500px; border: 1px solid #333; padding: 40px; background: rgba(0,0,0,0.8); position: relative; }
+        .terminal-window::before { content: 'AUTH_PROTOCOL_V9.7'; position: absolute; top: -12px; left: 20px; background: #000; padding: 0 10px; color: #555; font-size: 0.8rem; }
+        .cli-input-group { margin-bottom: 20px; border-bottom: 1px solid #333; }
+        .cli-label { display: block; color: #666; font-size: 0.8rem; margin-bottom: 5px; }
+        .cli-input { width: 100%; background: transparent; border: none; color: var(--term-main); font-family: 'Fira Code', monospace; font-size: 1.2rem; outline: none; padding: 5px 0; }
+        .btn-terminal { width: 100%; background: var(--term-dim); border: 1px solid var(--term-main); color: var(--term-main); padding: 15px; font-family: 'Share Tech Mono', monospace; font-size: 1.1rem; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 2px; margin-top: 10px; }
+        .btn-terminal:hover { background: var(--term-main); color: #000; box-shadow: 0 0 15px var(--term-main); }
 
         /* --- MODALES --- */
         .modal-overlay {
@@ -203,7 +112,6 @@
         .btn-opt { background: #111; border: 1px solid #444; color: #888; padding: 8px 15px; cursor: pointer; font-family: inherit; }
         .btn-opt.selected { background: var(--term-main); color: #000; border-color: var(--term-main); font-weight: bold; }
         .color-dot { width: 25px; height: 25px; border-radius: 50%; cursor: pointer; border: 2px solid #333; }
-        .color-dot:hover { transform: scale(1.1); }
         .color-dot.active-theme { border-color: #fff; box-shadow: 0 0 10px #fff; }
 
         /* --- BIBLIOTECA --- */
@@ -358,45 +266,17 @@
         </div>
     </header>
 
-    <!-- NEW BOOT / LOGIN INTERFACE -->
-    <div id="boot-view" class="view-layer active" style="justify-content:flex-start; padding: 60px; align-items: flex-start; overflow-y: auto;">
-        <div class="boot-sequence">
-            <div class="ascii-art">
-   _   _  _______  ____  __ __  _ _____
-  | \ | || ____\ \/ / | | | | | | ____|
-  |  \| ||  _|  \  /| | | | |_| |  _|  
-  | |\  || |___ /  \| |_| |  _  | |___ 
-  |_| \_||_____/_/\_\\___/|_| |_|_____|
-  :: SYSTEM KERNEL v9.8 :: SECURE SHELL ::
-            </div>
-            
-            <div class="sys-msg ok">> MOUNTING FILESYSTEM... OK</div>
-            <div class="sys-msg ok">> LOADING NETWORK DRIVERS... OK</div>
-            <div class="sys-msg warn">> CHECKING BIO-METRICS... NOT FOUND</div>
-            <div class="sys-msg">> INITIALIZING LOGIN SEQUENCE...</div>
-            
-            <div class="login-interface">
-                <div class="login-row">
-                    <span class="prompt-label">USR_ID @ NEXUS:~$</span>
-                    <input type="email" id="email" class="naked-input" placeholder="enter_identity" autocomplete="off">
-                </div>
-                
-                <div class="login-row">
-                    <span class="prompt-label">PASS_KEY @ NEXUS:~$</span>
-                    <input type="password" id="password" class="naked-input" placeholder="enter_access_code">
-                </div>
-                
-                <div id="auth-log" style="margin-top:15px; color:var(--term-alert); min-height:20px; font-family:'Fira Code'; font-size:0.9rem;"></div>
-
-                <div class="login-actions">
-                    <button onclick="login()" class="hack-btn">EXECUTE_LOGIN</button>
-                    <button onclick="register()" class="hack-btn" style="border-color:#555; color:#888;">INIT_NEW_USER</button>
-                </div>
-                
-                <div class="guest-option" onclick="guestMode()">
-                    >> BYPASS SECURITY (GUEST MODE)
-                </div>
-            </div>
+    <!-- BOOT -->
+    <div id="boot-view" class="view-layer active">
+        <div class="terminal-window">
+            <h2 style="color:var(--term-main); margin-top:0;">> SYSTEM_ACCESS</h2>
+            <p style="color:#666; font-size:0.9rem; margin-bottom:30px;">Ingrese credenciales para acceder a la Red Global.</p>
+            <div class="cli-input-group"><label class="cli-label">USR_ID:</label><input type="email" id="email" class="cli-input" placeholder="ghost@net.com" autocomplete="off"></div>
+            <div class="cli-input-group"><label class="cli-label">PASS_KEY:</label><input type="password" id="password" class="cli-input" placeholder="********"></div>
+            <button onclick="login()" class="btn-terminal">EJECUTAR LOGIN.EXE</button>
+            <button onclick="register()" class="btn-terminal" style="border-color:#555; color:#888;">CREAR NUEVO NODO</button>
+            <div style="margin-top:20px; text-align:center;"><span onclick="guestMode()" style="cursor:pointer; text-decoration:underline; color:#444; font-size:0.8rem;">ACCESO FANTASMA (INVITADO)</span></div>
+            <div id="auth-log" style="margin-top:15px; color:var(--term-alert); height:20px; font-size:0.8rem;"></div>
         </div>
     </div>
 
@@ -458,6 +338,7 @@
        HISTORIAS LARGAS Y COMPLEJAS (EXPANDIDAS)
        ================================================================== */
     const LIBRARY = {
+        // --- PROTOCOLO FANTASMA (SIN CAMBIOS) ---
         'protocol_phantom': {
             title: "PROTOCOLO FANTASMA",
             tags: "NETRUNNER // FUGA // MEMORIA",
@@ -506,11 +387,7 @@
                     text: "> ENERGÍA RESTAURADA.<br><br>Las luces se encienden. Revelan una base de hackers abandonada. Hay una terminal central y una mesa desordenada. En la pantalla del terminal dice: 'INTRODUCIR FRASE DE PASO'.",
                     hint: "Busca una nota con la contraseña en la habitación.",
                     items: [{ id: 'note_pwd', x: 60, y: 60, hint: "Papel pegado en la mesa" }, { id: 'data_jack', x: 20, y: 70, hint: "Cable de conexión" }],
-                    commands: { 
-                        'read note': "> NOTA DESCIFRADA: 'La clave es CYBER_GHOST'.", 
-                        'read': "> NOTA DESCIFRADA: 'La clave es CYBER_GHOST'.",
-                        'cyber_ghost': { scene: 'day1_terminal_access', msg: "> CLAVE CORRECTA." } 
-                    }
+                    commands: { 'read note': "> NOTA DESCIFRADA: 'La clave es CYBER_GHOST'.", 'read': "> NOTA DESCIFRADA: 'La clave es CYBER_GHOST'.", 'cyber_ghost': { scene: 'day1_terminal_access', msg: "> CLAVE CORRECTA." } }
                 },
                 'day1_terminal_access': {
                     header: "DÍA 1: ACCESO A LA RED",
@@ -581,21 +458,22 @@
             }
         },
 
+        // --- CÓDIGO OBSIDIANA: EXPANSIÓN MASIVA ---
         'obsidian_code': {
             title: "CÓDIGO OBSIDIANA",
             tags: "HEIST // ESPACIO // COMANDOS",
             cover: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/obsidiana.png",
-            desc: "Eres un hacker de élite contratado para el trabajo imposible: Robar una estación espacial entera. 5 Fases. Sin errores.",
-            startScene: 'phase1_bunker',
+            desc: "Eres un hacker de élite contratado para robar la Estación Vanguard. Una misión de sigilo, química y hacking en gravedad cero. Tiempo estimado: 25 min.",
+            startScene: 'oc_start',
             items: {
                 'deck_mk5': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/mk5.png", name: "Cyberdeck MK5", desc: "El estándar de oro en hacking ofensivo. Capaz de romper encriptación cuántica." },
                 'satellite_dish': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/antena.png", name: "Calibrador Antena", desc: "Módulo de alineación láser para comunicaciones SHF." },
                 'spacesuit_helmet': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/casco.png", name: "Casco EVA", desc: "Soporte vital autónomo por 4 horas. Visor con HUD táctico." },
-                'flight_plan': { icon: "https://cdn-icons-png.flaticon.com/512/3209/3209873.png", name: "Plan de Vuelo", desc: "Tarjeta de datos con códigos de lanzamiento encriptados." },
-                'empty_vial': { icon: "https://cdn-icons-png.flaticon.com/512/3209/3209931.png", name: "Vial Vacío", desc: "Contenedor de vidrio reforzado para muestras químicas." },
-                'toxin_base': { icon: "https://cdn-icons-png.flaticon.com/512/564/564793.png", name: "Base Tóxica", desc: "Compuesto biológico inerte. Necesita catalizador." },
-                'acid_compound': { icon: "https://cdn-icons-png.flaticon.com/512/3358/3358285.png", name: "Ácido Sintetizado", desc: "Altamente corrosivo. Capaz de disolver blindaje orgánico." },
-                'security_chip': { icon: "https://cdn-icons-png.flaticon.com/512/900/900967.png", name: "Chip de Seguridad", desc: "Extraído de un droide guardia. Contiene códigos de nivel medio." }
+                'flight_plan': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/mapa.png", name: "Plan de Vuelo", desc: "Tarjeta de datos con códigos de lanzamiento encriptados." },
+                'empty_vial': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/vial.png", name: "Vial Vacío", desc: "Contenedor de vidrio reforzado para muestras químicas." },
+                'toxin_base': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/base.png", name: "Base Tóxica", desc: "Compuesto biológico inerte. Necesita catalizador." },
+                'acid_compound': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/base.png", name: "Ácido Sintetizado", desc: "Altamente corrosivo. Capaz de disolver blindaje orgánico." },
+                'security_chip': { icon: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/tarjetachip.png", name: "Chip de Seguridad", desc: "Extraído de un droide guardia. Contiene códigos de nivel medio." }
             },
             endings: {
                 'end_ghost': { title: "SILENCIO ETERNO", desc: "INFORME FINAL: FANTASMA DEL VACÍO\n\nNadie supo qué ocurrió en la estación Vanguard. Simplemente dejó de responder. Al borrar la IA central y purgar los registros, convertiste la estación en un mausoleo flotante. Escapaste con los datos del núcleo en una cápsula de emergencia.\n\nLa corporación propietaria perdió billones. Tú cobraste tu recompensa y desapareciste en el cinturón de asteroides. A veces miras al cielo y ves el punto brillante de la estación muerta orbitando la Tierra. Un monumento a tu habilidad. Un secreto que te llevarás a la tumba." },
@@ -603,84 +481,198 @@
                 'end_hero': { title: "SACRIFICIO HEROICO", desc: "INFORME FINAL: HÉROE ANÓNIMO\n\nDescubriste que la estación no era solo un banco de datos, sino una plataforma de armas biológicas. No podías permitir que nadie, ni tu empleador ni la IA, tuviera ese poder. Saboteaste el reactor.\n\nLa explosión iluminó el cielo nocturno como una segunda luna. Moriste en la detonación, pero salvaste a la humanidad de una plaga artificial. Tu nombre no aparecerá en los libros de historia, pero en los foros oscuros de la red, los hackers brindan por el 'Ángel de Fuego' que salvó el mundo." }
             },
             scenes: {
-                'phase1_bunker': {
-                    header: "FASE 1: PREPARACIÓN // BUNKER ALFA",
+                // --- FASE 1: TIERRA ---
+                'oc_start': {
+                    header: "FASE 1: BRIEFING // BUNKER ALFA",
+                    progress: 5,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/5.1.png",
+                    text: "> INICIANDO OPERACIÓN OBSIDIANA.<br><br>Ubicación: Desierto de Mojave. Bunker subterráneo.<br>Objetivo: Infiltración Orbital.<br><br>Tu contacto, una IA renegada llamada 'Mother', te da luz verde. El transporte orbital automatizado pasará sobre tu posición en 30 minutos. Tienes que hackear su sistema de guía para que aterrice y te recoja.",
+                    choices: [{ txt: "Ir a la mesa de trabajo", next: 'oc_workbench' }]
+                },
+                'oc_workbench': {
+                    header: "FASE 1: ENSAMBLAJE",
                     progress: 10,
-                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.1.png",
-                    text: "> INICIANDO OPERACIÓN OBSIDIANA.<br><br>Estás en tu bunker. El transporte orbital pasa en 20 minutos. Tienes que hackear su sistema de guía desde aquí. Tu Cyberdeck MK5 está desmontado sobre la mesa.",
-                    hint: "Ensambla el deck en la mesa de trabajo.",
-                    items: [{ id: 'deck_mk5', x: 60, y: 70, hint: "Hardware" }],
-                    actions: [{ id: 'table', x: 40, y: 40, w: 20, h: 20, label: "MESA", req: 'deck_mk5', success: 'phase1_uplink', fail: "> Faltan componentes." }]
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/5.2.png",
+                    text: "Tu Cyberdeck MK5, la herramienta de hacking más potente del mercado negro, está desmontado. No puedes iniciar el enlace sin él.",
+                    hint: "Recoge las piezas del deck y úsalas en la zona de montaje.",
+                    items: [{ id: 'deck_mk5', x: 60, y: 70, hint: "Componentes del Deck" }],
+                    actions: [{ id: 'table', x: 40, y: 40, w: 20, h: 20, label: "MESA DE MONTAJE", req: 'deck_mk5', success: 'oc_radar', fail: "> Faltan componentes críticos." }]
                 },
-                'phase1_uplink': {
-                    header: "FASE 1: ENLACE",
+                'oc_radar': {
+                    header: "FASE 1: ALINEACIÓN",
                     progress: 15,
-                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/4.png",
-                    text: "Alinea la antena exterior.",
-                    items: [{ id: 'satellite_dish', x: 80, y: 20, hint: "Calibrador" }],
-                    actions: [{ id: 'radar', x: 30, y: 30, w: 40, h: 40, label: "RADAR", req: 'satellite_dish', success: 'phase1_launch_cmd', fail: "> Señal débil." }]
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/5.3.png",
+                    text: "> HARDWARE DETECTADO.<br>El deck está listo. Ahora necesitas una señal fuerte. La antena exterior fue dañada en la última tormenta de arena. Necesitas recalibrar el azimut.",
+                    hint: "Usa el calibrador en el radar. Luego busca el código de lanzamiento en la sala.",
+                    items: [
+                        { id: 'satellite_dish', x: 80, y: 20, hint: "Módulo de Calibración" },
+                        { id: 'flight_plan', x: 20, y: 80, hint: "Tarjeta de datos azul" }
+                    ],
+                    actions: [{ id: 'radar', x: 30, y: 30, w: 40, h: 40, label: "RADAR DISH", req: 'satellite_dish', success: 'oc_launch_prep', fail: "> Señal demasiado débil para hackear." }]
                 },
-                'phase1_launch_cmd': {
-                    header: "FASE 1: LANZAMIENTO",
+                'oc_launch_prep': {
+                    header: "FASE 1: PRE-LANZAMIENTO",
                     progress: 20,
-                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.9.png",
-                    text: "> SEÑAL LISTA. Escribe 'launch' para despegar.",
-                    commands: { 'launch': { scene: 'phase2_docking', msg: "> DESPEGUE CONFIRMADO." } }
-                },
-                'phase2_docking': {
-                    header: "FASE 2: ESCLUSA",
-                    progress: 30,
-                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.3.png",
-                    text: "Estás acoplado. La presión de la esclusa es inestable. Escribe 'stabilize' en la consola para igualar la presión, o usa el casco para salir al vacío.",
-                    hint: "Usa comando 'stabilize' o ponte el casco.",
-                    items: [{ id: 'spacesuit_helmet', x: 20, y: 60, hint: "Casco" }],
-                    actions: [{ id: 'airlock', x: 50, y: 50, w: 30, h: 30, label: "COMPUERTA", req: 'spacesuit_helmet', success: 'phase3_corridor', fail: "> PELIGRO: VACÍO." }],
-                    commands: { 'stabilize': { scene: 'phase3_corridor', msg: "> PRESIÓN ESTABILIZADA. ACCESO SEGURO." } }
-                },
-                'phase3_corridor': {
-                    header: "FASE 3: BIFURCACIÓN",
-                    progress: 40,
-                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.4.png",
-                    text: "Pasillos vacíos. Detectas lecturas extrañas a la izquierda.",
-                    commands: { 'scan': "> DETECTADO: Organismo biológico hostil en Lab." },
-                    choices: [{ txt: "Ir a Servidores (Derecha)", next: 'phase4_core' }, { txt: "Investigar Bio-Lab (Izquierda)", next: 'biolab_entry' }]
-                },
-                'biolab_entry': {
-                    header: "FASE 3B: BIO-LAB",
-                    progress: 50,
-                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.7.png",
-                    text: "Un espécimen alienígena bloquea la puerta de seguridad. Es inmune a las armas convencionales, pero parece vulnerable al ácido. Hay una estación química.",
-                    hint: "Mezcla la base tóxica en el sintetizador.",
-                    items: [{ id: 'empty_vial', x: 10, y: 80, hint: "Vial" }, { id: 'toxin_base', x: 90, y: 80, hint: "Químico Base" }],
-                    actions: [{ id: 'mixer', x: 50, y: 50, w: 20, h: 20, label: "SINTETIZADOR", req: 'toxin_base', success: 'biolab_crafting', fail: "> Introduce base química." }]
-                },
-                'biolab_crafting': {
-                    header: "FASE 3B: SÍNTESIS",
-                    progress: 55,
-                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.7.png", 
-                    text: "Base cargada. El sistema pide comando de mezcla: 'mix acid'.",
-                    commands: { 'mix acid': { scene: 'biolab_attack', msg: "> ÁCIDO CREADO." } }
-                },
-                'biolab_attack': {
-                    header: "FASE 3B: NEUTRALIZACIÓN",
-                    progress: 60,
-                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.7.png",
-                    text: "Tienes el ácido. Úsalo contra la criatura.",
-                    choices: [{ txt: "Lanzar Ácido", next: 'phase4_core' }] 
-                },
-                'phase4_core': {
-                    header: "FASE 4: EL CÓDIGO MAESTRO",
-                    progress: 90,
-                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.5.png",
-                    text: "Llegas al núcleo. La IA despierta.",
-                    hint: "Comandos: 'sudo delete ai' o 'admin override'.",
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/5.4.png",
+                    text: "> ENLACE ESTABLECIDO CON TRANSPORTE ORBITAL.<br>El sistema de la nave solicita un código de autorización de despegue. Tienes una tarjeta de datos con posibles códigos, pero están encriptados. Debes leerla.",
+                    hint: "Usa el comando 'read' para ver la tarjeta.",
                     commands: { 
-                        'sudo delete ai': { scene: 'end_ghost', msg: "> IA ELIMINADA." },
-                        'admin override': { scene: 'end_king', msg: "> CONTROL TOTAL." } 
+                        'read': "> DATOS: 'Código de emergencia: ORION-9'.",
+                        'scan': "> La consola espera el código de lanzamiento."
+                    },
+                    choices: [{ txt: "Introducir código en terminal", next: 'oc_launch_code' }]
+                },
+                'oc_launch_code': {
+                    header: "FASE 1: LANZAMIENTO",
+                    progress: 25,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/5.5.png",
+                    text: "> ESPERANDO CÓDIGO DE AUTORIZACIÓN...",
+                    hint: "Escribe el código que leíste en la tarjeta.",
+                    commands: {
+                        'ORION-9': { scene: 'oc_transit', msg: "> CÓDIGO ACEPTADO. INICIANDO DESCENSO DE TRANSPORTE..." },
+                        'orion-9': { scene: 'oc_transit', msg: "> CÓDIGO ACEPTADO. INICIANDO DESCENSO DE TRANSPORTE..." }
                     }
                 },
-                'end_ghost': { isEnding: true, header: "FINAL: SILENCIO", progress: 100, img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.6.png", text: "Misión cumplida.", choices:[{txt:"SALIR", next:'EXIT'}]},
-                'end_king': { isEnding: true, header: "FINAL: REY", progress: 100, img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/3.8.png", text: "Dominio total.", choices:[{txt:"SALIR", next:'EXIT'}]}
+                'oc_transit': {
+                    header: "FASE 2: TRÁNSITO",
+                    progress: 35,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/5.6.png",
+                    text: "El viaje es brutal. 8Gs de aceleración. Te desmayas brevemente. Al despertar, ves la Estación Vanguard llenando tu visor. Es inmensa. Una ciudad de metal en el vacío.<br><br>Tu nave se acopla automáticamente al puerto de carga.",
+                    choices: [{ txt: "Iniciar secuencia de abordaje", next: 'oc_airlock' }]
+                },
+
+                // --- FASE 2: ESCLUSA ---
+                'oc_airlock': {
+                    header: "FASE 2: ESCLUSA DE AIRE",
+                    progress: 40,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/5.7.png",
+                    text: "> ALERTA: DESCOMPRESIÓN.<br>Los sensores indican vacío en el otro lado de la compuerta. Si abres ahora, morirás. Necesitas un traje EVA. Hay un armario de emergencia a tu derecha.",
+                    hint: "Ponte el casco EVA antes de abrir la compuerta.",
+                    items: [{ id: 'spacesuit_helmet', x: 20, y: 60, hint: "Casco Espacial Reforzado" }],
+                    actions: [{ id: 'door', x: 50, y: 50, w: 30, h: 30, label: "COMPUERTA EXTERIOR", req: 'spacesuit_helmet', success: 'oc_hub', fail: "> ¡ALTO! Detectado vacío. Necesitas protección EVA." }]
+                },
+
+                // --- FASE 3: EL HUB ---
+                'oc_hub': {
+                    header: "FASE 3: NODO CENTRAL",
+                    progress: 50,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/5.8.png",
+                    text: "Estás dentro. Gravedad artificial al 50%. El silencio es absoluto. Estás en el Nodo Central. Tienes dos caminos:<br><br>1. ALA OESTE (Laboratorios Biológicos): Detectas lecturas de energía extrañas.<br>2. ALA ESTE (Servidores): El camino directo al núcleo, pero fuertemente protegido.",
+                    commands: {
+                        'scan': "> ESCANEO: Ala Oeste contiene materiales orgánicos peligrosos. Ala Este tiene torretas activas.",
+                    },
+                    choices: [
+                        { txt: "Ir al Ala Oeste (Bio-Labs)", next: 'oc_biolab_entry' },
+                        { txt: "Ir al Ala Este (Servidores)", next: 'oc_server_corridor' }
+                    ]
+                },
+
+                // --- RUTA A: BIO LABS (PUZZLE QUÍMICO) ---
+                'oc_biolab_entry': {
+                    header: "FASE 3A: BIO-LABORATORIO",
+                    progress: 55,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/5.9.png",
+                    text: "Entras al laboratorio. Un hedor a ozono llena el aire. Una criatura experimental, el 'Sujeto 89', se ha liberado y bloquea el pasillo de servicio. Su piel es blindada, inmune a las balas.<br><br>Ves una estación de síntesis química activa.",
+                    hint: "Debes crear un ácido para fundir el blindaje de la criatura.",
+                    items: [
+                        { id: 'empty_vial', x: 10, y: 80, hint: "Vial de Vidrio" },
+                        { id: 'toxin_base', x: 90, y: 80, hint: "Contenedor de Base Tóxica" }
+                    ],
+                    actions: [{ id: 'mixer', x: 50, y: 50, w: 20, h: 20, label: "SINTETIZADOR MOLECULAR", req: 'toxin_base', success: 'oc_biolab_mix', fail: "> El sintetizador necesita una base química para empezar." }]
+                },
+                'oc_biolab_mix': {
+                    header: "FASE 3A: SÍNTESIS",
+                    progress: 60,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/6.1.png",
+                    text: "> BASE TÓXICA CARGADA.<br>El sistema requiere un comando de mezcla preciso para convertir la toxina en ácido corrosivo. La fórmula está escrita en la pared: 'H2SO4 + HEAT'.",
+                    hint: "Escribe 'mix acid' o 'synthesize'.",
+                    commands: {
+                        'mix acid': { scene: 'oc_biolab_combat', msg: "> PROCESANDO... ÁCIDO SINTETIZADO CON ÉXITO." },
+                        'synthesize': { scene: 'oc_biolab_combat', msg: "> PROCESANDO... ÁCIDO SINTETIZADO CON ÉXITO." }
+                    }
+                },
+                'oc_biolab_combat': {
+                    header: "FASE 3A: NEUTRALIZACIÓN",
+                    progress: 65,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/6.2.png",
+                    text: "Tienes el vial de ácido concentrado en tu mano. La criatura ruge y se prepara para cargar.",
+                    hint: "No hay tiempo para pensar. ¡Lanza el vial!",
+                    // Aquí simplificamos la acción para no requerir drop si el usuario es lento
+                    choices: [
+                        { txt: "Lanzar Ácido al Sujeto 89", next: 'oc_core_antechamber' }
+                    ]
+                },
+
+                // --- RUTA B: SERVIDORES (PUZZLE HACKING) ---
+                'oc_server_corridor': {
+                    header: "FASE 3B: PASILLO DE SEGURIDAD",
+                    progress: 55,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/7.png",
+                    text: "El pasillo está protegido por una red láser invisible y torretas automáticas. En el suelo yace un guardia muerto (o eso parece). Tiene un chip de seguridad en su cinturón.",
+                    hint: "Usa 'scan' para ver los láseres. Recoge el chip.",
+                    items: [{ id: 'security_chip', x: 40, y: 70, hint: "Chip de Acceso Nivel 3" }],
+                    commands: { 'scan': "> LÁSERES DETECTADOS. PATRÓN DE MOVIMIENTO: INTERVALOS DE 3 SEGUNDOS." },
+                    choices: [{ txt: "Intentar cruzar con el chip", next: 'oc_server_hack' }]
+                },
+                'oc_server_hack': {
+                    header: "FASE 3B: FIREWALL FÍSICO",
+                    progress: 65,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/7.1.png",
+                    text: "Llegas a la puerta del servidor. El chip te da acceso físico, pero el sistema lógico está bloqueado por un enigma. La pantalla muestra: '¿Qué es lo que siempre viene, pero nunca llega?'",
+                    hint: "La respuesta es 'mañana'. Escríbela en inglés: 'tomorrow'.",
+                    commands: {
+                        'tomorrow': { scene: 'oc_core_antechamber', msg: "> RESPUESTA CORRECTA. PUERTA ABIERTA." },
+                        'manana': { scene: 'oc_core_antechamber', msg: "> RESPUESTA CORRECTA. PUERTA ABIERTA." }
+                    }
+                },
+
+                // --- FASE 4: EL NÚCLEO ---
+                'oc_core_antechamber': {
+                    header: "FASE 4: ANTECÁMARA DEL NÚCLEO",
+                    progress: 80,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/6.4.png",
+                    text: "Has superado las defensas. Estás en la antecámara del Núcleo Cuántico. Pero no estás solo. Una figura sale de las sombras: es 'Zero', un hacker rival legendario. Te apunta con un arma.<br><br>Zero: 'No dejaré que le des este poder a las corporaciones. Voy a destruir la estación. Únete a mí o muere'.",
+                    choices: [
+                        { txt: "Atacar a Zero (Pelear)", next: 'oc_boss_fight' },
+                        { txt: "Intentar razonar con él", next: 'oc_boss_talk' }
+                    ]
+                },
+                'oc_boss_fight': {
+                    header: "FASE 4: DUELO",
+                    progress: 85,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/6.5.png",
+                    text: "Te lanzas a cubierto mientras dispara. Hackeas los sistemas de soporte vital de la sala para reducir el oxígeno y hacerlo desmayar. Zero cae inconsciente. El camino al núcleo está libre.",
+                    choices: [{ txt: "Entrar al Núcleo", next: 'oc_core_main' }]
+                },
+                'oc_boss_talk': {
+                    header: "FASE 4: DIPLOMACIA",
+                    progress: 85,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/6.6.png",
+                    text: "Le explicas que no trabajas para las corporaciones, sino para ti mismo. Le ofreces compartir los datos. Zero duda, baja el arma y te da un código maestro antes de huir. 'Haz lo correcto', dice.",
+                    choices: [{ txt: "Entrar al Núcleo", next: 'oc_core_main' }]
+                },
+
+                // --- FASE 5: EL FINAL ---
+                'oc_core_main': {
+                    header: "FASE 5: EL CEREBRO DE VANGUARD",
+                    progress: 95,
+                    img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/6.5.png",
+                    text: "Estás frente a la IA Central. Es una columna de luz azul pulsante. Tienes acceso root. El destino de la estación está en tus manos. Tres comandos posibles:<br><br>1. 'sudo download' (Robar datos, dejar la estación inerte)<br>2. 'sudo claim' (Tomar control total, convertirte en Rey)<br>3. 'sudo overload' (Destruir la estación, salvar a la humanidad del arma)",
+                    hint: "Escribe tu destino.",
+                    commands: {
+                        'sudo download': { scene: 'end_ghost', msg: "> DESCARGANDO PETABYTES... HECHO." },
+                        'download': { scene: 'end_ghost', msg: "> DESCARGANDO PETABYTES... HECHO." },
+                        'sudo claim': { scene: 'end_king', msg: "> REESCRIBIENDO PROTOCOLOS DE MANDO... HECHO." },
+                        'claim': { scene: 'end_king', msg: "> REESCRIBIENDO PROTOCOLOS DE MANDO... HECHO." },
+                        'sudo overload': { scene: 'end_hero', msg: "> SOBRECARGA DE REACTOR INICIADA... ADIÓS." },
+                        'overload': { scene: 'end_hero', msg: "> SOBRECARGA DE REACTOR INICIADA... ADIÓS." }
+                    }
+                },
+
+                // --- FINALES OBSIDIANA ---
+                'end_ghost': { isEnding: true, header: "FINAL: EL MERCENARIO", progress: 100, img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/6.7final1.png", text: "Robaste los datos y desapareciste. La estación quedó como un cascarón vacío. Eres inmensamente rico, pero el mundo sigue igual de corrupto.", choices:[{txt:"SALIR", next:'EXIT'}]},
+                'end_king': { isEnding: true, header: "FINAL: EL REY ORBITAL", progress: 100, img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/6.8final2.png", text: "Ahora posees Vanguard. Las naciones de la Tierra te temen. Has impuesto una 'Paz Armada' desde el cielo. Eres un tirano, pero un tirano justo.", choices:[{txt:"SALIR", next:'EXIT'}]},
+                'end_hero': { isEnding: true, header: "FINAL: MÁRTIR DE LAS ESTRELLAS", progress: 100, img: "https://llvimiywqzlufikbaxaq.supabase.co/storage/v1/object/public/imagenes/6.9final3.png", text: "Detonaste la estación para evitar que cayera en malas manos. Moriste en la explosión, pero tu sacrificio aseguró que nadie usara Vanguard como arma de terror.", choices:[{txt:"SALIR", next:'EXIT'}]}
             }
         }
     };
@@ -853,14 +845,16 @@
     });
 
     function processCommand(cmd) {
+        // Comandos Globales
         if (cmd === 'clear') { document.getElementById('sys-console-output').innerHTML = ''; return; }
         if (cmd === 'help') { logSystem("> AYUDA: 'scan' (buscar), 'analyze [item]', 'whoami'."); return; }
         if (cmd === 'whoami') { logSystem(`> USUARIO: ${currentUser ? currentUser.email : 'INVITADO'}`); return; }
         if (cmd === 'uptime') { logSystem(`> TIEMPO DE SESIÓN: ${(performance.now()/1000).toFixed(0)}s`); return; }
-        if (cmd === 'version') { logSystem(`> NEXUS OS v9.8 (Build 2091)`); return; }
+        if (cmd === 'version') { logSystem(`> NEXUS OS v9.7 (Build 2090)`); return; }
         
         if (cmd.startsWith('analyze ')) {
             const itemName = cmd.split('analyze ')[1];
+            // Buscar item por nombre o ID aproximado
             const storyData = LIBRARY[gameState.storyId];
             for (let id in storyData.items) {
                 if (id.includes(itemName) || storyData.items[id].name.toLowerCase().includes(itemName)) {
@@ -872,6 +866,7 @@
             return;
         }
 
+        // Comandos de Escena
         const scene = LIBRARY[gameState.storyId].scenes[gameState.sceneId];
         if (scene.commands && scene.commands[cmd]) {
             const result = scene.commands[cmd];
@@ -1031,30 +1026,19 @@
         const password = document.getElementById('password').value;
         const log = document.getElementById('auth-log');
         if(currentUser && email === currentUser.email) { renderLibrary(); return; }
-        
-        log.innerText = "> INITIALIZING SECURE CONNECTION...";
+        log.innerText = "> CONECTANDO...";
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if(error) {
-            // Enhanced Error Handling for Hacker Theme
-            if (error.message.includes("Invalid login credentials")) {
-                log.innerText = "> ERROR: IDENTITY NOT RECOGNIZED. PERMISSION DENIED.\n> SUGGESTION: TRY [INIT_NEW_USER] COMMAND.";
-            } else {
-                log.innerText = `> CRITICAL ERROR: ${error.message}`;
-            }
-        } else { 
-            log.innerText = "> ACCESS GRANTED. WELCOME BACK, OPERATIVE."; 
-            currentUser = data.user; 
-            setTimeout(() => renderLibrary(), 1500); 
-        }
+        if(error) log.innerText = `> ERROR: ${error.message}`;
+        else { log.innerText = "> ACCESO CONCEDIDO."; currentUser = data.user; setTimeout(() => renderLibrary(), 1000); }
     }
 
     async function register() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const log = document.getElementById('auth-log');
-        log.innerText = "> GENERATING ENCRYPTION KEYS...";
+        log.innerText = "> GENERANDO CLAVES...";
         const { error } = await supabaseClient.auth.signUp({ email, password });
-        if(error) log.innerText = `> ERROR: ${error.message}`; else log.innerText = "> NEW NODE CREATED. CHECK EMAIL FOR ACTIVATION LINK.";
+        if(error) log.innerText = `> ERROR: ${error.message}`; else log.innerText = "> VERIFICA TU EMAIL.";
     }
 
     function guestMode() { isGuest = true; renderLibrary(); }
