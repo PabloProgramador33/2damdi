@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NETRUNNER // SYSTEM OPS v3.8</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Fuentes Hacker / Tech -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Iconos -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            /* Variables dinámicas para temas */
+            --bg-deep: #050505;
+            --bg-panel: rgba(10, 15, 20, 0.95);
+            --border-dim: #1a2530;
+            --border-bright: #304050;
+            
+            /* Colores de Terminal Profesional */
+            --term-main: #00f0ff;      /* Color principal (Cyan) */
+            --term-glow: rgba(0, 240, 255, 0.4);
+            --term-green: #0aff60;
+            --term-red: #ff2a2a;
+            --term-yellow: #fcee0a;
+            --term-dim: #4a5568;
+            
+            --glass-shine: linear-gradient(120deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+        }
+
+        /* Temas alternativos */
+        body.theme-matrix { --term-main: #0aff60; --term-glow: rgba(10, 255, 96, 0.4); --border-bright: #1a4025; }
+        body.theme-amber { --term-main: #ffb000; --term-glow: rgba(255, 176, 0, 0.4); --border-bright: #403010; --term-green: #ffb000; }
+
+        body {
+            background-color: var(--bg-deep);
+            color: #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+            overflow: hidden;
+            height: 100vh;
+            background-image: 
+                linear-gradient(rgba(10, 20, 30, 0.9), rgba(5, 5, 5, 1)),
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231a202c' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            transition: color 0.5s ease;
+        }
+
+        /* --- UTILIDADES DE UI ESTILO HACKER --- */
+        .tech-border {
+            border: 1px solid var(--border-dim);
+            position: relative;
+            background: var(--bg-panel);
+            backdrop-filter: blur(4px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            transition: border-color 0.3s ease;
+        }
+
+        /* Esquinas técnicas (brackets) */
+        .tech-border::before, .tech-border::after { content: ''; position: absolute; width: 8px; height: 8px; border: 1px solid transparent; transition: all 0.3s ease; pointer-events: none; }
+        .tech-border::before { top: -1px; left: -1px; border-top-color: var(--term-main); border-left-color: var(--term-main); }
+        .tech-border::after { bottom: -1px; right: -1px; border-bottom-color: var(--term-main); border-right-color: var(--term-main); }
+        .tech-border:hover::before, .tech-border:hover::after { width: 100%; height: 100%; opacity: 0.5; box-shadow: 0 0 10px var(--term-main); }
+
+        .crt-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 50; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%); background-size: 100% 4px; }
+        .font-hud { font-family: 'Rajdhani', sans-serif; }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--term-main); }
+
+        /* --- COMPONENTES --- */
+        .server-item { border-left: 2px solid #333; background: linear-gradient(90deg, transparent, transparent); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .server-item:hover { background: linear-gradient(90deg, rgba(255,255,255, 0.05), transparent); border-left-color: var(--term-dim); padding-left: 1rem; cursor: pointer; }
+        .server-item.active { background: linear-gradient(90deg, rgba(255,255,255, 0.08), transparent); border-left: 2px solid var(--term-main); color: white; box-shadow: inset 0 0 20px var(--term-glow); }
+
+        .btn-tac { background: rgba(10, 20, 30, 0.8); border: 1px solid var(--border-bright); color: var(--term-main); text-transform: uppercase; letter-spacing: 1px; transition: all 0.15s ease-out; position: relative; overflow: hidden; font-family: 'Rajdhani', sans-serif; font-weight: 700; z-index: 20; cursor: pointer; }
+        .btn-tac:hover:not(:disabled) { background: var(--term-main); color: black; box-shadow: 0 0 15px var(--term-glow); border-color: var(--term-main); }
+        .btn-tac:active:not(:disabled) { transform: scale(0.98); }
+        .btn-tac:disabled { opacity: 0.3; border-color: #222; color: #444; cursor: not-allowed; background: rgba(0,0,0,0.5); }
+
+        .btn-danger { color: var(--term-red); border-color: rgba(255, 42, 42, 0.3); }
+        .btn-danger:hover:not(:disabled) { background: var(--term-red); color: black; box-shadow: 0 0 20px rgba(255, 42, 42, 0.4); border-color: var(--term-red); }
+
+        .console-line { padding-left: 10px; border-left: 1px solid #333; margin-bottom: 2px; font-size: 11px; }
+        .console-line:last-child { border-left-color: var(--term-green); background: linear-gradient(90deg, rgba(10, 255, 96, 0.05), transparent); animation: flashLine 0.5s; }
+        @keyframes flashLine { from { background-color: rgba(10, 255, 96, 0.2); } }
+
+        .nav-tab { color: #666; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.3s; }
+        .nav-tab:hover { color: var(--term-main); }
+        .nav-tab.active { color: var(--term-main); border-bottom-color: var(--term-main); text-shadow: 0 0 8px var(--term-glow); }
+
+        .hacker-toggle { position: relative; display: inline-block; width: 36px; height: 18px; }
+        .hacker-toggle input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #1a202c; border: 1px solid #333; transition: .4s; }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: #555; transition: .4s; }
+        input:checked + .slider { border-color: var(--term-main); }
+        input:checked + .slider:before { transform: translateX(18px); background-color: var(--term-main); box-shadow: 0 0 5px var(--term-main); }
+
+        #boot-screen { background: #000; z-index: 9998; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        #login-screen { background: #050505; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; background-image: radial-gradient(circle at center, #111 0%, #000 70%); }
+
+        .login-input { background: rgba(0,0,0,0.5); border: 1px solid #333; color: var(--term-main); width: 100%; padding: 10px; margin-bottom: 10px; outline: none; transition: all 0.3s; }
+        .login-input:focus { border-color: var(--term-main); box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); }
+
+        .modal-backdrop { background: rgba(0,0,0,0.8); backdrop-filter: blur(2px); }
+        
+        .text-theme-main { color: var(--term-main); }
+        .bg-theme-main { background-color: var(--term-main); }
+        .border-theme-main { border-color: var(--term-main); }
+        .shadow-theme-glow { box-shadow: 0 0 10px var(--term-glow); }
+
+        .panel-fade { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .stats-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 80px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); pointer-events: none; z-index: 5; }
+        
+        /* Clase nueva para bloquear la terminal mientras espera */
+        .terminal-busy { opacity: 0.5; pointer-events: none; cursor: wait; }
+    </style>
+</head>
+<body class="flex flex-col p-2 md:p-4 gap-4 text-xs md:text-sm select-none h-screen">
+
+    <div class="crt-overlay"></div>
+
+    <!-- PANTALLA DE LOGIN -->
+    <div id="login-screen" class="fixed inset-0 font-mono text-xs">
+        <div class="tech-border p-8 w-full max-w-md bg-black/80 flex flex-col items-center">
+            <div class="mb-6 flex flex-col items-center">
+                <i data-lucide="shield-check" class="w-12 h-12 text-theme-main mb-2 animate-pulse"></i>
+                <h1 class="text-2xl font-hud font-bold tracking-[0.2em] text-white">NETRUNNER<span class="text-theme-main">OS</span></h1>
+                <div class="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Identify Yourself</div>
+            </div>
+
+            <div class="w-full space-y-4">
+                <div>
+                    <label class="block text-[9px] text-gray-500 uppercase tracking-wider mb-1">Agent ID (Email)</label>
+                    <input type="email" id="login-email" class="login-input" placeholder="agent@netrunner.sys">
+                </div>
+                <div>
+                    <label class="block text-[9px] text-gray-500 uppercase tracking-wider mb-1">Access Code</label>
+                    <input type="password" id="login-password" class="login-input" placeholder="••••••••••••">
+                </div>
+                
+                <div id="login-msg" class="text-[10px] text-center min-h-[1.5em] text-red-500 font-bold"></div>
+
+                <div class="grid grid-cols-2 gap-4 mt-4">
+                    <button onclick="handleLogin()" class="btn-tac h-12 text-sm flex items-center justify-center gap-2 group">
+                        <i data-lucide="log-in" class="w-4 h-4"></i> LOGIN
+                    </button>
+                    <!-- NUEVO BOTÓN DE REGISTRO -->
+                    <button onclick="handleSignUp()" class="btn-tac h-12 text-sm flex items-center justify-center gap-2 border-yellow-600 text-yellow-500 hover:bg-yellow-900/30">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i> REGISTER
+                    </button>
+                </div>
+
+                <div class="flex items-center justify-between mt-4 border-t border-gray-800 pt-4">
+                    <span class="text-[9px] text-gray-600">Secure Protocol v3.8</span>
+                    <button onclick="bypassLogin()" class="text-[9px] text-gray-500 hover:text-white underline cursor-pointer">
+                        GUEST ACCESS (BYPASS)
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-4 text-[9px] text-gray-600 font-mono">
+            POWERED BY SUPABASE AUTH
+        </div>
+    </div>
+
+    <!-- PANTALLA DE ARRANQUE (BOOT) -->
+    <div id="boot-screen" class="fixed inset-0 font-mono text-xs">
+        <div class="w-64">
+            <div class="flex justify-between mb-1 text-gray-500">
+                <span>BIOS v4.0.12</span>
+                <span>MEM: OK</span>
+            </div>
+            <div class="h-1 bg-gray-900 w-full mb-4 overflow-hidden relative">
+                <div class="h-full bg-theme-main absolute animate-[loading_1.5s_ease-in-out_forwards]" style="width: 100%; background-color: var(--term-main);"></div>
+            </div>
+            <div class="space-y-1 text-green-500">
+                <div>> Authenticated user: <span id="boot-user" class="text-white">UNKNOWN</span></div>
+                <div style="animation-delay: 0.2s" class="opacity-0 animate-[fadeIn_0.1s_forwards_0.2s]">> Loading kernel... OK</div>
+                <div style="animation-delay: 0.4s" class="opacity-0 animate-[fadeIn_0.1s_forwards_0.4s]">> Establishing secure link...</div>
+                <div style="animation-delay: 0.8s" class="opacity-0 animate-[fadeIn_0.1s_forwards_0.8s] text-theme-main">> SYSTEM READY</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE AJUSTES -->
+    <div id="settings-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center modal-backdrop">
+        <div class="tech-border w-96 p-6 bg-black">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-2">
+                <h3 class="font-hud text-xl text-white">SYSTEM CONFIG</h3>
+                <button onclick="toggleSettings()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- Theme Selector -->
+                <div>
+                    <label class="block text-[10px] uppercase tracking-widest text-gray-500 mb-3">Interface Theme</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setTheme('default')" class="h-10 border border-cyan-500 bg-cyan-950/30 text-cyan-500 hover:bg-cyan-500 hover:text-black transition-colors text-xs">CYBER</button>
+                        <button onclick="setTheme('matrix')" class="h-10 border border-green-500 bg-green-950/30 text-green-500 hover:bg-green-500 hover:text-black transition-colors text-xs">MATRIX</button>
+                        <button onclick="setTheme('amber')" class="h-10 border border-yellow-500 bg-yellow-950/30 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-colors text-xs">RETRO</button>
+                    </div>
+                </div>
+
+                <!-- Fake Settings -->
+                <div>
+                    <label class="block text-[10px] uppercase tracking-widest text-gray-500 mb-3">Visual FX</label>
+                    <div class="flex justify-between items-center mb-2">
+                        <span>Motion Blur</span>
+                        <label class="hacker-toggle"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>CRT Scanline</span>
+                        <label class="hacker-toggle"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                </div>
+                
+                <div class="pt-4 border-t border-gray-800">
+                    <button onclick="handleLogout()" class="text-red-500 hover:text-red-400 text-xs flex items-center gap-2 w-full justify-center">
+                        <i data-lucide="log-out" class="w-3 h-3"></i> TERMINATE SESSION
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INTERFAZ PRINCIPAL -->
+    <div id="main-ui" class="flex-1 flex flex-col gap-4 opacity-0 transition-opacity duration-700 min-h-0 relative z-10 w-full max-w-[1600px] mx-auto h-full hidden">
+        
+        <!-- HEADER -->
+        <header class="tech-border h-14 flex justify-between items-center px-6 shrink-0 bg-black/40">
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="terminal" class="w-5 h-5 text-theme-main"></i>
+                    <div>
+                        <h1 class="font-hud text-xl font-bold tracking-widest text-white leading-none">NETRUNNER <span class="text-theme-main text-xs align-top">v3.8</span></h1>
+                        <div class="text-[10px] text-gray-500 tracking-[0.2em] uppercase">VBox Operations Center</div>
+                    </div>
+                </div>
+                <div class="h-6 w-px bg-gray-800 hidden md:block"></div>
+                <div class="hidden md:flex gap-4 text-[10px] text-gray-400 font-mono">
+                    <div class="flex items-center gap-2"><span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> NET: SECURE</div>
+                    <div class="flex items-center gap-2"><span class="w-2 h-2 bg-gray-600 rounded-full"></span> DB: CONNECTED</div>
+                </div>
+            </div>
+
+            <div class="flex gap-8 text-right font-mono items-center">
+                <div class="flex items-center gap-3 mr-4">
+                     <span id="user-display" class="text-[9px] text-gray-400 hidden md:inline">GUEST_USER</span>
+                     <button onclick="toggleSettings()" class="hover:text-white text-gray-500 transition-colors flex items-center gap-2 group">
+                        <i data-lucide="settings" class="w-4 h-4 group-hover:rotate-90 transition-transform"></i>
+                    </button>
+                </div>
+                
+                <div>
+                    <div class="text-[9px] text-gray-500 uppercase">Estado Enlace</div>
+                    <div id="conn-status" class="text-red-500 font-bold tracking-wide flex items-center justify-end gap-2 text-xs">
+                        OFFLINE
+                    </div>
+                </div>
+                <div>
+                    <div class="text-[9px] text-gray-500 uppercase">Tiempo Sistema</div>
+                    <div id="clock" class="text-theme-main font-bold text-lg leading-none font-hud">00:00:00</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- GRID PRINCIPAL -->
+        <div class="flex-1 grid grid-cols-12 gap-4 min-h-0">
+
+            <!-- COLUMNA 1: SERVIDORES -->
+            <aside class="col-span-12 md:col-span-3 flex flex-col gap-4">
+                <div class="tech-border flex-1 flex flex-col overflow-hidden bg-black/20">
+                    <div class="p-3 border-b border-gray-800 bg-gray-900/30 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-bold tracking-widest text-theme-main uppercase flex items-center gap-2">
+                                <i data-lucide="network" class="w-3 h-3"></i> Nodos Activos
+                            </span>
+                            <span id="target-count" class="text-[10px] bg-gray-800 text-gray-300 px-2 py-0.5 border border-gray-700">0</span>
+                        </div>
+                        <!-- Barra de búsqueda -->
+                        <div class="relative">
+                            <input type="text" id="server-search" placeholder="FILTER NODES..." onkeyup="filterServers()" 
+                                class="w-full bg-black/50 border border-gray-800 text-[10px] p-1.5 pl-7 text-gray-300 focus:border-theme-main focus:outline-none uppercase font-mono">
+                            <i data-lucide="search" class="w-3 h-3 text-gray-600 absolute left-2 top-2"></i>
+                        </div>
+                    </div>
+                    <div id="server-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+                        <!-- Items generados dinámicamente -->
+                    </div>
+                </div>
+                
+                <div class="tech-border h-auto p-4 flex flex-col justify-center bg-black/20">
+                    <div class="text-[9px] text-gray-500 mb-2 uppercase tracking-wider flex justify-between">
+                        <span>Network Traffic</span>
+                        <span class="text-theme-main animate-pulse">LIVE</span>
+                    </div>
+                    <!-- Mini Gráfico de Red -->
+                    <div class="flex items-end gap-1 h-8 mb-3 opacity-60">
+                        <div class="w-1 bg-theme-main h-[40%]"></div>
+                        <div class="w-1 bg-theme-main h-[70%]"></div>
+                        <div class="w-1 bg-theme-main h-[30%]"></div>
+                        <div class="w-1 bg-theme-main h-[90%]"></div>
+                        <div class="w-1 bg-theme-main h-[50%]"></div>
+                        <div class="w-1 bg-theme-main h-[20%]"></div>
+                        <div class="w-1 bg-theme-main h-[80%]"></div>
+                        <div class="w-1 bg-theme-main h-[60%]"></div>
+                        <div class="w-1 bg-theme-main h-[45%]"></div>
+                        <div class="w-1 bg-theme-main h-[75%]"></div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 text-center border-t border-gray-800 pt-3">
+                        <div class="bg-gray-900/40 p-1 border border-gray-800">
+                            <div class="text-lg font-hud font-bold text-white" id="stat-total">0</div>
+                            <div class="text-[8px] text-gray-500">TOTAL</div>
+                        </div>
+                        <div class="bg-green-900/10 p-1 border border-green-900/30">
+                            <div class="text-lg font-hud font-bold text-green-500" id="stat-on">0</div>
+                            <div class="text-[8px] text-green-700">ON</div>
+                        </div>
+                        <div class="bg-red-900/10 p-1 border border-red-900/30">
+                            <div class="text-lg font-hud font-bold text-red-500" id="stat-off">0</div>
+                            <div class="text-[8px] text-red-700">OFF</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- COLUMNA 2: VISUALIZACIÓN CENTRAL -->
+            <main class="col-span-12 md:col-span-6 flex flex-col gap-4 relative">
+                
+                <!-- Sistema de Pestañas para el Panel Central -->
+                <div class="tech-border flex-[2] relative flex flex-col overflow-hidden bg-black/60 group">
+                    <!-- Tab Header -->
+                    <nav class="flex gap-6 px-6 pt-4 border-b border-gray-800 bg-black/40 z-20">
+                        <button onclick="switchTab('visual')" id="tab-btn-visual" class="nav-tab active pb-2 text-[10px] font-bold tracking-widest uppercase">
+                            <i data-lucide="activity" class="w-3 h-3 inline mr-1 mb-0.5"></i> Visual
+                        </button>
+                        <button onclick="switchTab('process')" id="tab-btn-process" class="nav-tab pb-2 text-[10px] font-bold tracking-widest uppercase">
+                            <i data-lucide="cpu" class="w-3 h-3 inline mr-1 mb-0.5"></i> Process
+                        </button>
+                        <button onclick="switchTab('terminal')" id="tab-btn-terminal" class="nav-tab pb-2 text-[10px] font-bold tracking-widest uppercase">
+                            <i data-lucide="terminal-square" class="w-3 h-3 inline mr-1 mb-0.5"></i> Terminal
+                        </button>
+                        <button onclick="switchTab('files')" id="tab-btn-files" class="nav-tab pb-2 text-[10px] font-bold tracking-widest uppercase">
+                            <i data-lucide="folder-lock" class="w-3 h-3 inline mr-1 mb-0.5"></i> Files
+                        </button>
+                    </nav>
+
+                    <!-- CONTENIDO DE TABS -->
+                    <div class="relative flex-1 overflow-hidden">
+                        
+                        <!-- TAB 1: VISUAL (Radar + Live Stats) -->
+                        <div id="view-visual" class="absolute inset-0 panel-fade">
+                            <div class="absolute inset-0 z-0 opacity-10" style="background-image: radial-gradient(var(--term-main) 1px, transparent 1px); background-size: 30px 30px;"></div>
+                            <canvas id="core-canvas" class="absolute inset-0 w-full h-full opacity-80 pointer-events-none z-0"></canvas>
+        
+                            <div class="z-10 text-center w-full mt-8 backdrop-blur-[2px] relative">
+                                <div class="inline-flex items-center gap-2 border border-gray-800 bg-black/60 px-3 py-1 mb-4 rounded-full">
+                                    <div class="w-1.5 h-1.5 bg-theme-main animate-pulse rounded-full"></div>
+                                    <span class="text-[9px] text-theme-main tracking-widest uppercase">Target Locked</span>
+                                </div>
+                                
+                                <h2 id="main-name" class="text-4xl md:text-5xl font-hud font-bold text-white mb-1 tracking-tight drop-shadow-[0_0_10px_rgba(0,0,0,0.8)]">NO SIGNAL</h2>
+                                
+                                <div class="flex justify-center gap-6 text-[10px] font-mono text-gray-400 mb-6">
+                                    <span id="main-id" class="border-b border-gray-800 pb-1">UUID: NULL</span>
+                                    <span id="main-ip" class="border-b border-gray-800 pb-1">IP: 0.0.0.0</span>
+                                    <span id="main-uptime" class="border-b border-gray-800 pb-1 text-gray-500">UP: 00:00:00</span>
+                                </div>
+        
+                                <div id="status-container" class="mt-2">
+                                    <div id="main-status" class="text-2xl font-bold text-gray-700 font-hud tracking-[0.2em] border-2 border-gray-800 inline-block px-6 py-2 bg-black/80">OFFLINE</div>
+                                </div>
+                            </div>
+        
+                            <!-- NEW: Gráfico Histórico Overlay en el fondo inferior -->
+                            <div class="absolute bottom-20 left-0 w-full h-24 pointer-events-none opacity-30 z-0">
+                                <canvas id="stats-chart" class="w-full h-full"></canvas>
+                            </div>
+
+                            <div class="absolute bottom-0 w-full p-6 flex justify-between items-end z-10 pointer-events-none bg-gradient-to-t from-black via-black/80 to-transparent pt-12">
+                                <div class="w-1/3">
+                                    <div class="flex justify-between items-end mb-1">
+                                        <span class="text-[9px] text-gray-400 font-bold">CPU LOAD</span>
+                                        <span class="text-xl font-hud text-white" id="cpu-val-display">00<span class="text-sm text-gray-600">%</span></span>
+                                    </div>
+                                    <div class="h-1 w-full bg-gray-900 overflow-hidden">
+                                        <div id="cpu-bar" class="h-full bg-theme-main w-0 transition-all duration-300 shadow-theme-glow"></div>
+                                    </div>
+                                </div>
+                                <div class="w-1/3">
+                                    <div class="flex justify-between items-end mb-1">
+                                        <span class="text-[9px] text-gray-400 font-bold">RAM USAGE</span>
+                                        <span class="text-xl font-hud text-white" id="ram-val-display">00<span class="text-sm text-gray-600">%</span></span>
+                                    </div>
+                                    <div class="h-1 w-full bg-gray-900 overflow-hidden">
+                                        <div id="ram-bar" class="h-full bg-purple-500 w-0 transition-all duration-300 shadow-[0_0_10px_#a855f7]"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 2: PROCESOS -->
+                        <div id="view-process" class="absolute inset-0 bg-black/80 hidden flex flex-col p-4 font-mono text-xs panel-fade">
+                            <div class="flex justify-between text-[10px] text-gray-500 border-b border-gray-800 pb-2 mb-2">
+                                <span class="w-16">PID</span>
+                                <span class="w-24">USER</span>
+                                <span class="w-12 text-right">CPU%</span>
+                                <span class="w-12 text-right">MEM%</span>
+                                <span class="flex-1 pl-4">COMMAND</span>
+                            </div>
+                            <div id="process-list" class="flex-1 overflow-y-auto space-y-1 text-gray-400">
+                                <!-- JS llenará esto -->
+                                <div class="text-center mt-10 text-gray-600">WAITING FOR DATA STREAM...</div>
+                            </div>
+                            <div class="mt-2 text-[10px] text-theme-main pt-2 border-t border-gray-800">
+                                Total Processes: <span id="proc-count">0</span> | Threads: <span id="thread-count">0</span>
+                            </div>
+                        </div>
+
+                        <!-- TAB 3: TERMINAL (AHORA CON EJECUCIÓN REAL Y BOTONES RÁPIDOS) -->
+                        <div id="view-terminal" class="absolute inset-0 bg-black hidden flex flex-col panel-fade">
+                            <!-- Quick Actions Toolbar -->
+                            <div class="flex gap-2 p-2 bg-gray-900 border-b border-gray-700 overflow-x-auto shrink-0">
+                                <button onclick="executeTerminalCommand('ipconfig /all')" class="bg-blue-900/30 hover:bg-blue-800 text-blue-300 px-3 py-1 border border-blue-800/50 rounded text-[10px] font-mono whitespace-nowrap">IPCONFIG</button>
+                                <button onclick="executeTerminalCommand('systeminfo')" class="bg-green-900/30 hover:bg-green-800 text-green-300 px-3 py-1 border border-green-800/50 rounded text-[10px] font-mono whitespace-nowrap">SYSINFO</button>
+                                <button onclick="executeTerminalCommand('netstat -an')" class="bg-purple-900/30 hover:bg-purple-800 text-purple-300 px-3 py-1 border border-purple-800/50 rounded text-[10px] font-mono whitespace-nowrap">NETSTAT</button>
+                                <button onclick="executeTerminalCommand('whoami')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1 border border-gray-600 rounded text-[10px] font-mono whitespace-nowrap">WHOAMI</button>
+                                <button onclick="executeTerminalCommand('dir')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1 border border-gray-600 rounded text-[10px] font-mono whitespace-nowrap">DIR</button>
+                            </div>
+
+                            <div id="term-output" class="flex-1 overflow-y-auto p-4 text-gray-300 space-y-1 font-mono text-xs mb-2">
+                                <div class="text-gray-500">Netrunner Secure Shell v3.1 [VBox Guest Link]</div>
+                                <div class="text-gray-500">Type 'help' for available commands.</div>
+                                <br>
+                            </div>
+                            <div class="flex items-center text-theme-main p-2 bg-gray-900/50">
+                                <span class="mr-2 font-mono" id="term-prompt">C:\></span>
+                                <input type="text" id="term-input" autocomplete="off" class="bg-transparent border-none outline-none flex-1 text-white focus:ring-0 font-mono text-xs">
+                            </div>
+                        </div>
+
+                        <!-- TAB 4: FILES -->
+                        <div id="view-files" class="absolute inset-0 bg-black/80 hidden p-4 panel-fade overflow-y-auto">
+                            <div class="grid grid-cols-4 gap-4">
+                                <!-- Mock Folders -->
+                                <div class="flex flex-col items-center p-4 border border-gray-800 hover:border-theme-main hover:bg-gray-900/50 cursor-pointer transition-colors">
+                                    <i data-lucide="folder" class="w-8 h-8 text-yellow-600 mb-2"></i>
+                                    <span class="text-[10px] text-gray-400">/var/log</span>
+                                </div>
+                                <div class="flex flex-col items-center p-4 border border-gray-800 hover:border-theme-main hover:bg-gray-900/50 cursor-pointer transition-colors">
+                                    <i data-lucide="folder" class="w-8 h-8 text-blue-600 mb-2"></i>
+                                    <span class="text-[10px] text-gray-400">/etc/conf</span>
+                                </div>
+                                <div class="flex flex-col items-center p-4 border border-gray-800 hover:border-theme-main hover:bg-gray-900/50 cursor-pointer transition-colors">
+                                    <i data-lucide="file-code" class="w-8 h-8 text-gray-500 mb-2"></i>
+                                    <span class="text-[10px] text-gray-400">kernel.sys</span>
+                                </div>
+                                <div class="flex flex-col items-center p-4 border border-gray-800 hover:border-theme-main hover:bg-gray-900/50 cursor-pointer transition-colors">
+                                    <i data-lucide="lock" class="w-8 h-8 text-red-500 mb-2"></i>
+                                    <span class="text-[10px] text-red-400">shadow.db</span>
+                                </div>
+                            </div>
+                            <div class="mt-8 text-[10px] text-gray-600 font-mono text-center">
+                                // ACCESS RESTRICTED // HIGHER CLEARANCE REQUIRED
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Consola del sistema (Log inferior) -->
+                <div class="tech-border flex-1 bg-black/90 flex flex-col min-h-[150px]">
+                    <div class="px-3 py-1 bg-gray-900/50 border-b border-gray-800 flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-gray-500 tracking-widest uppercase">> System Log</span>
+                        <div class="flex gap-2">
+                             <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        </div>
+                    </div>
+                    <div id="console" class="flex-1 p-3 font-mono text-[11px] overflow-y-auto text-gray-400/90 scroll-smooth">
+                        <div class="console-line text-gray-600">Initializing secure environment v3.7...</div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- COLUMNA 3: COMANDOS -->
+            <aside class="col-span-12 md:col-span-3 tech-border p-5 flex flex-col gap-6 bg-black/20 overflow-y-auto">
+                <div class="flex items-center gap-2 border-b border-gray-800 pb-3">
+                    <i data-lucide="cpu" class="w-4 h-4 text-theme-main"></i>
+                    <span class="text-[10px] font-bold text-white tracking-widest uppercase">Command Center</span>
+                </div>
+
+                <!-- POWER (Sin tocar IDs ni lógica) -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-[9px] text-gray-500 uppercase font-bold">
+                        <span>Main Power</span>
+                        <span class="text-xs text-gray-700">PWR_01</span>
+                    </div>
+                    <button id="btn-start" onclick="runCmd('start')" class="btn-tac w-full h-12 text-sm flex items-center justify-center gap-2 group">
+                        <i data-lucide="zap" class="w-4 h-4 group-hover:text-yellow-400 transition-colors"></i> BOOT_SEQUENCE
+                    </button>
+                </div>
+
+                <!-- SESSION -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-[9px] text-gray-500 uppercase font-bold">
+                        <span>Cycle Ops</span>
+                        <span class="text-xs text-gray-700">CYC_02</span>
+                    </div>
+                    
+                    <button id="btn-resume" onclick="runCmd('resume')" class="btn-tac btn-warn w-full h-12 hidden">
+                        <i data-lucide="play" class="w-4 h-4 mr-2"></i> RESUME_PROCESS
+                    </button>
+
+                    <button id="btn-reset" onclick="runCmd('reset')" class="btn-tac w-full h-10 text-[10px] border-gray-700 text-gray-400 hover:text-white hover:border-white">
+                        <i data-lucide="refresh-cw" class="w-3 h-3 mr-2"></i> REBOOT SYSTEM
+                    </button>
+                </div>
+
+                <div class="h-px bg-gray-800/50 my-2"></div>
+
+                <!-- NUEVO: MÓDULO DE SEGURIDAD (Visual) -->
+                <div class="bg-gray-900/30 p-3 border border-gray-800 rounded">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i data-lucide="shield" class="w-3 h-3 text-gray-400"></i>
+                        <span class="text-[9px] font-bold text-gray-500 uppercase">Security Protocols</span>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] text-gray-400">Firewall L7</span>
+                            <label class="hacker-toggle"><input type="checkbox" checked><span class="slider"></span></label>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] text-gray-400">IPS/IDS Active</span>
+                            <label class="hacker-toggle"><input type="checkbox" checked><span class="slider"></span></label>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] text-gray-400">Disk Encrypt</span>
+                            <label class="hacker-toggle"><input type="checkbox"><span class="slider"></span></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="h-px bg-gray-800/50 my-2"></div>
+
+                <!-- DANGER ZONE -->
+                <div class="mt-auto space-y-3">
+                    <div class="text-[9px] text-red-900 text-center font-bold uppercase tracking-[0.3em] border border-red-900/20 py-1 bg-red-950/10">DANGER ZONE</div>
+                    
+                    <button id="btn-stop" onclick="runCmd('stop')" class="btn-tac w-full h-10 text-[10px] border-gray-800 text-gray-500 hover:text-white hover:border-gray-500">
+                        <i data-lucide="power" class="w-3 h-3 mr-2"></i> GRACEFUL_SHUTDOWN
+                    </button>
+                    
+                    <button id="btn-kill" onclick="runCmd('force-stop')" class="btn-tac btn-danger w-full h-14 text-sm font-bold flex items-center justify-center gap-2">
+                        <i data-lucide="skull" class="w-4 h-4"></i> TERMINATE_PROCESS
+                    </button>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:3001/api';
+        
+        // --- SUPABASE CONFIG ---
+        const SB_URL = 'https://zuolmzrforzrjtphftzd.supabase.co';
+        const SB_KEY = 'sb_publishable_lxqOyOhBJpiD9aQyOxLpVg_uWdQ7k2i'; 
+        
+        let sbClient = null;
+
+        try {
+            sbClient = window.supabase.createClient(SB_URL, SB_KEY);
+            console.log("Supabase Client Init: OK");
+        } catch(e) {
+            console.error("Supabase Init Failed:", e);
+        }
+        
+        // DATOS FANTASMA PARA SIMULACIÓN (Fallback)
+        const GHOST_DATA = [
+            { id: "SRV-ALPHA-99", name: "GHOST_PROTOCOL_01", status: "stopped", cpu: 0, ram: 0, ip: "192.168.0.105" },
+            { id: "SRV-BRAVO-X", name: "SHADOW_NET_V2", status: "running", cpu: 45, ram: 62, ip: "10.0.5.24" },
+            { id: "SRV-CHARLIE-0", name: "VAULT_KEEPER", status: "paused", cpu: 12, ram: 88, ip: "172.16.88.9" }
+        ];
+
+        // MOCK DATA for Processes (Fallback)
+        const MOCK_PROCS = [
+            { user: 'root', cmd: 'kernel_task', baseCpu: 1, baseMem: 5 },
+            { user: 'sys', cmd: 'systemd', baseCpu: 0.5, baseMem: 2 },
+            { user: 'www', cmd: 'nginx_worker', baseCpu: 5, baseMem: 12 },
+            { user: 'db', cmd: 'postgres_w', baseCpu: 8, baseMem: 25 },
+            { user: 'root', cmd: 'dockerd', baseCpu: 15, baseMem: 30 },
+            { user: 'root', cmd: 'kworker/u', baseCpu: 2, baseMem: 1 },
+            { user: 'user', cmd: 'node_app', baseCpu: 12, baseMem: 45 },
+            { user: 'root', cmd: 'sshd', baseCpu: 0.1, baseMem: 0.5 }
+        ];
+
+        let state = { 
+            servers: [], 
+            selectedId: null, 
+            online: false, 
+            isSimulation: false, 
+            activeTab: 'visual',
+            cpuHistory: new Array(50).fill(0),
+            isTerminalBusy: false // Flag de seguridad para la terminal
+        };
+
+        // --- AUTH LOGIC ---
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const msg = document.getElementById('login-msg');
+
+            msg.innerText = "CONNECTING TO SECURE SERVER...";
+
+            if(!sbClient) {
+                msg.innerText = "ERR: CLIENT INIT FAILED. USE GUEST MODE.";
+                return;
+            }
+
+            try {
+                const { data, error } = await sbClient.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    msg.innerText = "ACCESS DENIED: " + error.message.toUpperCase();
+                    document.getElementById('login-screen').classList.add('animate-pulse');
+                    setTimeout(() => document.getElementById('login-screen').classList.remove('animate-pulse'), 500);
+                } else {
+                    msg.className = "text-[10px] text-center min-h-[1.5em] text-green-500 font-bold";
+                    msg.innerText = "ACCESS GRANTED. WELCOME AGENT.";
+                    setTimeout(() => {
+                        startBootSequence(data.user.email);
+                    }, 1000);
+                }
+            } catch (err) {
+                msg.innerText = "CRITICAL ERROR. CHECK CONSOLE.";
+                console.error(err);
+            }
+        }
+
+        // --- NEW: SIGN UP LOGIC ---
+        async function handleSignUp() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const msg = document.getElementById('login-msg');
+
+            if(!email || !password) {
+                msg.innerText = "ERR: EMAIL AND PASSWORD REQUIRED FOR REGISTRATION.";
+                return;
+            }
+
+            msg.innerText = "REGISTERING NEW AGENT...";
+
+            if(!sbClient) {
+                msg.innerText = "ERR: CLIENT INIT FAILED.";
+                return;
+            }
+
+            try {
+                const { data, error } = await sbClient.auth.signUp({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    msg.innerText = "REGISTRATION FAILED: " + error.message.toUpperCase();
+                } else {
+                    msg.className = "text-[10px] text-center min-h-[1.5em] text-yellow-500 font-bold";
+                    msg.innerText = "REGISTRATION SUCCESSFUL. CHECK EMAIL OR LOGIN.";
+                }
+            } catch (err) {
+                msg.innerText = "CRITICAL ERROR DURING SIGNUP.";
+                console.error(err);
+            }
+        }
+        
+        function bypassLogin() {
+            startBootSequence("GUEST_ADMIN");
+        }
+        
+        async function handleLogout() {
+            if(sbClient) await sbClient.auth.signOut();
+            location.reload();
+        }
+
+        function startBootSequence(userEmail) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('boot-screen').style.display = 'flex';
+            document.getElementById('boot-user').innerText = userEmail;
+            document.getElementById('user-display').innerText = userEmail.toUpperCase();
+            
+            setTimeout(() => {
+                const bootScreen = document.getElementById('boot-screen');
+                bootScreen.style.opacity = 0;
+                setTimeout(() => bootScreen.style.display = 'none', 500);
+                
+                const mainUi = document.getElementById('main-ui');
+                mainUi.classList.remove('hidden');
+                setTimeout(() => mainUi.style.opacity = 1, 100);
+                
+                init();
+            }, 2000);
+        }
+
+        // --- VISUALIZADOR DE NÚCLEO Y GRÁFICOS ---
+        const cvs = document.getElementById('core-canvas');
+        const statCvs = document.getElementById('stats-chart');
+        
+        const ctx = cvs ? cvs.getContext('2d') : null;
+        const statCtx = statCvs ? statCvs.getContext('2d') : null;
+        
+        let angle = 0;
+
+        new ResizeObserver(() => resizeCanvases()).observe(cvs.parentElement);
+
+        function resizeCanvases() {
+            if(!cvs) return;
+            cvs.width = cvs.parentElement.offsetWidth;
+            cvs.height = cvs.parentElement.offsetHeight;
+            
+            if(statCvs) {
+                statCvs.width = statCvs.parentElement.offsetWidth;
+                statCvs.height = statCvs.parentElement.offsetHeight;
+            }
+        }
+
+        function drawCore() {
+            if(!ctx || state.activeTab !== 'visual') {
+                requestAnimationFrame(drawCore);
+                return;
+            }
+            
+            const w = cvs.width;
+            const h = cvs.height;
+            const cx = w/2;
+            const cy = h/2;
+            const themeColor = getComputedStyle(document.body).getPropertyValue('--term-main').trim();
+
+            ctx.clearRect(0, 0, w, h);
+            angle += 0.008;
+
+            // Radar
+            ctx.strokeStyle = 'rgba(100, 100, 100, 0.1)';
+            ctx.lineWidth = 1;
+            for(let i=1; i<=3; i++) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, i * 55, 0, Math.PI*2);
+                ctx.stroke();
+            }
+
+            // Rotating Arc
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
+            ctx.strokeStyle = themeColor;
+            ctx.globalAlpha = 0.4;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 110, 0, Math.PI/1.5);
+            ctx.stroke();
+            ctx.restore();
+            
+            // Core Pulse
+            const srv = state.servers.find(s => s.id === state.selectedId);
+            const isRunning = srv && srv.status === 'running';
+            
+            if (isRunning) {
+                const pulse = 10 + Math.sin(angle * 10) * 3;
+                ctx.fillStyle = themeColor;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = themeColor;
+                ctx.beginPath();
+                ctx.arc(cx, cy, pulse, 0, Math.PI*2);
+                ctx.fill();
+            } else {
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.arc(cx, cy, 5, 0, Math.PI*2);
+                ctx.fill();
+            }
+
+            drawStatsChart(themeColor);
+            requestAnimationFrame(drawCore);
+        }
+
+        function drawStatsChart(color) {
+            if(!statCtx) return;
+            const w = statCvs.width;
+            const h = statCvs.height;
+
+            statCtx.clearRect(0, 0, w, h);
+            statCtx.beginPath();
+            statCtx.strokeStyle = color;
+            statCtx.lineWidth = 2;
+
+            const step = w / (state.cpuHistory.length - 1);
+            
+            state.cpuHistory.forEach((val, i) => {
+                const x = i * step;
+                const y = h - (val / 100 * h); // Escala 0-100%
+                if(i===0) statCtx.moveTo(x, y);
+                else statCtx.lineTo(x, y);
+            });
+            statCtx.stroke();
+            
+            // Fill gradient under
+            const grad = statCtx.createLinearGradient(0, 0, 0, h);
+            grad.addColorStop(0, color);
+            grad.addColorStop(1, "transparent");
+            statCtx.globalAlpha = 0.1;
+            statCtx.lineTo(w, h);
+            statCtx.lineTo(0, h);
+            statCtx.fillStyle = grad;
+            statCtx.fill();
+            statCtx.globalAlpha = 1.0;
+        }
+
+        if(ctx) drawCore();
+
+        // --- LOGIC: TABS ---
+        function switchTab(tab) {
+            state.activeTab = tab;
+            document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-btn-${tab}`).classList.add('active');
+            
+            ['visual', 'process', 'terminal', 'files'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+            });
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+
+            if(tab === 'terminal') {
+                 document.getElementById('term-input').focus();
+                 updateTerminalPrompt();
+            }
+        }
+        
+        function updateTerminalPrompt() {
+            const srv = state.servers.find(s => s.id === state.selectedId);
+            const prompt = document.getElementById('term-prompt');
+            // Muestra "C:>" para simular que estamos en la VM
+            if(srv) prompt.innerText = `C:\\Users\\Admin>`; 
+            else prompt.innerText = `C:\\>`;
+        }
+
+        // --- LOGIC: TERMINAL REAL vs SIMULADA ---
+        // Nueva función central para ejecutar comandos (llamada por botones y por Enter)
+        // CON SISTEMA DE COOLDOWN PARA EVITAR BLOQUEOS
+        async function executeTerminalCommand(cmd) {
+            if (!cmd || state.isTerminalBusy) return; // Bloqueo si está ocupado
+            
+            state.isTerminalBusy = true; // Activar bloqueo
+            
+            const out = document.getElementById('term-output');
+            const promptText = document.getElementById('term-prompt').innerText;
+            const input = document.getElementById('term-input');
+            const terminalContainer = document.getElementById('view-terminal');
+            
+            // Efecto visual de ocupado
+            terminalContainer.classList.add('terminal-busy');
+            
+            // Limpiar input si fue escrito
+            input.value = '';
+            
+            out.innerHTML += `<div class="text-white mt-1"><span class="text-theme-main">${promptText}</span> ${cmd}</div>`;
+            out.scrollTop = out.scrollHeight;
+
+            let resp = "";
+            
+            if (!state.isSimulation && state.selectedId) {
+                try {
+                    out.innerHTML += `<div id="loading-cmd" class="text-gray-500 animate-pulse text-[10px]">... Executing on guest VM ...</div>`;
+                    const res = await fetch(`${API}/server/${state.selectedId}/exec`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ command: cmd })
+                    });
+                    
+                    document.getElementById('loading-cmd')?.remove();
+                    
+                    if(res.ok) {
+                        const data = await res.json();
+                        resp = data.output || "";
+                        if(!resp) resp = "[Command executed successfully with no output]";
+                    } else {
+                        resp = `ERR: REMOTE SHELL REFUSED CONNECTION (HTTP ${res.status})`;
+                    }
+                } catch(err) {
+                    document.getElementById('loading-cmd')?.remove();
+                    resp = "ERR: UPLINK FAILED. CHECK BACKEND CONNECTION.";
+                }
+            }
+
+            if (!resp) {
+                // Fallback local simulation (si no hay backend conectado)
+                switch(cmd.toLowerCase()) {
+                    case 'help': resp = "Available commands: help, status, scan, clear, whoami, reboot"; break;
+                    case 'clear': out.innerHTML = ''; return;
+                    default: resp = `bash: ${cmd}: command not found (simulation mode)`;
+                }
+            }
+            
+            // Renderizar salida
+            if(resp) out.innerHTML += `<div class="text-gray-300 mb-2 whitespace-pre-wrap leading-tight">${resp}</div>`;
+            out.scrollTop = out.scrollHeight;
+
+            // COOLDOWN DE SEGURIDAD (1.5s) PARA EVITAR ERROR DE VBOX
+            setTimeout(() => {
+                state.isTerminalBusy = false;
+                terminalContainer.classList.remove('terminal-busy');
+                input.focus();
+            }, 1500);
+        }
+
+        // Listener para la tecla ENTER
+        document.getElementById('term-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                executeTerminalCommand(this.value);
+            }
+        });
+
+        // --- LOGIC: ESTADÍSTICAS REALES ---
+        async function fetchRealStats() {
+            if (state.isSimulation || !state.selectedId) return null;
+            try {
+                const res = await fetch(`${API}/server/${state.selectedId}/stats`);
+                if(res.ok) {
+                    const data = await res.json();
+                    return data; 
+                }
+            } catch(e) { return null; }
+            return null;
+        }
+
+        // --- LOGIC: SISTEMA BASE ---
+        setInterval(async () => {
+            const c = document.getElementById('clock');
+            if(c) c.innerText = new Date().toLocaleTimeString('es-ES');
+            
+            const srv = state.servers.find(s => s.id === state.selectedId);
+            if(!srv) return;
+
+            let currentCpu = 0;
+            let currentRam = 0;
+
+            if (!state.isSimulation && srv.status === 'running') {
+                const realData = await fetchRealStats();
+                if (realData) {
+                    srv.cpu = realData.cpu;
+                    srv.ram = realData.ram;
+                    currentCpu = realData.cpu;
+                    currentRam = realData.ram;
+                } else {
+                    srv.cpu = Math.min(100, Math.max(0, srv.cpu + Math.floor(Math.random() * 10) - 5));
+                    srv.ram = Math.min(100, Math.max(0, srv.ram + Math.floor(Math.random() * 6) - 3));
+                    currentCpu = srv.cpu;
+                    currentRam = srv.ram;
+                }
+            }
+
+            state.cpuHistory.push(currentCpu);
+            if(state.cpuHistory.length > 50) state.cpuHistory.shift();
+
+            if(state.selectedId) updateUI();
+            updateProcesses();
+
+        }, 1000);
+
+        async function init() {
+            sync(); 
+            setInterval(sync, 2000); 
+        }
+
+        async function sync() {
+            if (state.isSimulation) return; 
+
+            try {
+                const res = await fetch(`${API}/servers`);
+                const data = await res.json();
+                
+                state.online = true;
+                
+                if (data.length > 0) {
+                    // Update server list but try to preserve selected ID
+                    const oldSelected = state.selectedId;
+                    state.servers = data; 
+                    
+                    if (!oldSelected || !state.servers.find(s => s.id === oldSelected)) {
+                         select(state.servers[0].id);
+                    } else {
+                         // Refresh UI values for selected server
+                         updateUI();
+                    }
+                } else {
+                     if(state.servers.length === 0) startSimulationMode();
+                }
+
+                updateConnStatus(true, "ENCRYPTED_LINK");
+                renderList();
+
+            } catch (e) {
+                if (!state.isSimulation && state.servers.length === 0) {
+                    console.warn("API no detectada. Iniciando Modo Simulación.");
+                    startSimulationMode();
+                } else if (!state.isSimulation) {
+                    updateConnStatus(false, "CONNECTION_LOST");
+                }
+            }
+        }
+
+        function startSimulationMode() {
+            state.isSimulation = true;
+            state.servers = JSON.parse(JSON.stringify(GHOST_DATA)); 
+            state.online = true;
+            updateConnStatus(true, "SIMULATION_MODE");
+            if (!state.selectedId) select(state.servers[0].id);
+            renderList();
+        }
+
+        function updateConnStatus(online, text) {
+            const el = document.getElementById('conn-status');
+            if(online) {
+                el.innerHTML = `<span class="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_5px_#0f0]"></span> ${text}`;
+                el.className = "text-green-500 font-bold tracking-wide flex items-center justify-end gap-2 text-xs";
+            } else {
+                el.innerHTML = `<span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> ${text}`;
+                el.className = "text-red-500 font-bold tracking-wide flex items-center justify-end gap-2 text-xs";
+            }
+        }
+
+        function filterServers() {
+            renderList();
+        }
+
+        function renderList() {
+            const list = document.getElementById('server-list');
+            const searchVal = document.getElementById('server-search').value.toLowerCase();
+            if(!list) return;
+            
+            const filtered = state.servers.filter(s => 
+                (s.name && s.name.toLowerCase().includes(searchVal)) || 
+                (s.id && s.id.toLowerCase().includes(searchVal))
+            );
+
+            const html = filtered.map(s => {
+                const active = s.id === state.selectedId;
+                let statusColor = "bg-red-500";
+                if(s.status === 'running') statusColor = "bg-green-500 shadow-[0_0_8px_#0f0]";
+                if(s.status === 'paused') statusColor = "bg-yellow-500 animate-pulse";
+                
+                // Muestra IP real si existe
+                const ipDisplay = s.ip && s.ip !== '0.0.0.0' ? s.ip : '--';
+
+                return `
+                <div onclick="select('${s.id}')" 
+                     class="server-item p-3 mb-1 flex justify-between items-center group ${active ? 'active' : 'border-transparent text-gray-500'}">
+                    <div class="flex flex-col">
+                        <span class="text-xs font-bold tracking-wider font-mono ${active ? 'text-white' : 'group-hover:text-gray-300'}">${s.name}</span>
+                        <div class="flex gap-2 text-[9px] font-mono opacity-60 uppercase">
+                            <span>${s.id.substring(0,8)}</span>
+                            <span class="text-theme-main">IP: ${ipDisplay}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] font-bold tracking-widest opacity-80">${s.status.toUpperCase()}</span>
+                        <div class="w-2 h-2 rounded-full ${statusColor}"></div>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            list.innerHTML = html || '<div class="p-4 text-[10px] text-gray-600 text-center">NO MATCHES FOUND</div>';
+            
+            document.getElementById('target-count').innerText = state.servers.length;
+            document.getElementById('stat-total').innerText = state.servers.length;
+            document.getElementById('stat-on').innerText = state.servers.filter(s=>s.status==='running').length;
+            document.getElementById('stat-off').innerText = state.servers.filter(s=>s.status==='stopped').length;
+        }
+
+        function select(id) {
+            state.selectedId = id;
+            state.cpuHistory = new Array(50).fill(0);
+            updateUI();
+            updateTerminalPrompt();
+            renderList(); // Para actualizar selección visual
+            const s = state.servers.find(x => x.id === id);
+            log(`TARGET SWITCHED: ${s.name}`);
+        }
+
+        function updateUI() {
+            const srv = state.servers.find(s => s.id === state.selectedId);
+            if (!srv) return;
+
+            document.getElementById('main-name').innerText = srv.name;
+            document.getElementById('main-id').innerText = "UUID: " + srv.id;
+            
+            // Usar IP real del backend si existe
+            const ip = srv.ip && srv.ip !== '0.0.0.0' ? srv.ip : "SCANNING...";
+            document.getElementById('main-ip').innerText = "IP: " + ip;
+            
+            const st = srv.status;
+            const statusDiv = document.getElementById('main-status');
+            
+            const uptimeEl = document.getElementById('main-uptime');
+            if(st === 'running') uptimeEl.innerText = "UP: 14:02:45";
+            else uptimeEl.innerText = "UP: --:--:--";
+
+            const cpu = st === 'running' ? srv.cpu : 0;
+            const ram = st === 'running' ? srv.ram : 0;
+            
+            document.getElementById('cpu-val-display').innerHTML = `${Number(cpu).toString().padStart(2,'0')}<span class="text-sm text-gray-600">%</span>`;
+            document.getElementById('ram-val-display').innerHTML = `${Number(ram).toString().padStart(2,'0')}<span class="text-sm text-gray-600">%</span>`;
+
+            const cpuBar = document.getElementById('cpu-bar');
+            if(cpuBar) {
+                cpuBar.style.width = cpu + "%";
+                cpuBar.className = cpu > 85 
+                    ? "h-full bg-red-500 w-0 transition-all duration-300 shadow-[0_0_15px_#ef4444]" 
+                    : "h-full bg-theme-main w-0 transition-all duration-300 shadow-theme-glow";
+                
+                if(cpu <= 85) cpuBar.style.backgroundColor = "var(--term-main)";
+            }
+            
+            const ramBar = document.getElementById('ram-bar');
+            if(ramBar) ramBar.style.width = ram + "%";
+
+            // Botones
+            const btnStart = document.getElementById('btn-start');
+            const btnKill = document.getElementById('btn-kill');
+            const btnResume = document.getElementById('btn-resume');
+            const btnStop = document.getElementById('btn-stop');
+            const btnReset = document.getElementById('btn-reset');
+
+            if(btnResume) btnResume.classList.add('hidden');
+            if(btnKill) btnKill.classList.remove('hidden');
+
+            if (st === 'running') {
+                statusDiv.innerText = "ONLINE";
+                statusDiv.className = "text-2xl font-bold font-hud tracking-[0.2em] border-2 border-green-500/50 inline-block px-6 py-2 bg-green-950/30 text-green-400 shadow-[0_0_15px_rgba(74,222,128,0.2)]";
+                
+                btnStart.disabled = true;
+                btnKill.disabled = false;
+                btnStop.disabled = false;
+                btnReset.disabled = false;
+
+            } else if (st === 'paused') {
+                statusDiv.innerText = "SUSPENDED";
+                statusDiv.className = "text-2xl font-bold font-hud tracking-[0.2em] border-2 border-yellow-500/50 inline-block px-6 py-2 bg-yellow-950/30 text-yellow-400 animate-pulse";
+                
+                if(btnKill) btnKill.classList.add('hidden');
+                if(btnResume) btnResume.classList.remove('hidden');
+                
+                btnStart.disabled = true;
+                btnStop.disabled = true;
+                btnReset.disabled = true;
+
+            } else {
+                statusDiv.innerText = "TERMINATED";
+                statusDiv.className = "text-2xl font-bold font-hud tracking-[0.2em] border-2 border-red-500/50 inline-block px-6 py-2 bg-red-950/30 text-red-500";
+                
+                btnStart.disabled = false;
+                btnKill.disabled = true;
+                btnStop.disabled = true;
+                btnReset.disabled = true;
+            }
+        }
+
+        async function runCmd(action) {
+            if(!state.selectedId) return;
+            log(`INITIATING PROTOCOL: ${action.toUpperCase()}...`);
+            
+            if(state.isSimulation) {
+                setTimeout(() => {
+                    const srv = state.servers.find(s => s.id === state.selectedId);
+                    if(srv) {
+                        if(action === 'start') { srv.status = 'running'; srv.cpu = 10; srv.ram = 20; }
+                        if(action === 'stop' || action === 'force-stop') { srv.status = 'stopped'; }
+                        if(action === 'reset') { srv.status = 'running'; srv.cpu = 5; }
+                        if(action === 'resume') { srv.status = 'running'; }
+                        
+                        log(`COMMAND ${action} EXECUTED (SIMULATION).`, "success");
+                        updateUI();
+                        renderList();
+                    }
+                }, 600); 
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API}/server/${state.selectedId}/power`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action })
+                });
+                const json = await res.json();
+                
+                if(json.success) {
+                    log(`COMMAND ${action} EXECUTED SUCCESSFULLY.`, "success");
+                    setTimeout(sync, 200);
+                } else {
+                    log(`FATAL ERROR: ${json.error}`, "error");
+                }
+            } catch(e) {
+                log("NETWORK FAILURE. SWITCHING TO SIMULATION.", "error");
+                startSimulationMode(); 
+            }
+        }
+
+        function updateProcesses() {
+            if(state.activeTab !== 'process') return;
+            const srv = state.servers.find(s => s.id === state.selectedId);
+            const container = document.getElementById('process-list');
+            
+            if(!srv || srv.status !== 'running') {
+                container.innerHTML = '<div class="text-center mt-10 text-red-500">SYSTEM OFFLINE. PROCESSES TERMINATED.</div>';
+                return;
+            }
+
+            let html = '';
+            MOCK_PROCS.forEach(p => {
+                const pid = Math.floor(Math.random() * 8000) + 1000;
+                const cpu = (p.baseCpu + (Math.random() * 5)).toFixed(1);
+                const mem = (p.baseMem + (Math.random() * 2)).toFixed(1);
+                
+                html += `
+                <div class="flex justify-between hover:bg-white/5 p-1 cursor-default">
+                    <span class="w-16 text-blue-400">${pid}</span>
+                    <span class="w-24 text-yellow-600">${p.user}</span>
+                    <span class="w-12 text-right ${cpu > 20 ? 'text-red-500' : ''}">${cpu}</span>
+                    <span class="w-12 text-right">${mem}</span>
+                    <span class="flex-1 pl-4 text-white/80">${p.cmd}</span>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+            document.getElementById('proc-count').innerText = Math.floor(Math.random() * 10) + 120;
+            document.getElementById('thread-count').innerText = Math.floor(Math.random() * 50) + 400;
+        }
+
+        function log(msg, type="info") {
+            const el = document.getElementById('console');
+            if(!el) return;
+            const div = document.createElement('div');
+            const time = new Date().toLocaleTimeString('es-ES');
+            
+            let prefix = "i";
+            let colorClass = "text-gray-400 border-l border-gray-800";
+            
+            if(type === "error") { prefix = "!"; colorClass = "text-red-400 border-l border-red-900"; }
+            if(type === "success") { prefix = "✓"; colorClass = "text-green-400 border-l border-green-900"; }
+            if(type === "warn") { prefix = "⚠"; colorClass = "text-yellow-400 border-l border-yellow-900"; }
+            
+            div.innerHTML = `<span class="opacity-50">[${time}]</span> <span class="font-bold mx-1">${prefix}</span> ${msg}`;
+            div.className = `console-line pl-2 mb-1 ${colorClass}`;
+            
+            el.appendChild(div);
+            el.scrollTop = el.scrollHeight;
+        }
+        
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.toggle('hidden');
+        }
+        
+        function setTheme(theme) {
+            document.body.className = "flex flex-col p-2 md:p-4 gap-4 text-xs md:text-sm select-none"; // Reset
+            if(theme === 'matrix') document.body.classList.add('theme-matrix');
+            if(theme === 'amber') document.body.classList.add('theme-amber');
+            const cpuBar = document.getElementById('cpu-bar');
+            if(cpuBar && parseInt(cpuBar.style.width) <= 85) cpuBar.style.backgroundColor = "var(--term-main)";
+        }
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>
